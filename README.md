@@ -4,13 +4,19 @@ A desktop feed reader and subscription manager built on the [MMSP](https://githu
 
 <img width="1265" height="827" alt="meridian" src="https://github.com/user-attachments/assets/54ff3fbb-5abc-445b-a2ee-808829ec214e" />
 
-## Quick Start
+## Installation
+
+### Pre-built releases
+
+Download the latest installer for your platform from the [Releases page](https://github.com/oernster/meridian/releases).
+
+### Run from source
 
 ```bash
 # 1. Create and activate a virtual environment
 python -m venv venv
 venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS / Linux
+source venv/bin/activate     # macOS / Linux
 
 # 2. Install dependencies
 pip install -r requirements.txt
