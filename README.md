@@ -60,4 +60,4 @@ All feeds will be added and begin polling immediately.
 
 ## License
 
-Apache-2.0. See [ARCHITECTURE.md](ARCHITECTURE.md) for third-party licence notes.
+LGPL-3.0. See [ARCHITECTURE.md](ARCHITECTURE.md) for third-party licence notes.
