@@ -145,6 +145,11 @@
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCWQaM7SpSECp9FELz-cHzuQ",
       "source_type": "atom",
       "title": "Curious Droid"
+    },
+    {
+      "url": "https://www.crankthecode.com/.well-known/mmsp.json",
+      "source_type": "mfeed",
+      "title": "Crank The Code"
     }
   ]
 }
