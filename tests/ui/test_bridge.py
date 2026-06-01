@@ -1,5 +1,8 @@
 """UI bridge tests using real QApplication (no Qt mocking)."""
+import json
+import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -91,6 +94,20 @@ class TestFeedListModel:
     def test_role_names(self, qapp):
         model = FeedListModel()
         assert b"feedId" in model.roleNames().values()
+
+    def test_remove_rows_by_ids(self, qapp):
+        from PySide6.QtCore import Qt
+        model = FeedListModel()
+        model.refresh([_feed_dto(1), _feed_dto(2), _feed_dto(3)])
+        model.remove_rows_by_ids({1, 3})
+        assert model.rowCount() == 1
+        assert model.data(model.index(0, 0), Qt.UserRole + 0) == 2
+
+    def test_remove_rows_by_ids_unknown_ids_no_op(self, qapp):
+        model = FeedListModel()
+        model.refresh([_feed_dto(1), _feed_dto(2)])
+        model.remove_rows_by_ids({99})
+        assert model.rowCount() == 2
 
 
 class TestItemListModel:
@@ -261,3 +278,172 @@ class TestAppController:
         controller._selected_feed_id = 1
         controller.notify_new_items(1, 2)
         self.item_svc.get_items.assert_called_with(1)
+
+    def test_set_feed_sort_alpha_asc(self, qapp):
+        self.sub_svc.list_feeds.return_value = [_feed_dto(1), _feed_dto(2)]
+        controller = AppController(self.sub_svc, self.item_svc)
+        controller.setFeedSort("alpha_asc")
+        assert controller._feed_sort == "alpha_asc"
+        assert controller.feedModel.rowCount() == 2
+
+    def test_set_feed_sort_alpha_desc(self, qapp):
+        feeds = [
+            FeedDTO(id=1, url="https://example.com/feed/1", source_type="mfeed",
+                    title="Zebra", description=None, icon=None, language=None,
+                    filter_expr=None, unread_count=0),
+            FeedDTO(id=2, url="https://example.com/feed/2", source_type="mfeed",
+                    title="Apple", description=None, icon=None, language=None,
+                    filter_expr=None, unread_count=0),
+        ]
+        self.sub_svc.list_feeds.return_value = feeds
+        controller = AppController(self.sub_svc, self.item_svc)
+        controller.setFeedSort("alpha_desc")
+        from PySide6.QtCore import Qt
+        first = controller.feedModel.data(controller.feedModel.index(0, 0), Qt.UserRole + 2)
+        assert first == "Zebra"
+
+    def test_set_feed_sort_unread(self, qapp):
+        feeds = [_feed_dto(1, unread=5), _feed_dto(2, unread=20)]
+        self.sub_svc.list_feeds.return_value = feeds
+        controller = AppController(self.sub_svc, self.item_svc)
+        controller.setFeedSort("unread")
+        from PySide6.QtCore import Qt
+        first_unread = controller.feedModel.data(controller.feedModel.index(0, 0), Qt.UserRole + 5)
+        assert first_unread == 20
+
+    def test_set_item_sort_newest(self, qapp):
+        items = [
+            _item_dto(1),
+            ItemDTO(id=2, feed_id=1, item_id="https://example.com/item/2",
+                    type="article", title="Item 2", url="https://example.com/item/2",
+                    published_iso="2025-01-01T00:00:00+00:00",
+                    description=None, thumbnail_url=None, duration=None, is_read=False),
+        ]
+        self.item_svc.get_items.return_value = items
+        controller = AppController(self.sub_svc, self.item_svc)
+        controller._selected_feed_id = 1
+        controller.setItemSort("newest")
+        from PySide6.QtCore import Qt
+        first_pub = controller.itemModel.data(controller.itemModel.index(0, 0), Qt.UserRole + 4)
+        assert "2026" in first_pub
+
+    def test_set_item_sort_oldest(self, qapp):
+        items = [
+            _item_dto(1),
+            ItemDTO(id=2, feed_id=1, item_id="https://example.com/item/2",
+                    type="article", title="Item 2", url="https://example.com/item/2",
+                    published_iso="2025-01-01T00:00:00+00:00",
+                    description=None, thumbnail_url=None, duration=None, is_read=False),
+        ]
+        self.item_svc.get_items.return_value = items
+        controller = AppController(self.sub_svc, self.item_svc)
+        controller._selected_feed_id = 1
+        controller.setItemSort("oldest")
+        from PySide6.QtCore import Qt
+        first_pub = controller.itemModel.data(controller.itemModel.index(0, 0), Qt.UserRole + 4)
+        assert "2025" in first_pub
+
+    def test_set_item_sort_alpha(self, qapp):
+        items = [
+            ItemDTO(id=1, feed_id=1, item_id="https://example.com/item/1",
+                    type="article", title="Zebra Article", url="https://example.com/item/1",
+                    published_iso="2026-01-01T00:00:00+00:00",
+                    description=None, thumbnail_url=None, duration=None, is_read=False),
+            ItemDTO(id=2, feed_id=1, item_id="https://example.com/item/2",
+                    type="article", title="Apple Article", url="https://example.com/item/2",
+                    published_iso="2026-01-02T00:00:00+00:00",
+                    description=None, thumbnail_url=None, duration=None, is_read=False),
+        ]
+        self.item_svc.get_items.return_value = items
+        controller = AppController(self.sub_svc, self.item_svc)
+        controller._selected_feed_id = 1
+        controller.setItemSort("alpha")
+        from PySide6.QtCore import Qt
+        first_title = controller.itemModel.data(controller.itemModel.index(0, 0), Qt.UserRole + 1)
+        assert first_title == "Apple Article"
+
+    def test_set_item_sort_no_feed_selected_no_op(self, qapp):
+        controller = AppController(self.sub_svc, self.item_svc)
+        controller.setItemSort("newest")
+        self.item_svc.get_items.assert_not_called()
+
+    def test_bulk_unsubscribe_clears_selected(self, qapp):
+        self.sub_svc.list_feeds.return_value = []
+        self.item_svc.get_items.return_value = [_item_dto(1)]
+        controller = AppController(self.sub_svc, self.item_svc)
+        controller.selectFeed(1)
+        controller.bulkUnsubscribe([1, 2])
+        assert controller.selectedFeedId == 0
+        assert controller.itemModel.rowCount() == 0
+        assert self.sub_svc.unsubscribe.call_count == 2
+
+    def test_bulk_unsubscribe_non_selected_feed(self, qapp):
+        self.sub_svc.list_feeds.return_value = []
+        self.item_svc.get_items.return_value = [_item_dto(1)]
+        controller = AppController(self.sub_svc, self.item_svc)
+        controller.selectFeed(1)
+        controller.bulkUnsubscribe([99])
+        assert controller.selectedFeedId == 1
+
+    def test_export_feeds(self, qapp):
+        feeds = [_feed_dto(1), _feed_dto(2)]
+        self.sub_svc.list_feeds.return_value = feeds
+        controller = AppController(self.sub_svc, self.item_svc)
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
+            tmp = Path(f.name)
+        controller.exportFeeds(tmp.as_uri())
+        data = json.loads(tmp.read_text())
+        assert data["version"] == 1
+        assert len(data["feeds"]) == 2
+        tmp.unlink()
+
+    def test_export_feeds_write_error_emits_signal(self, qapp):
+        self.sub_svc.list_feeds.return_value = [_feed_dto(1)]
+        controller = AppController(self.sub_svc, self.item_svc)
+        errors = []
+        controller.errorOccurred.connect(errors.append)
+        controller.exportFeeds("file:///nonexistent_dir/out.json")
+        assert len(errors) == 1
+
+    def test_import_feeds(self, qapp):
+        self.sub_svc.list_feeds.return_value = []
+        controller = AppController(self.sub_svc, self.item_svc)
+        data = {"version": 1, "feeds": [
+            {"url": "https://example.com/feed/1", "source_type": "rss", "title": "Feed One"},
+            {"url": "https://example.com/feed/2", "source_type": "atom", "title": None},
+        ]}
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
+            json.dump(data, f)
+            tmp = Path(f.name)
+        controller.importFeeds(tmp.as_uri())
+        assert self.sub_svc.subscribe.call_count == 2
+        tmp.unlink()
+
+    def test_import_feeds_skips_bad_url(self, qapp):
+        self.sub_svc.list_feeds.return_value = []
+        self.sub_svc.subscribe.side_effect = ValueError("bad url")
+        controller = AppController(self.sub_svc, self.item_svc)
+        data = {"version": 1, "feeds": [{"url": "https://example.com/feed", "source_type": "rss"}]}
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
+            json.dump(data, f)
+            tmp = Path(f.name)
+        controller.importFeeds(tmp.as_uri())
+        tmp.unlink()
+
+    def test_import_feeds_skips_empty_url(self, qapp):
+        self.sub_svc.list_feeds.return_value = []
+        controller = AppController(self.sub_svc, self.item_svc)
+        data = {"version": 1, "feeds": [{"url": "", "source_type": "rss"}, {"url": "   "}]}
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
+            json.dump(data, f)
+            tmp = Path(f.name)
+        controller.importFeeds(tmp.as_uri())
+        self.sub_svc.subscribe.assert_not_called()
+        tmp.unlink()
+
+    def test_import_feeds_bad_file_emits_error(self, qapp):
+        controller = AppController(self.sub_svc, self.item_svc)
+        errors = []
+        controller.errorOccurred.connect(errors.append)
+        controller.importFeeds("file:///nonexistent/path.json")
+        assert len(errors) == 1

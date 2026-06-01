@@ -8,6 +8,22 @@ Item {
     required property var theme
     readonly property int _aspectFill: 2
 
+    Connections {
+        target: controller
+        function onItemsChanged() {
+            if (controller.itemModel.rowCount() === 0) {
+                detailTitle.text = ""
+                detailMeta.text = ""
+                detailTypeStor.text = ""
+                detailDescription.text = ""
+                detailUrl.text = ""
+                detailThumbnail.source = ""
+                playerContainer.visible = false
+                mediaPlayer.source = ""
+            }
+        }
+    }
+
     RowLayout {
         anchors.fill: parent
         spacing: 0
@@ -24,9 +40,12 @@ Item {
 
                 // Panel header
                 Rectangle {
+                    id: itemsHeader
                     Layout.fillWidth: true
                     height: 48
                     color: theme.mantle
+
+                    property string _itemSort: "newest"
 
                     RowLayout {
                         anchors.fill: parent
@@ -39,6 +58,43 @@ Item {
                             font.bold: true
                             color: theme.text
                             Layout.fillWidth: true
+                        }
+
+                        Row {
+                            spacing: 4
+                            Repeater {
+                                model: [
+                                    { key: "newest", label: "Newest" },
+                                    { key: "oldest", label: "Oldest" },
+                                    { key: "alpha",  label: "A→Z"    }
+                                ]
+                                delegate: Rectangle {
+                                    property bool isActive: itemsHeader._itemSort === modelData.key
+                                    property bool _hov: false
+                                    height: 26; radius: 4
+                                    implicitWidth: _il.implicitWidth + 12
+                                    color: isActive ? theme.surface0 : "transparent"
+                                    border.color: isActive ? theme.blue : _hov ? theme.amber : "transparent"
+                                    border.width: 1
+                                    Label {
+                                        id: _il
+                                        anchors.centerIn: parent
+                                        text: modelData.label
+                                        color: parent.isActive ? theme.blue : parent._hov ? theme.text : theme.overlay
+                                        font.pixelSize: 10; font.bold: parent.isActive
+                                    }
+                                    HoverHandler { onHoveredChanged: parent._hov = hovered }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        enabled: !parent.isActive
+                                        cursorShape: parent.isActive ? Qt.ArrowCursor : Qt.PointingHandCursor
+                                        onClicked: {
+                                            itemsHeader._itemSort = modelData.key
+                                            controller.setItemSort(modelData.key)
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         Button {
@@ -60,6 +116,8 @@ Item {
                                 color: parent.pressed ? theme.surface1
                                      : parent.hovered ? theme.surface0
                                      : "transparent"
+                                border.color: parent.hovered ? theme.amber : "transparent"
+                                border.width: 1
                                 radius: 5
                             }
                         }
@@ -81,7 +139,7 @@ Item {
                     model: controller ? controller.itemModel : null
                     delegate: itemDelegate
                     currentIndex: -1
-                    ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOn }
+                    ScrollBar.vertical: ScrollBar { id: itemVScroll; policy: ScrollBar.AlwaysOn }
                 }
             }
         }
@@ -131,11 +189,14 @@ Item {
                     font.pixelSize: 20
                     font.bold: true
                     wrapMode: Text.WordWrap
+                    maximumLineCount: 4
+                    elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
 
                 RowLayout {
-                    spacing: 8
+                    Layout.fillWidth: true
+                    spacing: 10
 
                     Rectangle {
                         height: 22
@@ -159,6 +220,7 @@ Item {
                         text: ""
                         color: theme.subtext
                         font.pixelSize: 12
+                        Layout.fillWidth: true
                     }
                 }
 
@@ -254,7 +316,7 @@ Item {
                     id: detailThumbnail
                     visible: !playerContainer.visible && source.toString() !== ""
                     Layout.fillWidth: true
-                    height: 200
+                    Layout.maximumHeight: Math.round(Layout.preferredWidth * 0.5)
                     fillMode: Image.PreserveAspectFit
                 }
 
@@ -262,6 +324,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
+                    contentWidth: availableWidth
 
                     TextArea {
                         id: detailDescription
@@ -282,6 +345,8 @@ Item {
                     color: openBtn.pressed ? theme.blue + "cc"
                          : openBtn.containsMouse ? theme.blue
                          : theme.surface0
+                    border.color: openBtn.containsMouse ? theme.amber : "transparent"
+                    border.width: 1
 
                     Label {
                         id: openBtn
@@ -316,13 +381,15 @@ Item {
         id: itemDelegate
 
         Rectangle {
-            width: itemList.width
+            width: itemList.width - itemVScroll.width
             height: 84
             color: itemList.currentIndex === index
                 ? theme.surface0
                 : itemMouse.containsMouse ? theme.surface0 + "80"
                 : model.itemIsRead ? "transparent"
                 : theme.mantle
+            border.color: itemMouse.containsMouse && itemList.currentIndex !== index ? theme.amber : "transparent"
+            border.width: 1
 
             // Unread indicator dot
             Rectangle {
@@ -424,6 +491,7 @@ Item {
                 height: 1
                 color: theme.surface0
                 opacity: 0.5
+                visible: !(itemMouse.containsMouse && itemList.currentIndex !== index)
             }
 
             MouseArea {
@@ -433,7 +501,6 @@ Item {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                     itemList.currentIndex = index
-                    console.log("Item clicked title:", model.itemTitle, "id:", model.itemId)
                     _loadItem({
                         itemTitle:       model.itemTitle,
                         itemPublished:   model.itemPublished,
@@ -449,12 +516,21 @@ Item {
         }
     }
 
+    function _descHtml(raw) {
+        if (!raw) return ""
+        if (/<[a-zA-Z]/.test(raw)) return raw
+        return raw
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\n/g, "<br/>")
+    }
+
     function _loadItem(item) {
-        console.log("_loadItem called, title:", item.itemTitle, "desc length:", item.itemDescription ? item.itemDescription.length : "null")
         detailTitle.text = item.itemTitle
         detailMeta.text = item.itemPublished.substring(0, 16).replace("T", "  ")
         detailTypeStor.text = item.itemType
-        detailDescription.text = item.itemDescription
+        detailDescription.text = _descHtml(item.itemDescription)
         detailUrl.text = item.itemUrl
         const isMedia = ["video", "audio", "short", "livestream"].includes(item.itemType)
         playerContainer.visible = isMedia && item.itemMediaUrl !== ""

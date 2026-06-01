@@ -71,6 +71,16 @@ class FeedListModel(QAbstractListModel):
         self._feeds = feeds
         self.endResetModel()
 
+    def remove_rows_by_ids(self, feed_ids: set[int]) -> None:
+        indices = sorted(
+            (i for i, f in enumerate(self._feeds) if f.id in feed_ids),
+            reverse=True,
+        )
+        for idx in indices:
+            self.beginRemoveRows(QModelIndex(), idx, idx)
+            self._feeds.pop(idx)
+            self.endRemoveRows()
+
 
 class ItemListModel(QAbstractListModel):
     _ROLES = {
@@ -151,6 +161,8 @@ class AppController(QObject):
         self._feed_model = FeedListModel(self)
         self._item_model = ItemListModel(self)
         self._selected_feed_id: int = 0
+        self._feed_sort: str = "alpha_asc"
+        self._item_sort: str = "newest"
         self.newItemsAvailable.connect(self._refresh_on_new_items)
 
     @Property(QObject, notify=feedsChanged)
@@ -168,6 +180,7 @@ class AppController(QObject):
     @Slot()
     def loadFeeds(self) -> None:
         feeds = self._sub_svc.list_feeds()
+        feeds = self._sort_feeds(feeds)
         self._feed_model.refresh(feeds)
         self.feedsChanged.emit()
 
@@ -175,8 +188,23 @@ class AppController(QObject):
     def selectFeed(self, feed_id: int) -> None:
         self._selected_feed_id = feed_id
         items = self._item_svc.get_items(feed_id)
+        items = self._sort_items(items)
         self._item_model.refresh(items)
         self.itemsChanged.emit()
+
+    @Slot(str)
+    def setFeedSort(self, key: str) -> None:
+        self._feed_sort = key
+        self.loadFeeds()
+
+    @Slot(str)
+    def setItemSort(self, key: str) -> None:
+        self._item_sort = key
+        if self._selected_feed_id:
+            items = self._item_svc.get_items(self._selected_feed_id)
+            items = self._sort_items(items)
+            self._item_model.refresh(items)
+            self.itemsChanged.emit()
 
     @Slot(str)
     def subscribe(self, url: str) -> None:
@@ -188,13 +216,15 @@ class AppController(QObject):
 
     @Slot('QVariantList')
     def bulkUnsubscribe(self, feed_ids: list) -> None:
-        for fid in feed_ids:
-            self._sub_svc.unsubscribe(int(fid))
-            if self._selected_feed_id == int(fid):
+        ids = {int(fid) for fid in feed_ids}
+        for fid in ids:
+            self._sub_svc.unsubscribe(fid)
+            if self._selected_feed_id == fid:
                 self._selected_feed_id = 0
                 self._item_model.refresh([])
                 self.itemsChanged.emit()
-        self.loadFeeds()
+        self._feed_model.remove_rows_by_ids(ids)
+        self.feedsChanged.emit()
 
     @Slot(int)
     def unsubscribe(self, feed_id: int) -> None:
@@ -263,6 +293,24 @@ class AppController(QObject):
                 _LOG.warning("Skipping %s: %s", url, exc)
         self.loadFeeds()
         _LOG.info("Imported %d feeds from %s", imported, path)
+
+    def _sort_feeds(self, feeds: list) -> list:
+        match self._feed_sort:
+            case "alpha_desc":
+                return sorted(feeds, key=lambda f: (f.title or f.url).lower(), reverse=True)
+            case "unread":
+                return sorted(feeds, key=lambda f: f.unread_count, reverse=True)
+            case _:  # alpha_asc
+                return sorted(feeds, key=lambda f: (f.title or f.url).lower())
+
+    def _sort_items(self, items: list) -> list:
+        match self._item_sort:
+            case "oldest":
+                return sorted(items, key=lambda i: i.published_iso)
+            case "alpha":
+                return sorted(items, key=lambda i: i.title.lower())
+            case _:  # newest
+                return sorted(items, key=lambda i: i.published_iso, reverse=True)
 
     def notify_new_items(self, feed_id: int, count: int) -> None:
         # Thread-safe: only emit signal; _refresh_on_new_items runs on Qt thread via auto-queued connection

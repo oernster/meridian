@@ -1,6 +1,8 @@
 import asyncio
+import xml.etree.ElementTree as ET
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 
 from meridian.infrastructure.fetching.http_fetcher import RateLimitedError
@@ -11,7 +13,7 @@ class TestPollScheduler:
     def setup_method(self):
         self.feed_repo = MagicMock()
         self.orchestrator = MagicMock()
-        self.orchestrator.poll_feed = AsyncMock(return_value=0)
+        self.orchestrator.poll_feed = AsyncMock(return_value=(0, False))
 
     def test_start_creates_task(self):
         scheduler = PollScheduler(self.feed_repo, self.orchestrator)
@@ -97,11 +99,50 @@ class TestPollScheduler:
         await scheduler._poll_one(1)
 
     async def test_poll_one_new_items_callback(self):
-        self.orchestrator.poll_feed = AsyncMock(return_value=3)
+        self.orchestrator.poll_feed = AsyncMock(return_value=(3, False))
         callback = AsyncMock()
         scheduler = PollScheduler(self.feed_repo, self.orchestrator, callback)
         await scheduler._poll_one(1)
         callback.assert_called_once_with(1, 3)
+
+    async def test_poll_one_feeds_changed_triggers_callback(self):
+        self.orchestrator.poll_feed = AsyncMock(return_value=(0, True))
+        callback = AsyncMock()
+        scheduler = PollScheduler(self.feed_repo, self.orchestrator, callback)
+        await scheduler._poll_one(1)
+        callback.assert_called_once_with(1, 0)
+
+    async def test_poll_one_http_404_calls_backoff(self):
+        response = MagicMock()
+        response.status_code = 404
+        exc = httpx.HTTPStatusError("404", request=MagicMock(), response=response)
+        self.orchestrator.poll_feed = AsyncMock(side_effect=exc)
+        scheduler = PollScheduler(self.feed_repo, self.orchestrator)
+        await scheduler._poll_one(1)
+        self.orchestrator.apply_backoff.assert_called_once_with(1, 86400)
+
+    async def test_poll_one_http_non_404_calls_backoff(self):
+        response = MagicMock()
+        response.status_code = 500
+        exc = httpx.HTTPStatusError("500", request=MagicMock(), response=response)
+        self.orchestrator.poll_feed = AsyncMock(side_effect=exc)
+        scheduler = PollScheduler(self.feed_repo, self.orchestrator)
+        await scheduler._poll_one(1)
+        self.orchestrator.apply_backoff.assert_called_once_with(1, 3600)
+
+    async def test_poll_one_connect_error_calls_backoff(self):
+        self.orchestrator.poll_feed = AsyncMock(side_effect=httpx.ConnectError("refused"))
+        scheduler = PollScheduler(self.feed_repo, self.orchestrator)
+        await scheduler._poll_one(1)
+        self.orchestrator.apply_backoff.assert_called_once_with(1, 3600)
+
+    async def test_poll_one_xml_parse_error_calls_backoff(self):
+        self.orchestrator.poll_feed = AsyncMock(
+            side_effect=ET.ParseError("syntax error: line 1, column 0")
+        )
+        scheduler = PollScheduler(self.feed_repo, self.orchestrator)
+        await scheduler._poll_one(1)
+        self.orchestrator.apply_backoff.assert_called_once_with(1, 3600)
 
     async def test_tick_polls_all_feeds(self):
         from meridian.domain.entities.feed import Feed

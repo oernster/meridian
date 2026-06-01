@@ -162,6 +162,97 @@ class TestAtomParser:
         items, _ = atom_parser.parse(1, "https://example.com/atom", raw)
         assert len(items[0].thumbnail) == 1
 
+    def test_media_group_non_youtube_content(self):
+        _MEDIA_NS = "http://search.yahoo.com/mrss/"
+        raw = f"""<?xml version="1.0"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="{_MEDIA_NS}">
+  <title>Podcast</title>
+  <entry>
+    <id>https://example.com/ep/1</id>
+    <title>Episode 1</title>
+    <link rel="alternate" href="https://example.com/ep/1"/>
+    <published>2026-01-01T00:00:00Z</published>
+    <media:group>
+      <media:thumbnail url="https://example.com/thumb.jpg" width="640" height="360"/>
+      <media:content url="https://example.com/video.mp4" type="video/mp4"/>
+      <media:description>Group description</media:description>
+    </media:group>
+  </entry>
+</feed>""".encode()
+        items, _ = atom_parser.parse(1, "https://example.com/atom", raw)
+        assert len(items[0].thumbnail) == 1
+        assert items[0].thumbnail[0].width == 640
+        assert len(items[0].media) == 1
+        assert items[0].media[0].url == "https://example.com/video.mp4"
+        assert items[0].description == "Group description"
+
+    def test_media_group_thumbnail_no_url_ignored(self):
+        _MEDIA_NS = "http://search.yahoo.com/mrss/"
+        raw = f"""<?xml version="1.0"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="{_MEDIA_NS}">
+  <title>T</title>
+  <entry>
+    <id>https://example.com/1</id><title>Item</title>
+    <link rel="alternate" href="https://example.com/1"/>
+    <published>2026-01-01T00:00:00Z</published>
+    <media:group>
+      <media:thumbnail/>
+    </media:group>
+  </entry>
+</feed>""".encode()
+        items, _ = atom_parser.parse(1, "https://example.com/atom", raw)
+        assert len(items[0].thumbnail) == 0
+
+    def test_media_group_youtube_content_url_excluded(self):
+        _MEDIA_NS = "http://search.yahoo.com/mrss/"
+        raw = f"""<?xml version="1.0"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="{_MEDIA_NS}">
+  <title>YT</title>
+  <entry>
+    <id>https://www.youtube.com/watch?v=abc</id><title>Video</title>
+    <link rel="alternate" href="https://www.youtube.com/watch?v=abc"/>
+    <published>2026-01-01T00:00:00Z</published>
+    <media:group>
+      <media:content url="https://www.youtube.com/v/abc" type="video/mp4"/>
+    </media:group>
+  </entry>
+</feed>""".encode()
+        items, _ = atom_parser.parse(1, "https://www.youtube.com/feeds/videos.xml?channel_id=UC123", raw)
+        assert len(items[0].media) == 0
+
+    def test_media_group_description_not_overridden_if_already_set(self):
+        _MEDIA_NS = "http://search.yahoo.com/mrss/"
+        raw = f"""<?xml version="1.0"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="{_MEDIA_NS}">
+  <title>T</title>
+  <entry>
+    <id>https://example.com/1</id>
+    <title>Item</title>
+    <link rel="alternate" href="https://example.com/1"/>
+    <published>2026-01-01T00:00:00Z</published>
+    <summary>Atom summary</summary>
+    <media:group>
+      <media:description>Group desc</media:description>
+    </media:group>
+  </entry>
+</feed>""".encode()
+        items, _ = atom_parser.parse(1, "https://example.com/atom", raw)
+        assert items[0].description == "Atom summary"
+
+    def test_youtube_feed_url_infers_video_type(self):
+        raw = b"""<?xml version="1.0"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>YT Channel</title>
+  <entry>
+    <id>https://www.youtube.com/watch?v=abc</id>
+    <title>A Video</title>
+    <link rel="alternate" href="https://www.youtube.com/watch?v=abc"/>
+    <published>2026-01-01T00:00:00Z</published>
+  </entry>
+</feed>"""
+        items, _ = atom_parser.parse(1, "https://www.youtube.com/feeds/videos.xml?channel_id=UC123", raw)
+        assert items[0].type == ItemType.VIDEO
+
     def test_datetime_no_timezone(self):
         from meridian.infrastructure.fetching.parser.atom_parser import _parse_dt
         from datetime import timezone

@@ -107,6 +107,17 @@ class TestSqliteFeedRepository:
         assert result.title == "Updated Title"
         assert result.language == "fr"
 
+    def test_update_title(self, session_factory):
+        repo = SqliteFeedRepository(session_factory)
+        saved = repo.save(_feed(url="https://title-test.example.com/feed"))
+        repo.update_title(saved.id, "Auto Discovered Title")
+        fetched = repo.get_by_id(saved.id)
+        assert fetched.title == "Auto Discovered Title"
+
+    def test_update_title_nonexistent_noop(self, session_factory):
+        repo = SqliteFeedRepository(session_factory)
+        repo.update_title(99997, "Ghost Title")
+
 
 class TestSqliteItemRepository:
     def _setup_feed(self, session_factory) -> Feed:

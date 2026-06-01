@@ -14,6 +14,7 @@ from meridian.domain.value_objects.poll_config import PollConfig, POLL_FLOOR_SEC
 
 _MEDIA_NS = "http://search.yahoo.com/mrss/"
 _DC_NS = "http://purl.org/dc/elements/1.1/"
+_CONTENT_NS = "http://purl.org/rss/1.0/modules/content/"
 _RSS1_DEFAULT_NS = b'xmlns="http://purl.org/rss/1.0/"'
 
 
@@ -79,7 +80,7 @@ def _parse_item(feed_id: int, feed_url: str, feed_title: str | None, el) -> Item
         title=_text(el, "title") or "(untitled)",
         url=url,
         published=published,
-        description=_text(el, "description"),
+        description=_text_content_encoded(el) or _text(el, "description"),
         authors=tuple(authors),
         tags=tuple(tags),
         media=tuple(media),
@@ -125,6 +126,11 @@ def _infer_type(media: list[Media]) -> ItemType:
         if m.mime_type.startswith("image/"):
             return ItemType.IMAGE
     return ItemType.ARTICLE
+
+
+def _text_content_encoded(el) -> str | None:
+    child = el.find(f"{{{_CONTENT_NS}}}encoded")
+    return child.text.strip() if child is not None and child.text else None
 
 
 def _text(el, tag: str) -> str | None:

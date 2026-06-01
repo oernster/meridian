@@ -54,9 +54,31 @@ ApplicationWindow {
         property color blue:     isDark ? _dBlue     : _lBlue
         property color red:      isDark ? _dRed      : _lRed
         property color green:    isDark ? _dGreen    : _lGreen
+        property color amber:    isDark ? "#fab387"  : "#e67e22"
     }
 
     color: theme.base
+
+    property var _selectedFeedIds: ({})
+    property int _selectedFeedCount: 0
+
+    function _toggleFeed(feedId) {
+        var s = Object.assign({}, _selectedFeedIds)
+        if (s[feedId]) { delete s[feedId] } else { s[feedId] = true }
+        _selectedFeedIds = s
+        _selectedFeedCount = Object.keys(s).length
+    }
+    function _selectAllFeeds() {
+        var s = {}
+        var m = controller.feedModel
+        for (var i = 0; i < m.rowCount(); i++) {
+            var id = m.data(m.index(i, 0), Qt.UserRole)
+            s[id] = true
+        }
+        _selectedFeedIds = s
+        _selectedFeedCount = Object.keys(s).length
+    }
+    function _clearFeedSelection() { _selectedFeedIds = {}; _selectedFeedCount = 0 }
 
     menuBar: MenuBar {
         Menu {
@@ -131,6 +153,8 @@ ApplicationWindow {
                 anchors.rightMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
                 color: themeToggleMouse.containsMouse ? theme.surface0 : "transparent"
+                border.color: themeToggleMouse.containsMouse ? theme.amber : "transparent"
+                border.width: 1
                 Label {
                     anchors.centerIn: parent
                     text: theme.isDark ? "☀️" : "🌙"
@@ -153,6 +177,8 @@ ApplicationWindow {
                 anchors.rightMargin: 8
                 anchors.verticalCenter: parent.verticalCenter
                 color: manageHeaderMouse.containsMouse ? theme.surface0 : theme.surface1
+                border.color: manageHeaderMouse.containsMouse ? theme.amber : "transparent"
+                border.width: 1
                 Label {
                     id: manageLbl
                     anchors.centerIn: parent
@@ -194,19 +220,108 @@ ApplicationWindow {
                     spacing: 0
 
                     Rectangle {
+                        id: feedsHeader
                         Layout.fillWidth: true
                         height: 38
                         color: "transparent"
 
-                        Label {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 16
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "FEEDS"
-                            font.pixelSize: 11
-                            font.bold: true
-                            font.letterSpacing: 1.4
-                            color: theme.overlay
+                        property string _feedSort: "alpha_asc"
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            spacing: 6
+
+                            Rectangle {
+                                width: 18; height: 18; radius: 3
+                                color: root._selectedFeedCount > 0 ? theme.blue : "transparent"
+                                border.color: theme.blue; border.width: 2
+                                Label {
+                                    anchors.centerIn: parent
+                                    text: root._selectedFeedCount > 0 && root._selectedFeedCount === controller.feedModel.rowCount() ? "✓" : (root._selectedFeedCount > 0 ? "–" : "")
+                                    color: theme.isDark ? "#1e1e2e" : "#ffffff"
+                                    font.pixelSize: 12; font.bold: true
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root._selectedFeedCount === controller.feedModel.rowCount() ? root._clearFeedSelection() : root._selectAllFeeds()
+                                }
+                            }
+
+                            Label {
+                                text: "FEEDS"
+                                font.pixelSize: 11
+                                font.bold: true
+                                font.letterSpacing: 1.4
+                                color: theme.overlay
+                                Layout.fillWidth: true
+                            }
+
+                            Rectangle {
+                                visible: root._selectedFeedCount > 0
+                                height: 24
+                                width: _removeFeedsLbl.contentWidth + 14
+                                radius: 4
+                                color: _removeFeedsMouse.containsMouse ? theme.surface0 : "transparent"
+                                border.color: theme.red
+                                border.width: 1
+                                Label {
+                                    id: _removeFeedsLbl
+                                    anchors.centerIn: parent
+                                    text: "Remove " + root._selectedFeedCount
+                                    color: theme.red
+                                    font.pixelSize: 10; font.bold: true
+                                }
+                                MouseArea {
+                                    id: _removeFeedsMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        feedBulkDeleteDialog.pendingBulkIds = Object.keys(root._selectedFeedIds).map(function(k) { return parseInt(k) })
+                                        feedBulkDeleteDialog.open()
+                                    }
+                                }
+                            }
+
+                            Row {
+                                spacing: 4
+                                Repeater {
+                                    model: [
+                                        { key: "alpha_asc",  label: "A→Z"    },
+                                        { key: "alpha_desc", label: "Z→A"    },
+                                        { key: "unread",     label: "Unread" }
+                                    ]
+                                    delegate: Rectangle {
+                                        property bool isActive: feedsHeader._feedSort === modelData.key
+                                        property bool _hov: false
+                                        height: 24; radius: 4
+                                        implicitWidth: _sl.implicitWidth + 12
+                                        color: isActive ? theme.surface0 : "transparent"
+                                        border.color: isActive ? theme.blue : _hov ? theme.amber : "transparent"
+                                        border.width: 1
+                                        Label {
+                                            id: _sl
+                                            anchors.centerIn: parent
+                                            text: modelData.label
+                                            color: parent.isActive ? theme.blue : parent._hov ? theme.text : theme.overlay
+                                            font.pixelSize: 10; font.bold: parent.isActive
+                                        }
+                                        HoverHandler { onHoveredChanged: parent._hov = hovered }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            enabled: !parent.isActive
+                                            cursorShape: parent.isActive ? Qt.ArrowCursor : Qt.PointingHandCursor
+                                            onClicked: {
+                                                feedsHeader._feedSort = modelData.key
+                                                controller.setFeedSort(modelData.key)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -218,7 +333,7 @@ ApplicationWindow {
                         model: controller.feedModel
                         delegate: feedDelegate
                         currentIndex: -1
-                        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOn }
+                        ScrollBar.vertical: ScrollBar { id: feedVScroll; policy: ScrollBar.AlwaysOn }
                     }
 
 
@@ -246,9 +361,36 @@ ApplicationWindow {
 
         Rectangle {
             id: feedRow
-            width: feedList.width
+            width: feedList.width - feedVScroll.width
             height: 64
             color: feedList.currentIndex === index ? theme.surface0 : "transparent"
+            border.color: feedRowMouse.containsMouse && feedList.currentIndex !== index ? theme.amber : "transparent"
+            border.width: 1
+
+            MouseArea {
+                id: feedRowMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                onPressed: function(mouse) {
+                    if (mouse.button === Qt.RightButton) {
+                        mouse.accepted = true
+                        var gp = feedRow.mapToGlobal(mouse.x, mouse.y)
+                        var op = Overlay.overlay.mapFromGlobal(gp.x, gp.y)
+                        feedContextPopup.targetFeedId = model.feedId
+                        feedContextPopup.targetTitle  = model.feedTitle || model.feedUrl
+                        feedContextPopup.x = op.x
+                        feedContextPopup.y = op.y
+                        feedContextPopup.open()
+                    }
+                }
+                onClicked: function(mouse) {
+                    if (mouse.button === Qt.LeftButton) {
+                        feedList.currentIndex = index
+                        controller.selectFeed(model.feedId)
+                    }
+                }
+            }
 
             Rectangle {
                 visible: feedList.currentIndex === index
@@ -260,9 +402,28 @@ ApplicationWindow {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 14; anchors.rightMargin: 12
+                anchors.leftMargin: 8; anchors.rightMargin: 12
                 anchors.topMargin: 8; anchors.bottomMargin: 8
-                spacing: 10
+                spacing: 8
+                z: 1
+
+                Rectangle {
+                    width: 22; height: 22; radius: 3
+                    color: !!root._selectedFeedIds[model.feedId] ? theme.blue : "transparent"
+                    border.color: theme.blue; border.width: 2
+                    Label {
+                        anchors.centerIn: parent
+                        text: !!root._selectedFeedIds[model.feedId] ? "✓" : ""
+                        color: theme.isDark ? "#1e1e2e" : "#ffffff"
+                        font.pixelSize: 12; font.bold: true
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -4
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root._toggleFeed(model.feedId)
+                    }
+                }
 
                 Rectangle {
                     width: 36; height: 36; radius: 8
@@ -307,14 +468,113 @@ ApplicationWindow {
                     }
                 }
             }
+        }
+    }
 
-            TapHandler {
-                onTapped: {
-                    feedList.currentIndex = index
-                    console.log("Feed tapped id:", model.feedId, "title:", model.feedTitle)
-                    controller.selectFeed(model.feedId)
+    Popup {
+        id: feedContextPopup
+        parent: Overlay.overlay
+        property int targetFeedId: 0
+        property string targetTitle: ""
+        padding: 4
+        width: 180
+        height: root._selectedFeedCount > 0 ? 80 : 44
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle {
+            color: theme.mantle
+            border.color: theme.surface0
+            border.width: 1
+            radius: 6
+        }
+
+        Column {
+            anchors.fill: parent
+            spacing: 0
+
+            Rectangle {
+                width: parent.width; height: 36
+                radius: 4
+                color: ctxHover.containsMouse ? theme.surface0 : "transparent"
+                Label {
+                    anchors.centerIn: parent
+                    text: "Remove Feed"
+                    color: theme.red
+                    font.pixelSize: 13
+                    font.bold: true
+                }
+                MouseArea {
+                    id: ctxHover
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        feedContextPopup.close()
+                        feedDeleteConfirmDialog.targetFeedId = feedContextPopup.targetFeedId
+                        feedDeleteConfirmDialog.targetTitle  = feedContextPopup.targetTitle
+                        feedDeleteConfirmDialog.open()
+                    }
                 }
             }
+
+            Rectangle {
+                visible: root._selectedFeedCount > 0
+                width: parent.width; height: 36
+                radius: 4
+                color: ctxBulkHover.containsMouse ? theme.surface0 : "transparent"
+                Label {
+                    anchors.centerIn: parent
+                    text: "Remove " + root._selectedFeedCount + " selected"
+                    color: theme.red
+                    font.pixelSize: 13
+                    font.bold: true
+                }
+                MouseArea {
+                    id: ctxBulkHover
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        feedBulkDeleteDialog.pendingBulkIds = Object.keys(root._selectedFeedIds).map(function(k) { return parseInt(k) })
+                        feedContextPopup.close()
+                        Qt.callLater(feedBulkDeleteDialog.open)
+                    }
+                }
+            }
+        }
+    }
+
+    Dialog {
+        id: feedDeleteConfirmDialog
+        property int targetFeedId: 0
+        property string targetTitle: ""
+        modal: true
+        title: "Remove Feed"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        anchors.centerIn: Overlay.overlay
+        background: Rectangle { color: theme.base; border.color: theme.surface0; radius: 8 }
+        Label {
+            text: "Remove \"" + feedDeleteConfirmDialog.targetTitle + "\"?\nAll downloaded items will be deleted."
+            wrapMode: Text.WordWrap; width: 320; color: theme.text; lineHeight: 1.4
+        }
+        onAccepted: controller.unsubscribe(feedDeleteConfirmDialog.targetFeedId)
+    }
+
+    Dialog {
+        id: feedBulkDeleteDialog
+        property var pendingBulkIds: []
+        modal: true
+        title: "Remove Feeds"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        anchors.centerIn: Overlay.overlay
+        background: Rectangle { color: theme.base; border.color: theme.surface0; radius: 8 }
+        Label {
+            text: "Remove " + feedBulkDeleteDialog.pendingBulkIds.length + " feed(s)?\nAll downloaded items will be deleted."
+            wrapMode: Text.WordWrap; width: 320; color: theme.text; lineHeight: 1.4
+        }
+        onAccepted: {
+            root._clearFeedSelection()
+            controller.bulkUnsubscribe(feedBulkDeleteDialog.pendingBulkIds)
         }
     }
 

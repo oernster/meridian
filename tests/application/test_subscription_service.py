@@ -103,3 +103,11 @@ class TestSubscriptionService:
     def test_infer_source_type_rss_default(self):
         result = SubscriptionService._infer_source_type("https://example.com/feed.rss")
         assert result == SourceType.RSS
+
+    def test_subscribe_with_title(self):
+        self.feed_repo.get_by_url.return_value = None
+        saved = Feed(id=6, url="https://example.com/feed", source_type=SourceType.MFEED, title="My Feed")
+        self.feed_repo.save.return_value = saved
+        dto = self.svc.subscribe("https://example.com/feed", title="My Feed")
+        saved_feed = self.feed_repo.save.call_args[0][0]
+        assert saved_feed.title == "My Feed"

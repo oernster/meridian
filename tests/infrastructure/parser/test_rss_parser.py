@@ -85,6 +85,21 @@ class TestRssParser:
         items, _ = rss_parser.parse(1, "https://example.com/feed.xml", _RSS_MINIMAL)
         assert items[0].description == "A test post"
 
+    def test_content_encoded_preferred_over_description(self):
+        feed = b"""<?xml version="1.0"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel><title>T</title>
+    <item>
+      <guid>https://example.com/1</guid>
+      <title>T</title>
+      <description>short summary</description>
+      <content:encoded><![CDATA[<p>Full article HTML</p>]]></content:encoded>
+    </item>
+  </channel>
+</rss>"""
+        items, _ = rss_parser.parse(1, "https://example.com/feed.xml", feed)
+        assert items[0].description == "<p>Full article HTML</p>"
+
     def test_video_type_inferred(self):
         items, _ = rss_parser.parse(1, "https://example.com/feed.xml", _RSS_WITH_VIDEO)
         assert items[0].type == ItemType.VIDEO
@@ -254,3 +269,13 @@ class TestRssParser:
 </rss>""".encode()
         items, _ = rss_parser.parse(1, "https://example.com/feed.xml", raw)
         assert len(items[0].media) == 0
+
+    def test_iso_date_without_timezone(self):
+        raw = _RSS_MINIMAL.replace(
+            b"<pubDate>Mon, 01 Jan 2026 00:00:00 +0000</pubDate>",
+            b"<pubDate>2026-03-15T12:30:00</pubDate>",
+        )
+        items, _ = rss_parser.parse(1, "https://example.com/feed.xml", raw)
+        from datetime import timezone
+        assert items[0].published.tzinfo == timezone.utc
+        assert items[0].published.year == 2026

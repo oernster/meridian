@@ -78,6 +78,8 @@ Rectangle {
                         color: parent.pressed ? theme.surface1
                              : parent.hovered ? theme.surface0
                              : "transparent"
+                        border.color: parent.hovered ? theme.amber : "transparent"
+                        border.width: 1
                         radius: 6
                     }
                 }
@@ -141,6 +143,8 @@ Rectangle {
                          : urlField.text.trim().startsWith("https://") ? (subscribeBtn.containsMouse ? theme.blue + "dd" : theme.blue)
                          : theme.surface1
                     opacity: urlField.text.trim().startsWith("https://") ? 1.0 : 0.5
+                    border.color: subscribeBtn.containsMouse && urlField.text.trim().startsWith("https://") ? theme.amber : "transparent"
+                    border.width: 1
 
                     Label {
                         anchors.centerIn: parent
@@ -253,7 +257,7 @@ Rectangle {
             clip: true
             model: controller ? controller.feedModel : null
             delegate: subDelegate
-            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOn }
+            ScrollBar.vertical: ScrollBar { id: subVScroll; policy: ScrollBar.AlwaysOn }
         }
     }
 
@@ -284,9 +288,11 @@ Rectangle {
 
         Rectangle {
             id: delegateRoot
-            width: subList.width
+            width: subList.width - subVScroll.width
             height: 80
             color: (!!root.selectedIds[model.feedId] || subItemMouse.hovered) ? theme.mantle : theme.base
+            border.color: subItemMouse.hovered ? theme.amber : "transparent"
+            border.width: 1
 
             Component.onCompleted: root._registerId(model.feedId)
             Component.onDestruction: root._unregisterId(model.feedId)
@@ -352,7 +358,7 @@ Rectangle {
                             color: parent.pressed ? theme.surface1
                                  : parent.hovered ? theme.surface0
                                  : "transparent"
-                            border.color: theme.surface0
+                            border.color: parent.hovered ? theme.amber : theme.surface0
                             border.width: 1
                             radius: 5
                         }
@@ -364,7 +370,6 @@ Rectangle {
                         implicitHeight: 26
                         implicitWidth: 60
                         onClicked: {
-                            // Ensure this feed is selected then open confirm dialog
                             root.toggleSelected(model.feedId, true)
                             bulkConfirmDialog.open()
                         }
@@ -379,7 +384,7 @@ Rectangle {
                             color: parent.pressed ? theme.surface1
                                  : parent.hovered ? theme.surface0
                                  : "transparent"
-                            border.color: theme.surface0
+                            border.color: parent.hovered ? theme.amber : theme.surface0
                             border.width: 1
                             radius: 5
                         }
