@@ -176,202 +176,209 @@ Item {
                 }
             }
 
-            ColumnLayout {
+            // Hidden state storage (outside ColumnLayout so it persists)
+            Label { id: detailTypeStor; visible: false; text: "" }
+            Label { id: detailUrl;      visible: false; text: "" }
+
+            ScrollView {
                 anchors.fill: parent
-                anchors.margins: 20
-                spacing: 14
+                clip: true
+                contentWidth: availableWidth
                 visible: detailTitle.text !== ""
 
-                Label {
-                    id: detailTitle
-                    text: ""
-                    color: theme.text
-                    font.pixelSize: 20
-                    font.bold: true
-                    wrapMode: Text.WordWrap
-                    maximumLineCount: 4
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
-                }
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 0
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 10
-
-                    Rectangle {
-                        height: 22
-                        width: typeLabel.contentWidth + 14
-                        radius: 4
-                        color: theme.surface0
-
-                        Label {
-                            id: typeLabel
-                            anchors.centerIn: parent
-                            text: detailTypeStor.text.toUpperCase()
-                            color: theme.blue
-                            font.pixelSize: 10
-                            font.bold: true
-                            font.letterSpacing: 0.8
-                        }
-                    }
-
-                    Label {
-                        id: detailMeta
-                        text: ""
-                        color: theme.subtext
-                        font.pixelSize: 12
+                    // Hero thumbnail — full width, fixed height, crop-fill
+                    Image {
+                        id: detailThumbnail
+                        visible: source.toString() !== "" && !playerContainer.visible
                         Layout.fillWidth: true
-                    }
-                }
-
-                // Media player
-                Rectangle {
-                    id: playerContainer
-                    visible: false
-                    Layout.fillWidth: true
-                    height: Math.min(root.height * 0.38, 340)
-                    color: "#000"
-                    radius: 10
-
-                    MediaPlayer {
-                        id: mediaPlayer
-                        videoOutput: videoOutput
+                        Layout.preferredHeight: 260
+                        Layout.maximumHeight: 360
+                        fillMode: Image.PreserveAspectCrop
+                        clip: true
                     }
 
-                    VideoOutput {
-                        id: videoOutput
-                        anchors.fill: parent
-                        anchors.bottomMargin: 48
-                    }
-
-                    // Audio-only visual
+                    // Media player (video/audio)
                     Rectangle {
-                        anchors.fill: parent
-                        anchors.bottomMargin: 48
-                        color: theme.mantle
-                        visible: detailTypeStor.text === "audio" || detailTypeStor.text === "podcast"
-                        radius: 10
+                        id: playerContainer
+                        visible: false
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Math.min(root.height * 0.38, 340)
+                        color: "#000"
+                        radius: 0
 
-                        Label {
-                            anchors.centerIn: parent
-                            text: "🎵"
-                            font.pixelSize: 40
+                        MediaPlayer {
+                            id: mediaPlayer
+                            videoOutput: videoOutput
+                        }
+
+                        VideoOutput {
+                            id: videoOutput
+                            anchors.fill: parent
+                            anchors.bottomMargin: 48
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            anchors.bottomMargin: 48
+                            color: theme.mantle
+                            visible: detailTypeStor.text === "audio" || detailTypeStor.text === "podcast"
+
+                            Label {
+                                anchors.centerIn: parent
+                                text: "🎵"
+                                font.pixelSize: 40
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            width: parent.width
+                            height: 48
+                            color: theme.mantle
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 12
+                                spacing: 8
+
+                                Button {
+                                    flat: true
+                                    font.pixelSize: 16
+                                    text: mediaPlayer.playbackState === MediaPlayer.PlayingState ? "⏸" : "▶"
+                                    implicitWidth: 36
+                                    implicitHeight: 36
+                                    onClicked: {
+                                        if (mediaPlayer.playbackState === MediaPlayer.PlayingState)
+                                            mediaPlayer.pause()
+                                        else
+                                            mediaPlayer.play()
+                                    }
+                                }
+
+                                Slider {
+                                    Layout.fillWidth: true
+                                    from: 0
+                                    to: mediaPlayer.duration > 0 ? mediaPlayer.duration : 1
+                                    value: mediaPlayer.position
+                                    onMoved: mediaPlayer.position = value
+                                }
+
+                                Label {
+                                    text: _formatTime(mediaPlayer.position) + " / " + _formatTime(mediaPlayer.duration)
+                                    color: theme.subtext
+                                    font.pixelSize: 10
+                                }
+                            }
                         }
                     }
 
-                    // Controls bar
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        width: parent.width
-                        height: 48
-                        color: theme.mantle
-                        radius: 10
-                        Rectangle {
-                            anchors.top: parent.top
-                            width: parent.width
-                            height: 10
-                            color: theme.mantle
+                    // Text content block
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.topMargin: 20
+                        Layout.leftMargin: 24
+                        Layout.rightMargin: 24
+                        Layout.bottomMargin: 24
+                        spacing: 12
+
+                        Label {
+                            id: detailTitle
+                            text: ""
+                            color: theme.text
+                            font.pixelSize: 22
+                            font.bold: true
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
                         }
 
                         RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 12
-                            anchors.rightMargin: 12
-                            spacing: 8
+                            Layout.fillWidth: true
+                            spacing: 10
 
-                            Button {
-                                flat: true
-                                font.pixelSize: 16
-                                text: mediaPlayer.playbackState === MediaPlayer.PlayingState ? "⏸" : "▶"
-                                implicitWidth: 36
-                                implicitHeight: 36
-                                onClicked: {
-                                    if (mediaPlayer.playbackState === MediaPlayer.PlayingState)
-                                        mediaPlayer.pause()
-                                    else
-                                        mediaPlayer.play()
+                            Rectangle {
+                                height: 22
+                                Layout.preferredWidth: typeLabel.implicitWidth + 14
+                                radius: 4
+                                color: theme.surface0
+
+                                Label {
+                                    id: typeLabel
+                                    anchors.centerIn: parent
+                                    text: detailTypeStor.text.toUpperCase()
+                                    color: theme.blue
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    font.letterSpacing: 0.8
                                 }
                             }
 
-                            Slider {
+                            Label {
+                                id: detailMeta
+                                text: ""
+                                color: theme.subtext
+                                font.pixelSize: 12
                                 Layout.fillWidth: true
-                                from: 0
-                                to: mediaPlayer.duration > 0 ? mediaPlayer.duration : 1
-                                value: mediaPlayer.position
-                                onMoved: mediaPlayer.position = value
                             }
+                        }
+
+                        // Divider
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: theme.surface0
+                        }
+
+                        TextArea {
+                            id: detailDescription
+                            readOnly: true
+                            wrapMode: Text.WordWrap
+                            color: theme.text
+                            background: null
+                            textFormat: Text.RichText
+                            font.pixelSize: 14
+                            Layout.fillWidth: true
+                            onLinkActivated: (link) => Qt.openUrlExternally(link)
+                        }
+
+                        Rectangle {
+                            height: 36
+                            Layout.preferredWidth: openBtn.implicitWidth + 32
+                            radius: 8
+                            color: openBtn.pressed ? theme.blue + "cc"
+                                 : openBtn.containsMouse ? theme.blue
+                                 : theme.surface0
+                            border.color: openBtn.containsMouse ? theme.amber : "transparent"
+                            border.width: 1
 
                             Label {
-                                text: _formatTime(mediaPlayer.position) + " / " + _formatTime(mediaPlayer.duration)
-                                color: theme.subtext
-                                font.pixelSize: 10
+                                id: openBtn
+                                anchors.centerIn: parent
+                                text: "Open in Browser →"
+                                color: openBtn.containsMouse ? (theme.isDark ? "#1e1e2e" : "#ffffff")
+                                     : theme.text
+                                font.pixelSize: 13
+                                property bool pressed: false
+                                property bool containsMouse: false
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onEntered: openBtn.containsMouse = true
+                                onExited:  openBtn.containsMouse = false
+                                onPressed: openBtn.pressed = true
+                                onReleased: openBtn.pressed = false
+                                onClicked: Qt.openUrlExternally(detailUrl.text)
                             }
                         }
                     }
                 }
-
-                Label { id: detailTypeStor; visible: false; text: "" }
-
-                Image {
-                    id: detailThumbnail
-                    visible: !playerContainer.visible && source.toString() !== ""
-                    Layout.fillWidth: true
-                    Layout.maximumHeight: Math.round(Layout.preferredWidth * 0.5)
-                    fillMode: Image.PreserveAspectFit
-                }
-
-                ScrollView {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    contentWidth: availableWidth
-
-                    TextArea {
-                        id: detailDescription
-                        readOnly: true
-                        wrapMode: Text.WordWrap
-                        color: theme.text
-                        background: null
-                        textFormat: Text.RichText
-                        font.pixelSize: 14
-                        onLinkActivated: (link) => Qt.openUrlExternally(link)
-                    }
-                }
-
-                Rectangle {
-                    height: 36
-                    width: openBtn.contentWidth + 32
-                    radius: 8
-                    color: openBtn.pressed ? theme.blue + "cc"
-                         : openBtn.containsMouse ? theme.blue
-                         : theme.surface0
-                    border.color: openBtn.containsMouse ? theme.amber : "transparent"
-                    border.width: 1
-
-                    Label {
-                        id: openBtn
-                        anchors.centerIn: parent
-                        text: "Open in Browser →"
-                        color: openBtn.containsMouse ? (theme.isDark ? "#1e1e2e" : "#ffffff")
-                             : theme.text
-                        font.pixelSize: 13
-                        property bool pressed: false
-                        property bool containsMouse: false
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onEntered: openBtn.containsMouse = true
-                        onExited:  openBtn.containsMouse = false
-                        onPressed: openBtn.pressed = true
-                        onReleased: openBtn.pressed = false
-                        onClicked: Qt.openUrlExternally(detailUrl.text)
-                    }
-                }
-
-                Label { id: detailUrl; visible: false; text: "" }
             }
         }
     }
@@ -456,7 +463,7 @@ Item {
 
                         Rectangle {
                             height: 18
-                            width: typeChip.contentWidth + 10
+                            Layout.preferredWidth: typeChip.implicitWidth + 10
                             radius: 3
                             color: theme.surface0
 
