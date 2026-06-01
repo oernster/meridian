@@ -15,9 +15,11 @@ class TestPollScheduler:
 
     def test_start_creates_task(self):
         scheduler = PollScheduler(self.feed_repo, self.orchestrator)
-        with patch("asyncio.create_task") as mock_create:
-            scheduler.start()
-            mock_create.assert_called_once()
+        sentinel = object()
+        with patch.object(scheduler, "_run", new=MagicMock(return_value=sentinel)):
+            with patch("asyncio.create_task") as mock_create:
+                scheduler.start()
+                mock_create.assert_called_once_with(sentinel)
 
     def test_stop_cancels_task(self):
         scheduler = PollScheduler(self.feed_repo, self.orchestrator)
@@ -30,6 +32,30 @@ class TestPollScheduler:
     def test_stop_no_task_noop(self):
         scheduler = PollScheduler(self.feed_repo, self.orchestrator)
         scheduler.stop()
+
+    def test_start_in_thread_creates_daemon_thread(self):
+        scheduler = PollScheduler(self.feed_repo, self.orchestrator)
+        with patch.object(scheduler, "_run", new=AsyncMock(side_effect=asyncio.CancelledError)):
+            scheduler.start_in_thread()
+            assert scheduler._thread is not None
+            assert scheduler._thread.daemon is True
+            assert scheduler._thread.name == "meridian-poll"
+            # Give thread time to set _loop
+            import time
+            deadline = time.monotonic() + 2.0
+            while scheduler._loop is None and time.monotonic() < deadline:
+                time.sleep(0.01)
+            assert scheduler._loop is not None
+            scheduler._loop.call_soon_threadsafe(scheduler._loop.stop)
+            scheduler._thread.join(timeout=2.0)
+
+    def test_stop_uses_loop_when_available(self):
+        scheduler = PollScheduler(self.feed_repo, self.orchestrator)
+        mock_loop = MagicMock()
+        mock_loop.is_closed.return_value = False
+        scheduler._loop = mock_loop
+        scheduler.stop()
+        mock_loop.call_soon_threadsafe.assert_called_once_with(mock_loop.stop)
 
     def test_double_start_no_duplicate(self):
         scheduler = PollScheduler(self.feed_repo, self.orchestrator)

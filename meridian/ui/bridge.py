@@ -144,6 +144,7 @@ class AppController(QObject):
         self._feed_model = FeedListModel(self)
         self._item_model = ItemListModel(self)
         self._selected_feed_id: int = 0
+        self.newItemsAvailable.connect(self._refresh_on_new_items)
 
     @Property(QObject, notify=feedsChanged)
     def feedModel(self) -> FeedListModel:
@@ -206,7 +207,11 @@ class AppController(QObject):
         self.loadFeeds()
 
     def notify_new_items(self, feed_id: int, count: int) -> None:
+        # Thread-safe: only emit signal; _refresh_on_new_items runs on Qt thread via auto-queued connection
         self.newItemsAvailable.emit(feed_id, count)
+
+    @Slot(int, int)
+    def _refresh_on_new_items(self, feed_id: int, count: int) -> None:
         self.loadFeeds()
         if self._selected_feed_id == feed_id:
             self.selectFeed(feed_id)

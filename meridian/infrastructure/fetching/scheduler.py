@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 from collections.abc import Callable, Coroutine
 from typing import Any
 
@@ -27,13 +28,32 @@ class PollScheduler:
         self._orchestrator = orchestrator
         self._on_new_items = on_new_items
         self._task: asyncio.Task | None = None
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._thread: threading.Thread | None = None
 
     def start(self) -> None:
         if self._task is None or self._task.done():
             self._task = asyncio.create_task(self._run())
 
+    def start_in_thread(self) -> None:
+        """Run the scheduler in a dedicated daemon thread with its own event loop."""
+        def _thread_main() -> None:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            self._loop = loop
+            loop.create_task(self._run())
+            try:
+                loop.run_forever()
+            finally:
+                loop.close()
+
+        self._thread = threading.Thread(target=_thread_main, daemon=True, name="meridian-poll")
+        self._thread.start()
+
     def stop(self) -> None:
-        if self._task and not self._task.done():
+        if self._loop and not self._loop.is_closed():
+            self._loop.call_soon_threadsafe(self._loop.stop)
+        elif self._task and not self._task.done():
             self._task.cancel()
 
     async def _run(self) -> None:

@@ -51,7 +51,7 @@ def main() -> None:
     if not engine.rootObjects():
         sys.exit(1)
 
-    scheduler.start()
+    scheduler.start_in_thread()
     exit_code = app.exec()
     scheduler.stop()
     asyncio.run(fetcher.aclose())
