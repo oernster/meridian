@@ -46,8 +46,6 @@ def main(argv: list[str] | None = None) -> int:
 
     logger = logging.getLogger("installer.icon")
     try:
-        from PySide6.QtGui import QIcon
-
         icon = build_installer_window_icon(
             project_root=Path(__file__).resolve().parents[1]
         )

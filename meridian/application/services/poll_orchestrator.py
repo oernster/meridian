@@ -7,7 +7,6 @@ from meridian.application.interfaces.poll_state_repository import (
     PollState,
     PollStateRepository,
 )
-from meridian.domain.entities.feed import Feed
 from meridian.domain.value_objects.poll_config import POLL_FLOOR_SECONDS
 
 
@@ -25,7 +24,7 @@ class PollOrchestrator:
         self._fetcher = fetcher
 
     async def poll_feed(self, feed_id: int) -> tuple[int, bool]:
-        """Return (new_item_count, feeds_changed) where feeds_changed covers title updates."""
+        """Return (new_item_count, feeds_changed) where feeds_changed covers title updates."""  # noqa: E501
         feed = self._feed_repo.get_by_id(feed_id)
         if feed is None:
             return 0, False
@@ -66,8 +65,7 @@ class PollOrchestrator:
                 self._feed_repo.update_title(feed_id, parsed_title)
                 title_updated = True
         new_items = [
-            i for i in result.items
-            if not self._item_repo.exists(feed_id, i.item_id)
+            i for i in result.items if not self._item_repo.exists(feed_id, i.item_id)
         ]
         if new_items:
             self._item_repo.save_many(new_items)
@@ -99,7 +97,9 @@ class PollOrchestrator:
         state = self._poll_state_repo.get(feed_id)
         if state.next_poll is None:
             return 0
-        delta = (self._ensure_utc(state.next_poll) - datetime.now(tz=timezone.utc)).total_seconds()
+        delta = (
+            self._ensure_utc(state.next_poll) - datetime.now(tz=timezone.utc)
+        ).total_seconds()
         return max(0, int(delta))
 
     def apply_backoff(self, feed_id: int, retry_after_seconds: int) -> None:

@@ -49,8 +49,7 @@ class ItemService:
             language=item.language,
             live_status=item.live_status,
             authors=tuple(
-                AuthorDTO(name=a.name, url=a.url, avatar=a.avatar)
-                for a in item.authors
+                AuthorDTO(name=a.name, url=a.url, avatar=a.avatar) for a in item.authors
             ),
             tags=item.tags,
             media=tuple(

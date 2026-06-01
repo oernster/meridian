@@ -9,10 +9,17 @@ from meridian.domain.value_objects.source_type import SourceType
 
 
 def _make_feed(filter_expr: str | None = None) -> Feed:
-    return Feed(id=1, url="https://example.com/feed", source_type=SourceType.MFEED, filter_expr=filter_expr)
+    return Feed(
+        id=1,
+        url="https://example.com/feed",
+        source_type=SourceType.MFEED,
+        filter_expr=filter_expr,
+    )
 
 
-def _make_item(item_id: str = "https://example.com/1", itype: ItemType = ItemType.ARTICLE) -> Item:
+def _make_item(
+    item_id: str = "https://example.com/1", itype: ItemType = ItemType.ARTICLE
+) -> Item:
     return Item(
         id=1,
         feed_id=1,

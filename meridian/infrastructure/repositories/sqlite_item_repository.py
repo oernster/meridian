@@ -6,8 +6,17 @@ from meridian.application.interfaces.item_repository import ItemRepository
 from meridian.domain.entities.item import Item
 from meridian.domain.value_objects.item_type import ItemType
 from meridian.domain.value_objects.media import (
-    Author, Caption, Chapter, ContentRating, GeoRestriction,
-    ItemSource, Media, Paywall, Series, Thumbnail, Transcript,
+    Author,
+    Caption,
+    Chapter,
+    ContentRating,
+    GeoRestriction,
+    ItemSource,
+    Media,
+    Paywall,
+    Series,
+    Thumbnail,
+    Transcript,
 )
 from meridian.infrastructure.db.orm_models import ItemRow
 
@@ -63,9 +72,7 @@ class SqliteItemRepository(ItemRepository):
     def unread_count(self, feed_id: int) -> int:
         with self._session_factory() as session:
             return (
-                session.query(ItemRow)
-                .filter_by(feed_id=feed_id, is_read=False)
-                .count()
+                session.query(ItemRow).filter_by(feed_id=feed_id, is_read=False).count()
             )
 
     def exists(self, feed_id: int, item_id_uri: str) -> bool:
@@ -96,29 +103,106 @@ class SqliteItemRepository(ItemRepository):
             scheduled_start=item.scheduled_start,
             expires=item.expires,
             is_read=item.is_read,
-            authors=[{"name": a.name, "url": a.url, "avatar": a.avatar} for a in item.authors] or None,
+            authors=[
+                {"name": a.name, "url": a.url, "avatar": a.avatar} for a in item.authors
+            ]
+            or None,
             tags=list(item.tags) or None,
-            media=[{
-                "url": m.url, "mime_type": m.mime_type, "size_bytes": m.size_bytes,
-                "duration": m.duration, "width": m.width, "height": m.height,
-                "bitrate_kbps": m.bitrate_kbps, "role": m.role,
-                "quality_label": m.quality_label,
-            } for m in item.media] or None,
-            thumbnail=[{"url": t.url, "width": t.width, "height": t.height} for t in item.thumbnail] or None,
-            chapters=[{
-                "title": c.title, "start_seconds": c.start_seconds,
-                "end_seconds": c.end_seconds, "image_url": c.image_url,
-            } for c in item.chapters] or None,
-            captions=[{
-                "url": c.url, "mime_type": c.mime_type,
-                "language": c.language, "label": c.label,
-            } for c in item.captions] or None,
-            transcript={"url": item.transcript.url, "mime_type": item.transcript.mime_type, "language": item.transcript.language} if item.transcript else None,
-            series={"id": item.series.id, "title": item.series.title, "episode_number": item.series.episode_number, "season_number": item.series.season_number, "total_episodes": item.series.total_episodes} if item.series else None,
-            content_rating={"rating": item.content_rating.rating, "system": item.content_rating.system, "descriptors": list(item.content_rating.descriptors), "spoiler": item.content_rating.spoiler} if item.content_rating else None,
-            geo_restriction={"type": item.geo_restriction.type, "regions": list(item.geo_restriction.regions)} if item.geo_restriction else None,
-            paywall={"paywalled": item.paywall.paywalled, "preview_available": item.paywall.preview_available} if item.paywall else None,
-            source={"type": item.source.type, "feed_url": item.source.feed_url, "feed_title": item.source.feed_title} if item.source else None,
+            media=[
+                {
+                    "url": m.url,
+                    "mime_type": m.mime_type,
+                    "size_bytes": m.size_bytes,
+                    "duration": m.duration,
+                    "width": m.width,
+                    "height": m.height,
+                    "bitrate_kbps": m.bitrate_kbps,
+                    "role": m.role,
+                    "quality_label": m.quality_label,
+                }
+                for m in item.media
+            ]
+            or None,
+            thumbnail=[
+                {"url": t.url, "width": t.width, "height": t.height}
+                for t in item.thumbnail
+            ]
+            or None,
+            chapters=[
+                {
+                    "title": c.title,
+                    "start_seconds": c.start_seconds,
+                    "end_seconds": c.end_seconds,
+                    "image_url": c.image_url,
+                }
+                for c in item.chapters
+            ]
+            or None,
+            captions=[
+                {
+                    "url": c.url,
+                    "mime_type": c.mime_type,
+                    "language": c.language,
+                    "label": c.label,
+                }
+                for c in item.captions
+            ]
+            or None,
+            transcript=(
+                {
+                    "url": item.transcript.url,
+                    "mime_type": item.transcript.mime_type,
+                    "language": item.transcript.language,
+                }
+                if item.transcript
+                else None
+            ),
+            series=(
+                {
+                    "id": item.series.id,
+                    "title": item.series.title,
+                    "episode_number": item.series.episode_number,
+                    "season_number": item.series.season_number,
+                    "total_episodes": item.series.total_episodes,
+                }
+                if item.series
+                else None
+            ),
+            content_rating=(
+                {
+                    "rating": item.content_rating.rating,
+                    "system": item.content_rating.system,
+                    "descriptors": list(item.content_rating.descriptors),
+                    "spoiler": item.content_rating.spoiler,
+                }
+                if item.content_rating
+                else None
+            ),
+            geo_restriction=(
+                {
+                    "type": item.geo_restriction.type,
+                    "regions": list(item.geo_restriction.regions),
+                }
+                if item.geo_restriction
+                else None
+            ),
+            paywall=(
+                {
+                    "paywalled": item.paywall.paywalled,
+                    "preview_available": item.paywall.preview_available,
+                }
+                if item.paywall
+                else None
+            ),
+            source=(
+                {
+                    "type": item.source.type,
+                    "feed_url": item.source.feed_url,
+                    "feed_title": item.source.feed_title,
+                }
+                if item.source
+                else None
+            ),
         )
 
     def _to_entity(self, row: ItemRow) -> Item:
@@ -128,9 +212,12 @@ class SqliteItemRepository(ItemRepository):
         )
         media = tuple(
             Media(
-                url=m["url"], mime_type=m["mime_type"],
-                size_bytes=m.get("size_bytes"), duration=m.get("duration"),
-                width=m.get("width"), height=m.get("height"),
+                url=m["url"],
+                mime_type=m["mime_type"],
+                size_bytes=m.get("size_bytes"),
+                duration=m.get("duration"),
+                width=m.get("width"),
+                height=m.get("height"),
                 bitrate_kbps=m.get("bitrate_kbps"),
                 role=m.get("role", "primary"),
                 quality_label=m.get("quality_label"),
@@ -143,27 +230,78 @@ class SqliteItemRepository(ItemRepository):
         )
         chapters = tuple(
             Chapter(
-                title=c["title"], start_seconds=c["start_seconds"],
-                end_seconds=c.get("end_seconds"), image_url=c.get("image_url"),
+                title=c["title"],
+                start_seconds=c["start_seconds"],
+                end_seconds=c.get("end_seconds"),
+                image_url=c.get("image_url"),
             )
             for c in (row.chapters or [])
         )
         captions = tuple(
-            Caption(url=c["url"], mime_type=c["mime_type"], language=c["language"], label=c.get("label"))
+            Caption(
+                url=c["url"],
+                mime_type=c["mime_type"],
+                language=c["language"],
+                label=c.get("label"),
+            )
             for c in (row.captions or [])
         )
         tr = row.transcript
-        transcript = Transcript(url=tr["url"], mime_type=tr["mime_type"], language=tr.get("language")) if tr else None
+        transcript = (
+            Transcript(
+                url=tr["url"], mime_type=tr["mime_type"], language=tr.get("language")
+            )
+            if tr
+            else None
+        )
         s = row.series
-        series = Series(id=s["id"], title=s["title"], episode_number=s.get("episode_number"), season_number=s.get("season_number"), total_episodes=s.get("total_episodes")) if s else None
+        series = (
+            Series(
+                id=s["id"],
+                title=s["title"],
+                episode_number=s.get("episode_number"),
+                season_number=s.get("season_number"),
+                total_episodes=s.get("total_episodes"),
+            )
+            if s
+            else None
+        )
         cr = row.content_rating
-        content_rating = ContentRating(rating=cr["rating"], system=cr.get("system"), descriptors=tuple(cr.get("descriptors", [])), spoiler=cr.get("spoiler", False)) if cr else None
+        content_rating = (
+            ContentRating(
+                rating=cr["rating"],
+                system=cr.get("system"),
+                descriptors=tuple(cr.get("descriptors", [])),
+                spoiler=cr.get("spoiler", False),
+            )
+            if cr
+            else None
+        )
         gr = row.geo_restriction
-        geo_restriction = GeoRestriction(type=gr["type"], regions=tuple(gr["regions"])) if gr else None
+        geo_restriction = (
+            GeoRestriction(type=gr["type"], regions=tuple(gr["regions"]))
+            if gr
+            else None
+        )
         pw = row.paywall
-        paywall = Paywall(paywalled=pw["paywalled"], preview_available=pw.get("preview_available", False)) if pw else None
+        paywall = (
+            Paywall(
+                paywalled=pw["paywalled"],
+                preview_available=pw.get("preview_available", False),
+            )
+            if pw
+            else None
+        )
         src = row.source
-        source = ItemSource(type=src["type"], feed_url=src["feed_url"], feed_title=src.get("feed_title")) if src else None
+        source = (
+            ItemSource(
+                type=src["type"],
+                feed_url=src["feed_url"],
+                feed_title=src.get("feed_title"),
+            )
+            if src
+            else None
+        )
         return Item(
             id=row.id,
             feed_id=row.feed_id,

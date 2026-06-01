@@ -8,6 +8,7 @@ term         = ["NOT" SP] atom / "(" expr ")"
 atom         = type-filter / tag-filter / author-filter / lang-filter /
                duration-filter / date-filter / keyword-filter / rating-filter
 """
+
 from __future__ import annotations
 
 import re
@@ -37,7 +38,7 @@ class _Token:
 
 
 _ATOM_RE = re.compile(
-    r'(?:type|tag|author|lang|duration|published|keyword|rating):'
+    r"(?:type|tag|author|lang|duration|published|keyword|rating):"
     r'(?:"[^"]*"|\[[-\d:TZ.,]+\]|[^\s()]+)'
 )
 
@@ -49,13 +50,19 @@ def _tokenize(text: str) -> list[_Token]:
         if text[i].isspace():
             i += 1
             continue
-        if text[i:i + 3] == "AND" and (i + 3 >= len(text) or not text[i + 3].isalnum()):
+        if text[i : i + 3] == "AND" and (
+            i + 3 >= len(text) or not text[i + 3].isalnum()
+        ):
             tokens.append(_Token(_TokenKind.AND, "AND"))
             i += 3
-        elif text[i:i + 2] == "OR" and (i + 2 >= len(text) or not text[i + 2].isalnum()):
+        elif text[i : i + 2] == "OR" and (
+            i + 2 >= len(text) or not text[i + 2].isalnum()
+        ):
             tokens.append(_Token(_TokenKind.OR, "OR"))
             i += 2
-        elif text[i:i + 3] == "NOT" and (i + 3 >= len(text) or not text[i + 3].isalnum()):
+        elif text[i : i + 3] == "NOT" and (
+            i + 3 >= len(text) or not text[i + 3].isalnum()
+        ):
             tokens.append(_Token(_TokenKind.NOT, "NOT"))
             i += 3
         elif text[i] == "(":

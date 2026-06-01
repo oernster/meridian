@@ -1,5 +1,4 @@
 import json
-from datetime import datetime, timezone
 
 import httpx
 import pytest
@@ -9,13 +8,15 @@ from meridian.domain.entities.feed import Feed
 from meridian.domain.value_objects.source_type import SourceType
 from meridian.infrastructure.fetching.http_fetcher import HttpFetcher, RateLimitedError
 
-_MFEED = json.dumps({
-    "mmsp": "1.0",
-    "id": "https://example.com/feed",
-    "title": "Test",
-    "feed_url": "https://example.com/feed",
-    "items": [],
-}).encode()
+_MFEED = json.dumps(
+    {
+        "mmsp": "1.0",
+        "id": "https://example.com/feed",
+        "title": "Test",
+        "feed_url": "https://example.com/feed",
+        "items": [],
+    }
+).encode()
 
 _FEED = Feed(id=1, url="https://example.com/feed", source_type=SourceType.MFEED)
 
@@ -74,9 +75,7 @@ class TestHttpFetcher:
 
     @respx.mock
     async def test_429_no_retry_after_uses_floor(self):
-        respx.get("https://example.com/feed").mock(
-            return_value=httpx.Response(429)
-        )
+        respx.get("https://example.com/feed").mock(return_value=httpx.Response(429))
         fetcher = HttpFetcher(httpx.AsyncClient())
         with pytest.raises(RateLimitedError) as exc_info:
             await fetcher.fetch(_FEED)
@@ -107,15 +106,20 @@ class TestHttpFetcher:
             return_value=httpx.Response(200, content=_MFEED)
         )
         fetcher = HttpFetcher(httpx.AsyncClient())
-        result = await fetcher.fetch(_FEED, last_modified="Wed, 01 Jan 2026 00:00:00 GMT")
+        result = await fetcher.fetch(
+            _FEED, last_modified="Wed, 01 Jan 2026 00:00:00 GMT"
+        )
         assert not result.not_modified
 
     @respx.mock
     async def test_rss_dispatch(self):
         from meridian.domain.entities.feed import Feed
         from meridian.domain.value_objects.source_type import SourceType
-        rss_feed = Feed(id=2, url="https://example.com/feed", source_type=SourceType.RSS)
-        rss_body = b"""<?xml version="1.0"?><rss version="2.0"><channel><title>T</title></channel></rss>"""
+
+        rss_feed = Feed(
+            id=2, url="https://example.com/feed", source_type=SourceType.RSS
+        )
+        rss_body = b"""<?xml version="1.0"?><rss version="2.0"><channel><title>T</title></channel></rss>"""  # noqa: E501
         respx.get("https://example.com/feed").mock(
             return_value=httpx.Response(200, content=rss_body)
         )
@@ -127,8 +131,11 @@ class TestHttpFetcher:
     async def test_atom_dispatch(self):
         from meridian.domain.entities.feed import Feed
         from meridian.domain.value_objects.source_type import SourceType
-        atom_feed = Feed(id=3, url="https://example.com/feed", source_type=SourceType.ATOM)
-        atom_body = b"""<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>T</title></feed>"""
+
+        atom_feed = Feed(
+            id=3, url="https://example.com/feed", source_type=SourceType.ATOM
+        )
+        atom_body = b"""<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>T</title></feed>"""  # noqa: E501
         respx.get("https://example.com/feed").mock(
             return_value=httpx.Response(200, content=atom_body)
         )
@@ -140,8 +147,11 @@ class TestHttpFetcher:
     async def test_podcast_dispatch(self):
         from meridian.domain.entities.feed import Feed
         from meridian.domain.value_objects.source_type import SourceType
-        pod_feed = Feed(id=4, url="https://example.com/feed", source_type=SourceType.PODCAST)
-        pod_body = b"""<?xml version="1.0"?><rss version="2.0"><channel><title>T</title></channel></rss>"""
+
+        pod_feed = Feed(
+            id=4, url="https://example.com/feed", source_type=SourceType.PODCAST
+        )
+        pod_body = b"""<?xml version="1.0"?><rss version="2.0"><channel><title>T</title></channel></rss>"""  # noqa: E501
         respx.get("https://example.com/feed").mock(
             return_value=httpx.Response(200, content=pod_body)
         )
@@ -153,13 +163,14 @@ class TestHttpFetcher:
     async def test_platform_dispatch(self):
         from meridian.domain.entities.feed import Feed
         from meridian.domain.value_objects.source_type import SourceType
+
         plat_feed = Feed(
             id=5,
             url="https://example.com/feed",
             source_type=SourceType.PLATFORM,
             platform_id="test-platform",
         )
-        rss_body = b"""<?xml version="1.0"?><rss version="2.0"><channel><title>T</title></channel></rss>"""
+        rss_body = b"""<?xml version="1.0"?><rss version="2.0"><channel><title>T</title></channel></rss>"""  # noqa: E501
         respx.get("https://example.com/feed").mock(
             return_value=httpx.Response(200, content=rss_body)
         )

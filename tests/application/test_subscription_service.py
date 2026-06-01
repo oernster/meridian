@@ -48,7 +48,10 @@ class TestSubscriptionService:
         assert self.svc.list_feeds() == []
 
     def test_list_feeds_with_items(self):
-        self.feed_repo.list_all.return_value = [_make_feed(id=1), _make_feed(id=2, url="https://other.com/feed")]
+        self.feed_repo.list_all.return_value = [
+            _make_feed(id=1),
+            _make_feed(id=2, url="https://other.com/feed"),
+        ]
         self.item_repo.unread_count.return_value = 3
         result = self.svc.list_feeds()
         assert len(result) == 2
@@ -75,7 +78,9 @@ class TestSubscriptionService:
     def test_subscribe_auto_detects_rss_default(self):
         self.feed_repo.get_by_url.return_value = None
         saved = _make_feed(id=10, url="https://slashdot.org/rss/index.rss")
-        saved = Feed(id=10, url="https://slashdot.org/rss/index.rss", source_type=SourceType.RSS)
+        saved = Feed(
+            id=10, url="https://slashdot.org/rss/index.rss", source_type=SourceType.RSS
+        )
         self.feed_repo.save.return_value = saved
         dto = self.svc.subscribe("https://slashdot.org/rss/index.rss")
         assert dto.source_type == "rss"
@@ -85,7 +90,9 @@ class TestSubscriptionService:
         assert result == SourceType.MFEED
 
     def test_infer_source_type_mfeed_mmsp(self):
-        result = SubscriptionService._infer_source_type("https://example.com/.well-known/mmsp.json")
+        result = SubscriptionService._infer_source_type(
+            "https://example.com/.well-known/mmsp.json"
+        )
         assert result == SourceType.MFEED
 
     def test_infer_source_type_atom(self):
@@ -93,11 +100,15 @@ class TestSubscriptionService:
         assert result == SourceType.ATOM
 
     def test_infer_source_type_youtube(self):
-        result = SubscriptionService._infer_source_type("https://www.youtube.com/feeds/videos.xml?channel_id=UC123")
+        result = SubscriptionService._infer_source_type(
+            "https://www.youtube.com/feeds/videos.xml?channel_id=UC123"
+        )
         assert result == SourceType.ATOM
 
     def test_infer_source_type_podcast(self):
-        result = SubscriptionService._infer_source_type("https://example.com/podcast/feed.xml")
+        result = SubscriptionService._infer_source_type(
+            "https://example.com/podcast/feed.xml"
+        )
         assert result == SourceType.PODCAST
 
     def test_infer_source_type_rss_default(self):
@@ -106,8 +117,13 @@ class TestSubscriptionService:
 
     def test_subscribe_with_title(self):
         self.feed_repo.get_by_url.return_value = None
-        saved = Feed(id=6, url="https://example.com/feed", source_type=SourceType.MFEED, title="My Feed")
+        saved = Feed(
+            id=6,
+            url="https://example.com/feed",
+            source_type=SourceType.MFEED,
+            title="My Feed",
+        )
         self.feed_repo.save.return_value = saved
-        dto = self.svc.subscribe("https://example.com/feed", title="My Feed")
+        self.svc.subscribe("https://example.com/feed", title="My Feed")
         saved_feed = self.feed_repo.save.call_args[0][0]
         assert saved_feed.title == "My Feed"

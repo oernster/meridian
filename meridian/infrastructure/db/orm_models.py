@@ -1,7 +1,15 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
 
@@ -38,11 +46,17 @@ class PollStateRow(Base):
     feed_id: Mapped[int] = mapped_column(
         ForeignKey("feeds.id"), primary_key=True, nullable=False
     )
-    last_polled: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    next_poll: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_polled: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    next_poll: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     etag: Mapped[str | None] = mapped_column(String, nullable=True)
     last_modified: Mapped[str | None] = mapped_column(String, nullable=True)
-    backoff_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    backoff_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     moved_to: Mapped[str | None] = mapped_column(String, nullable=True)
     deprecated: Mapped[bool] = mapped_column(Boolean, default=False)
     deprecated_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -60,7 +74,9 @@ class ItemRow(Base):
     title: Mapped[str] = mapped_column(String, nullable=False)
     url: Mapped[str] = mapped_column(String, nullable=False)
     published: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    updated: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     language: Mapped[str | None] = mapped_column(String, nullable=True)
     duration: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -68,10 +84,16 @@ class ItemRow(Base):
     preview_url: Mapped[str | None] = mapped_column(String, nullable=True)
     license_id: Mapped[str | None] = mapped_column(String, nullable=True)
     live_status: Mapped[str | None] = mapped_column(String, nullable=True)
-    scheduled_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    scheduled_start: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    expires: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
-    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     authors: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     tags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
@@ -88,6 +110,4 @@ class ItemRow(Base):
 
     feed: Mapped["FeedRow"] = relationship("FeedRow", back_populates="items")
 
-    __table_args__ = (
-        UniqueConstraint("feed_id", "item_id", name="uq_feed_item_id"),
-    )
+    __table_args__ = (UniqueConstraint("feed_id", "item_id", name="uq_feed_item_id"),)

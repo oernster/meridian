@@ -1,4 +1,5 @@
 """Parser for platform source type. Falls back to RSS if no adapter registered."""
+
 from __future__ import annotations
 
 from meridian.domain.entities.item import Item

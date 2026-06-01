@@ -1,5 +1,3 @@
-import pytest
-
 from meridian.domain.value_objects.item_type import ItemType
 from meridian.infrastructure.fetching.parser import rss_parser
 
@@ -29,7 +27,8 @@ _RSS_WITH_VIDEO = b"""<?xml version="1.0" encoding="UTF-8"?>
       <title>My Video</title>
       <link>https://example.com/video/1</link>
       <pubDate>Mon, 01 Jan 2026 00:00:00 +0000</pubDate>
-      <enclosure url="https://example.com/video.mp4" type="video/mp4" length="10000000"/>
+      <enclosure url="https://example.com/video.mp4"
+                 type="video/mp4" length="10000000"/>
     </item>
   </channel>
 </rss>"""
@@ -43,7 +42,8 @@ _RSS_WITH_AUDIO = b"""<?xml version="1.0" encoding="UTF-8"?>
       <title>Episode 1</title>
       <link>https://example.com/ep/1</link>
       <pubDate>Mon, 01 Jan 2026 00:00:00 +0000</pubDate>
-      <enclosure url="https://example.com/audio.mp3" type="audio/mpeg" length="5000000"/>
+      <enclosure url="https://example.com/audio.mp3"
+                 type="audio/mpeg" length="5000000"/>
     </item>
   </channel>
 </rss>"""
@@ -65,7 +65,9 @@ _RSS_WITH_TTL = b"""<?xml version="1.0" encoding="UTF-8"?>
 
 class TestRssParser:
     def test_minimal_article(self):
-        items, config = rss_parser.parse(1, "https://example.com/feed.xml", _RSS_MINIMAL)
+        items, config = rss_parser.parse(
+            1, "https://example.com/feed.xml", _RSS_MINIMAL
+        )
         assert len(items) == 1
         item = items[0]
         assert item.type == ItemType.ARTICLE
@@ -174,7 +176,8 @@ class TestRssParser:
       <title>Video</title>
       <link>https://example.com/v/1</link>
       <pubDate>Mon, 01 Jan 2026 00:00:00 +0000</pubDate>
-      <media:content url="https://example.com/video.mp4" type="video/mp4" duration="600"/>
+      <media:content url="https://example.com/video.mp4"
+                     type="video/mp4" duration="600"/>
     </item>
   </channel>
 </rss>""".encode()
@@ -221,6 +224,7 @@ class TestRssParser:
         from meridian.infrastructure.fetching.parser.rss_parser import _infer_type
         from meridian.domain.value_objects.media import Media
         from meridian.domain.value_objects.item_type import ItemType
+
         media = [
             Media(url="https://a.example.com/doc.pdf", mime_type="application/pdf"),
             Media(url="https://b.example.com/v.mp4", mime_type="video/mp4"),
@@ -277,5 +281,6 @@ class TestRssParser:
         )
         items, _ = rss_parser.parse(1, "https://example.com/feed.xml", raw)
         from datetime import timezone
+
         assert items[0].published.tzinfo == timezone.utc
         assert items[0].published.year == 2026

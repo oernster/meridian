@@ -1,4 +1,5 @@
 """HTTP fetcher implementing FeedFetcher interface."""
+
 from __future__ import annotations
 
 import httpx
@@ -60,7 +61,9 @@ class HttpFetcher(FeedFetcher):
         if response.status_code == 429:
             retry_after = response.headers.get("retry-after")
             raise RateLimitedError(
-                int(retry_after) if retry_after and retry_after.isdigit() else POLL_FLOOR_SECONDS
+                int(retry_after)
+                if retry_after and retry_after.isdigit()
+                else POLL_FLOOR_SECONDS
             )
         response.raise_for_status()
         raw = response.content

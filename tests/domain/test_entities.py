@@ -3,7 +3,7 @@ import pytest
 from meridian.domain.entities.feed import Feed, UNSET_ID
 from meridian.domain.entities.item import Item
 from meridian.domain.value_objects.item_type import ItemType
-from meridian.domain.value_objects.media import Author, ContentRating, Media, Thumbnail
+from meridian.domain.value_objects.media import Media, Thumbnail
 from meridian.domain.value_objects.poll_config import PollConfig, POLL_FLOOR_SECONDS
 from meridian.domain.value_objects.source_type import SourceType
 from meridian.domain.value_objects.filter_expression import FilterExpression
@@ -88,7 +88,9 @@ class TestItem:
         assert item.primary_media_url() is None
 
     def test_primary_media_url_present(self):
-        item = _make_item(media=(Media(url="https://example.com/video.mp4", mime_type="video/mp4"),))
+        item = _make_item(
+            media=(Media(url="https://example.com/video.mp4", mime_type="video/mp4"),)
+        )
         assert item.primary_media_url() == "https://example.com/video.mp4"
 
     def test_is_media_type_video(self):

@@ -59,8 +59,6 @@ class InstallerMainWindow(QMainWindow):
         self._header_fit = HeaderFitController(self)
 
         try:
-            from PySide6.QtGui import QIcon
-
             icon = build_installer_window_icon(
                 project_root=Path(__file__).resolve().parents[2]
             )

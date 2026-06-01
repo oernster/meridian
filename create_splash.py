@@ -20,8 +20,10 @@ def main() -> int:
 
     logo_size = 100
     if logo_src.exists():
-        logo = Image.open(logo_src).convert("RGBA").resize(
-            (logo_size, logo_size), Image.LANCZOS
+        logo = (
+            Image.open(logo_src)
+            .convert("RGBA")
+            .resize((logo_size, logo_size), Image.LANCZOS)
         )
         logo_x = (W - logo_size) // 2
         logo_y = 30

@@ -1,4 +1,5 @@
 """Explicit composition root for Meridian."""
+
 from __future__ import annotations
 
 import asyncio
@@ -12,23 +13,33 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 
-from PySide6.QtCore import QUrl
-from PySide6.QtGui import QIcon
-from PySide6.QtQml import QQmlApplicationEngine
-from PySide6.QtQuickControls2 import QQuickStyle
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QUrl  # noqa: E402
+from PySide6.QtGui import QIcon  # noqa: E402
+from PySide6.QtQml import QQmlApplicationEngine  # noqa: E402
+from PySide6.QtQuickControls2 import QQuickStyle  # noqa: E402
+from PySide6.QtWidgets import QApplication  # noqa: E402
 
-from meridian.application.services.item_service import ItemService
-from meridian.application.services.poll_orchestrator import PollOrchestrator
-from meridian.application.services.subscription_service import SubscriptionService
-from meridian.infrastructure.db.session import build_session_factory
-from meridian.infrastructure.fetching.http_fetcher import HttpFetcher
-from meridian.infrastructure.fetching.scheduler import PollScheduler
-from meridian.infrastructure.repositories.sqlite_feed_repository import SqliteFeedRepository
-from meridian.infrastructure.repositories.sqlite_item_repository import SqliteItemRepository
-from meridian.infrastructure.repositories.sqlite_poll_state_repository import SqlitePollStateRepository
-from meridian.ui.bridge import AppController
-from meridian.version import __version__
+from meridian.application.services.item_service import ItemService  # noqa: E402
+from meridian.application.services.poll_orchestrator import (  # noqa: E402
+    PollOrchestrator,
+)
+from meridian.application.services.subscription_service import (  # noqa: E402
+    SubscriptionService,
+)
+from meridian.infrastructure.db.session import build_session_factory  # noqa: E402
+from meridian.infrastructure.fetching.http_fetcher import HttpFetcher  # noqa: E402
+from meridian.infrastructure.fetching.scheduler import PollScheduler  # noqa: E402
+from meridian.infrastructure.repositories.sqlite_feed_repository import (  # noqa: E402
+    SqliteFeedRepository,
+)
+from meridian.infrastructure.repositories.sqlite_item_repository import (  # noqa: E402
+    SqliteItemRepository,
+)
+from meridian.infrastructure.repositories.sqlite_poll_state_repository import (  # noqa: E402, E501
+    SqlitePollStateRepository,
+)
+from meridian.ui.bridge import AppController  # noqa: E402
+from meridian.version import __version__  # noqa: E402
 
 if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     _BASE = Path(sys._MEIPASS)
@@ -63,7 +74,9 @@ def main() -> None:
 
     scheduler = PollScheduler(feed_repo, orchestrator, on_new_items)
 
-    icon_url = QUrl.fromLocalFile(str(_ICON_PATH)).toString() if _ICON_PATH.exists() else ""
+    icon_url = (
+        QUrl.fromLocalFile(str(_ICON_PATH)).toString() if _ICON_PATH.exists() else ""
+    )
 
     engine = QQmlApplicationEngine()
 
@@ -83,6 +96,7 @@ def main() -> None:
 
     try:
         import pyi_splash  # type: ignore
+
         pyi_splash.close()
     except Exception:
         pass

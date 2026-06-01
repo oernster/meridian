@@ -1,4 +1,5 @@
 """Asyncio-based poll scheduler. One task per subscribed feed."""
+
 from __future__ import annotations
 
 import asyncio
@@ -14,8 +15,8 @@ from meridian.application.interfaces.feed_repository import FeedRepository
 from meridian.application.services.poll_orchestrator import PollOrchestrator
 from meridian.infrastructure.fetching.http_fetcher import RateLimitedError
 
-_BACKOFF_404_SECONDS = 86400      # dead channel: retry once per day
-_BACKOFF_ERROR_SECONDS = 3600     # transient error (SSL, network): retry hourly
+_BACKOFF_404_SECONDS = 86400  # dead channel: retry once per day
+_BACKOFF_ERROR_SECONDS = 3600  # transient error (SSL, network): retry hourly
 
 _LOG = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ class PollScheduler:
 
     def start_in_thread(self) -> None:
         """Run the scheduler in a dedicated daemon thread with its own event loop."""
+
         def _thread_main() -> None:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -55,10 +57,14 @@ class PollScheduler:
                 for task in pending:
                     task.cancel()
                 if pending:
-                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                    loop.run_until_complete(
+                        asyncio.gather(*pending, return_exceptions=True)
+                    )
                 loop.close()
 
-        self._thread = threading.Thread(target=_thread_main, daemon=True, name="meridian-poll")
+        self._thread = threading.Thread(
+            target=_thread_main, daemon=True, name="meridian-poll"
+        )
         self._thread.start()
 
     def stop(self) -> None:
@@ -84,20 +90,41 @@ class PollScheduler:
             if (new_count > 0 or feeds_changed) and self._on_new_items:
                 await self._on_new_items(feed_id, new_count)
         except RateLimitedError as exc:
-            _LOG.warning("Feed %d rate limited; backoff %ds", feed_id, exc.retry_after_seconds)
+            _LOG.warning(
+                "Feed %d rate limited; backoff %ds", feed_id, exc.retry_after_seconds
+            )
             self._orchestrator.apply_backoff(feed_id, exc.retry_after_seconds)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 404:
-                _LOG.warning("Feed %d not found (404); backoff %ds", feed_id, _BACKOFF_404_SECONDS)
+                _LOG.warning(
+                    "Feed %d not found (404); backoff %ds",
+                    feed_id,
+                    _BACKOFF_404_SECONDS,
+                )
                 self._orchestrator.apply_backoff(feed_id, _BACKOFF_404_SECONDS)
             else:
-                _LOG.warning("Feed %d HTTP %d; backoff %ds", feed_id, exc.response.status_code, _BACKOFF_ERROR_SECONDS)
+                _LOG.warning(
+                    "Feed %d HTTP %d; backoff %ds",
+                    feed_id,
+                    exc.response.status_code,
+                    _BACKOFF_ERROR_SECONDS,
+                )
                 self._orchestrator.apply_backoff(feed_id, _BACKOFF_ERROR_SECONDS)
         except (httpx.ConnectError, httpx.TimeoutException) as exc:
-            _LOG.warning("Feed %d network error (%s); backoff %ds", feed_id, type(exc).__name__, _BACKOFF_ERROR_SECONDS)
+            _LOG.warning(
+                "Feed %d network error (%s); backoff %ds",
+                feed_id,
+                type(exc).__name__,
+                _BACKOFF_ERROR_SECONDS,
+            )
             self._orchestrator.apply_backoff(feed_id, _BACKOFF_ERROR_SECONDS)
         except _xml_et.ParseError as exc:
-            _LOG.warning("Feed %d parse error; backoff %ds: %s", feed_id, _BACKOFF_ERROR_SECONDS, exc)
+            _LOG.warning(
+                "Feed %d parse error; backoff %ds: %s",
+                feed_id,
+                _BACKOFF_ERROR_SECONDS,
+                exc,
+            )
             self._orchestrator.apply_backoff(feed_id, _BACKOFF_ERROR_SECONDS)
         except Exception:
             _LOG.exception("Poll failed for feed %d", feed_id)

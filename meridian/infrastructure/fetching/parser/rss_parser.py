@@ -1,4 +1,5 @@
 """Parser for RSS 2.0 and RSS 1.0 (RDF) feeds."""
+
 from __future__ import annotations
 
 import re
@@ -18,19 +19,18 @@ _CONTENT_NS = "http://purl.org/rss/1.0/modules/content/"
 _RSS1_DEFAULT_NS = b'xmlns="http://purl.org/rss/1.0/"'
 
 
-def parse(feed_id: int, feed_url: str, raw_bytes: bytes) -> tuple[list[Item], PollConfig]:
+def parse(
+    feed_id: int, feed_url: str, raw_bytes: bytes
+) -> tuple[list[Item], PollConfig]:
     # Strip RSS 1.0 default namespace so element names become unqualified.
     # RSS 1.0 (RDF) puts <item> elements as siblings of <channel> at root level.
-    raw_bytes = raw_bytes.replace(_RSS1_DEFAULT_NS, b'')
+    raw_bytes = raw_bytes.replace(_RSS1_DEFAULT_NS, b"")
     root = ET.fromstring(raw_bytes)
     channel_el = root.find("channel")
     channel = channel_el if channel_el is not None else root
     feed_title = _text(channel, "title")
     item_els = channel.findall("item") or root.findall("item")
-    items = [
-        _parse_item(feed_id, feed_url, feed_title, el)
-        for el in item_els
-    ]
+    items = [_parse_item(feed_id, feed_url, feed_title, el) for el in item_els]
     ttl_el = channel.find("ttl")
     min_interval = POLL_FLOOR_SECONDS
     if ttl_el is not None and ttl_el.text:
@@ -59,11 +59,13 @@ def _parse_item(feed_id: int, feed_url: str, feed_title: str | None, el) -> Item
         h = thumb_el.get("height")
         thumb_url = thumb_el.get("url")
         if thumb_url:
-            thumbnail = [Thumbnail(
-                url=thumb_url,
-                width=int(w) if w else None,
-                height=int(h) if h else None,
-            )]
+            thumbnail = [
+                Thumbnail(
+                    url=thumb_url,
+                    width=int(w) if w else None,
+                    height=int(h) if h else None,
+                )
+            ]
     item_type = _infer_type(media)
     author_str = _text(el, "author") or _text_dc(el, "creator")
     authors = []
@@ -97,11 +99,13 @@ def _parse_enclosure(el) -> list[Media]:
     size = el.get("length")
     if not url or not url.startswith("https://"):
         return []
-    return [Media(
-        url=url,
-        mime_type=mime,
-        size_bytes=int(size) if size else None,
-    )]
+    return [
+        Media(
+            url=url,
+            mime_type=mime,
+            size_bytes=int(size) if size else None,
+        )
+    ]
 
 
 def _parse_media_content(el) -> Media | None:

@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 from meridian.domain.value_objects.source_type import SourceType
 
-
 UNSET_ID = 0
 
 

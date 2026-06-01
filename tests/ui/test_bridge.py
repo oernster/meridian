@@ -1,7 +1,7 @@
 """UI bridge tests using real QApplication (no Qt mocking)."""
+
 import json
 import tempfile
-from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -61,32 +61,41 @@ class TestFeedListModel:
 
     def test_data_all_roles(self, qapp):
         from PySide6.QtCore import Qt
+
         model = FeedListModel()
         model.refresh([_feed_dto(1, unread=3)])
         idx = model.index(0, 0)
-        assert model.data(idx, Qt.UserRole + 0) == 1       # feedId
-        assert model.data(idx, Qt.UserRole + 1) is not None # feedUrl
-        assert model.data(idx, Qt.UserRole + 2) == "Feed 1" # feedTitle
-        assert model.data(idx, Qt.UserRole + 3) == ""       # feedIcon (None -> "")
+        assert model.data(idx, Qt.UserRole + 0) == 1  # feedId
+        assert model.data(idx, Qt.UserRole + 1) is not None  # feedUrl
+        assert model.data(idx, Qt.UserRole + 2) == "Feed 1"  # feedTitle
+        assert model.data(idx, Qt.UserRole + 3) == ""  # feedIcon (None -> "")
         assert model.data(idx, Qt.UserRole + 4) == "mfeed"  # feedSourceType
-        assert model.data(idx, Qt.UserRole + 5) == 3        # feedUnreadCount
-        assert model.data(idx, Qt.UserRole + 6) == ""       # feedDescription (None -> "")
-        assert model.data(idx, 9999) is None                # unknown role
+        assert model.data(idx, Qt.UserRole + 5) == 3  # feedUnreadCount
+        assert model.data(idx, Qt.UserRole + 6) == ""  # feedDescription (None -> "")
+        assert model.data(idx, 9999) is None  # unknown role
 
     def test_data_feed_title_fallback_to_url(self, qapp):
         from PySide6.QtCore import Qt
+
         model = FeedListModel()
         dto = FeedDTO(
-            id=1, url="https://example.com/feed", source_type="mfeed",
-            title=None, description=None, icon=None, language=None,
-            filter_expr=None, unread_count=0,
+            id=1,
+            url="https://example.com/feed",
+            source_type="mfeed",
+            title=None,
+            description=None,
+            icon=None,
+            language=None,
+            filter_expr=None,
+            unread_count=0,
         )
         model.refresh([dto])
         idx = model.index(0, 0)
         assert model.data(idx, Qt.UserRole + 2) == "https://example.com/feed"
 
     def test_data_invalid_index(self, qapp):
-        from PySide6.QtCore import Qt, QModelIndex
+        from PySide6.QtCore import Qt
+
         model = FeedListModel()
         idx = model.index(99, 0)
         assert model.data(idx, Qt.UserRole + 0) is None
@@ -97,6 +106,7 @@ class TestFeedListModel:
 
     def test_remove_rows_by_ids(self, qapp):
         from PySide6.QtCore import Qt
+
         model = FeedListModel()
         model.refresh([_feed_dto(1), _feed_dto(2), _feed_dto(3)])
         model.remove_rows_by_ids({1, 3})
@@ -123,10 +133,14 @@ class TestItemListModel:
     def test_data_all_roles(self, qapp):
         from PySide6.QtCore import Qt
         from meridian.application.dto.item_dto import MediaDTO
+
         model = ItemListModel()
         dto = ItemDTO(
-            id=1, feed_id=1, item_id="https://example.com/item/1",
-            type="video", title="Item 1",
+            id=1,
+            feed_id=1,
+            item_id="https://example.com/item/1",
+            type="video",
+            title="Item 1",
             url="https://example.com/item/1",
             published_iso="2026-01-01T00:00:00+00:00",
             description="A description",
@@ -135,7 +149,13 @@ class TestItemListModel:
             is_read=False,
             language="en",
             live_status="live",
-            media=(MediaDTO(url="https://example.com/video.mp4", mime_type="video/mp4", role="primary"),),
+            media=(
+                MediaDTO(
+                    url="https://example.com/video.mp4",
+                    mime_type="video/mp4",
+                    role="primary",
+                ),
+            ),
         )
         model.refresh([dto])
         idx = model.index(0, 0)
@@ -154,6 +174,7 @@ class TestItemListModel:
 
     def test_data_item_no_media_url(self, qapp):
         from PySide6.QtCore import Qt
+
         model = ItemListModel()
         model.refresh([_item_dto(1)])
         idx = model.index(0, 0)
@@ -161,6 +182,7 @@ class TestItemListModel:
 
     def test_data_invalid_index(self, qapp):
         from PySide6.QtCore import Qt
+
         model = ItemListModel()
         idx = model.index(0, 0)
         assert model.data(idx, Qt.UserRole + 0) is None
@@ -288,18 +310,37 @@ class TestAppController:
 
     def test_set_feed_sort_alpha_desc(self, qapp):
         feeds = [
-            FeedDTO(id=1, url="https://example.com/feed/1", source_type="mfeed",
-                    title="Zebra", description=None, icon=None, language=None,
-                    filter_expr=None, unread_count=0),
-            FeedDTO(id=2, url="https://example.com/feed/2", source_type="mfeed",
-                    title="Apple", description=None, icon=None, language=None,
-                    filter_expr=None, unread_count=0),
+            FeedDTO(
+                id=1,
+                url="https://example.com/feed/1",
+                source_type="mfeed",
+                title="Zebra",
+                description=None,
+                icon=None,
+                language=None,
+                filter_expr=None,
+                unread_count=0,
+            ),
+            FeedDTO(
+                id=2,
+                url="https://example.com/feed/2",
+                source_type="mfeed",
+                title="Apple",
+                description=None,
+                icon=None,
+                language=None,
+                filter_expr=None,
+                unread_count=0,
+            ),
         ]
         self.sub_svc.list_feeds.return_value = feeds
         controller = AppController(self.sub_svc, self.item_svc)
         controller.setFeedSort("alpha_desc")
         from PySide6.QtCore import Qt
-        first = controller.feedModel.data(controller.feedModel.index(0, 0), Qt.UserRole + 2)
+
+        first = controller.feedModel.data(
+            controller.feedModel.index(0, 0), Qt.UserRole + 2
+        )
         assert first == "Zebra"
 
     def test_set_feed_sort_unread(self, qapp):
@@ -308,58 +349,106 @@ class TestAppController:
         controller = AppController(self.sub_svc, self.item_svc)
         controller.setFeedSort("unread")
         from PySide6.QtCore import Qt
-        first_unread = controller.feedModel.data(controller.feedModel.index(0, 0), Qt.UserRole + 5)
+
+        first_unread = controller.feedModel.data(
+            controller.feedModel.index(0, 0), Qt.UserRole + 5
+        )
         assert first_unread == 20
 
     def test_set_item_sort_newest(self, qapp):
         items = [
             _item_dto(1),
-            ItemDTO(id=2, feed_id=1, item_id="https://example.com/item/2",
-                    type="article", title="Item 2", url="https://example.com/item/2",
-                    published_iso="2025-01-01T00:00:00+00:00",
-                    description=None, thumbnail_url=None, duration=None, is_read=False),
+            ItemDTO(
+                id=2,
+                feed_id=1,
+                item_id="https://example.com/item/2",
+                type="article",
+                title="Item 2",
+                url="https://example.com/item/2",
+                published_iso="2025-01-01T00:00:00+00:00",
+                description=None,
+                thumbnail_url=None,
+                duration=None,
+                is_read=False,
+            ),
         ]
         self.item_svc.get_items.return_value = items
         controller = AppController(self.sub_svc, self.item_svc)
         controller._selected_feed_id = 1
         controller.setItemSort("newest")
         from PySide6.QtCore import Qt
-        first_pub = controller.itemModel.data(controller.itemModel.index(0, 0), Qt.UserRole + 4)
+
+        first_pub = controller.itemModel.data(
+            controller.itemModel.index(0, 0), Qt.UserRole + 4
+        )
         assert "2026" in first_pub
 
     def test_set_item_sort_oldest(self, qapp):
         items = [
             _item_dto(1),
-            ItemDTO(id=2, feed_id=1, item_id="https://example.com/item/2",
-                    type="article", title="Item 2", url="https://example.com/item/2",
-                    published_iso="2025-01-01T00:00:00+00:00",
-                    description=None, thumbnail_url=None, duration=None, is_read=False),
+            ItemDTO(
+                id=2,
+                feed_id=1,
+                item_id="https://example.com/item/2",
+                type="article",
+                title="Item 2",
+                url="https://example.com/item/2",
+                published_iso="2025-01-01T00:00:00+00:00",
+                description=None,
+                thumbnail_url=None,
+                duration=None,
+                is_read=False,
+            ),
         ]
         self.item_svc.get_items.return_value = items
         controller = AppController(self.sub_svc, self.item_svc)
         controller._selected_feed_id = 1
         controller.setItemSort("oldest")
         from PySide6.QtCore import Qt
-        first_pub = controller.itemModel.data(controller.itemModel.index(0, 0), Qt.UserRole + 4)
+
+        first_pub = controller.itemModel.data(
+            controller.itemModel.index(0, 0), Qt.UserRole + 4
+        )
         assert "2025" in first_pub
 
     def test_set_item_sort_alpha(self, qapp):
         items = [
-            ItemDTO(id=1, feed_id=1, item_id="https://example.com/item/1",
-                    type="article", title="Zebra Article", url="https://example.com/item/1",
-                    published_iso="2026-01-01T00:00:00+00:00",
-                    description=None, thumbnail_url=None, duration=None, is_read=False),
-            ItemDTO(id=2, feed_id=1, item_id="https://example.com/item/2",
-                    type="article", title="Apple Article", url="https://example.com/item/2",
-                    published_iso="2026-01-02T00:00:00+00:00",
-                    description=None, thumbnail_url=None, duration=None, is_read=False),
+            ItemDTO(
+                id=1,
+                feed_id=1,
+                item_id="https://example.com/item/1",
+                type="article",
+                title="Zebra Article",
+                url="https://example.com/item/1",
+                published_iso="2026-01-01T00:00:00+00:00",
+                description=None,
+                thumbnail_url=None,
+                duration=None,
+                is_read=False,
+            ),
+            ItemDTO(
+                id=2,
+                feed_id=1,
+                item_id="https://example.com/item/2",
+                type="article",
+                title="Apple Article",
+                url="https://example.com/item/2",
+                published_iso="2026-01-02T00:00:00+00:00",
+                description=None,
+                thumbnail_url=None,
+                duration=None,
+                is_read=False,
+            ),
         ]
         self.item_svc.get_items.return_value = items
         controller = AppController(self.sub_svc, self.item_svc)
         controller._selected_feed_id = 1
         controller.setItemSort("alpha")
         from PySide6.QtCore import Qt
-        first_title = controller.itemModel.data(controller.itemModel.index(0, 0), Qt.UserRole + 1)
+
+        first_title = controller.itemModel.data(
+            controller.itemModel.index(0, 0), Qt.UserRole + 1
+        )
         assert first_title == "Apple Article"
 
     def test_set_item_sort_no_feed_selected_no_op(self, qapp):
@@ -408,10 +497,21 @@ class TestAppController:
     def test_import_feeds(self, qapp):
         self.sub_svc.list_feeds.return_value = []
         controller = AppController(self.sub_svc, self.item_svc)
-        data = {"version": 1, "feeds": [
-            {"url": "https://example.com/feed/1", "source_type": "rss", "title": "Feed One"},
-            {"url": "https://example.com/feed/2", "source_type": "atom", "title": None},
-        ]}
+        data = {
+            "version": 1,
+            "feeds": [
+                {
+                    "url": "https://example.com/feed/1",
+                    "source_type": "rss",
+                    "title": "Feed One",
+                },
+                {
+                    "url": "https://example.com/feed/2",
+                    "source_type": "atom",
+                    "title": None,
+                },
+            ],
+        }
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
             json.dump(data, f)
             tmp = Path(f.name)
@@ -423,7 +523,10 @@ class TestAppController:
         self.sub_svc.list_feeds.return_value = []
         self.sub_svc.subscribe.side_effect = ValueError("bad url")
         controller = AppController(self.sub_svc, self.item_svc)
-        data = {"version": 1, "feeds": [{"url": "https://example.com/feed", "source_type": "rss"}]}
+        data = {
+            "version": 1,
+            "feeds": [{"url": "https://example.com/feed", "source_type": "rss"}],
+        }
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
             json.dump(data, f)
             tmp = Path(f.name)
@@ -433,7 +536,10 @@ class TestAppController:
     def test_import_feeds_skips_empty_url(self, qapp):
         self.sub_svc.list_feeds.return_value = []
         controller = AppController(self.sub_svc, self.item_svc)
-        data = {"version": 1, "feeds": [{"url": "", "source_type": "rss"}, {"url": "   "}]}
+        data = {
+            "version": 1,
+            "feeds": [{"url": "", "source_type": "rss"}, {"url": "   "}],
+        }
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
             json.dump(data, f)
             tmp = Path(f.name)

@@ -1,8 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
 from meridian.application.interfaces.feed_fetcher import FetchResult
 from meridian.application.interfaces.poll_state_repository import PollState
 from meridian.application.services.poll_orchestrator import PollOrchestrator
@@ -15,7 +13,9 @@ from meridian.domain.value_objects.source_type import SourceType
 
 
 def _make_feed(title: str | None = None) -> Feed:
-    return Feed(id=1, url="https://example.com/feed", source_type=SourceType.MFEED, title=title)
+    return Feed(
+        id=1, url="https://example.com/feed", source_type=SourceType.MFEED, title=title
+    )
 
 
 def _make_item(feed_title: str | None = "Example Feed") -> Item:
@@ -26,7 +26,9 @@ def _make_item(feed_title: str | None = "Example Feed") -> Item:
         title="Test",
         url="https://example.com/item/1",
         published=datetime(2026, 1, 1, tzinfo=timezone.utc),
-        source=ItemSource(type="mfeed", feed_url="https://example.com/feed", feed_title=feed_title),
+        source=ItemSource(
+            type="mfeed", feed_url="https://example.com/feed", feed_title=feed_title
+        ),
     )
 
 
@@ -109,7 +111,9 @@ class TestPollOrchestrator:
     async def test_poll_title_none_in_item_no_update(self):
         self.feed_repo.get_by_id.return_value = _make_feed(title=None)
         self.poll_state_repo.get.return_value = PollState(feed_id=1)
-        self.fetcher.fetch.return_value = _make_result(items=[_make_item(feed_title=None)])
+        self.fetcher.fetch.return_value = _make_result(
+            items=[_make_item(feed_title=None)]
+        )
         self.item_repo.exists.return_value = True
         count, feeds_changed = await self.orch.poll_feed(1)
         assert feeds_changed is False

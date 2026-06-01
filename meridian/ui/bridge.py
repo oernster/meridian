@@ -1,4 +1,5 @@
 """QML bridge: exposes Application services as QML-callable QObject."""
+
 from __future__ import annotations
 
 import json
@@ -18,10 +19,12 @@ from PySide6.QtCore import (
 
 _LOG = logging.getLogger(__name__)
 
-from meridian.application.dto.feed_dto import FeedDTO
-from meridian.application.dto.item_dto import ItemDTO
-from meridian.application.services.item_service import ItemService
-from meridian.application.services.subscription_service import SubscriptionService
+from meridian.application.dto.feed_dto import FeedDTO  # noqa: E402
+from meridian.application.dto.item_dto import ItemDTO  # noqa: E402
+from meridian.application.services.item_service import ItemService  # noqa: E402
+from meridian.application.services.subscription_service import (  # noqa: E402
+    SubscriptionService,
+)
 
 
 class FeedListModel(QAbstractListModel):
@@ -214,7 +217,7 @@ class AppController(QObject):
         except Exception as exc:
             self.errorOccurred.emit(str(exc))
 
-    @Slot('QVariantList')
+    @Slot("QVariantList")
     def bulkUnsubscribe(self, feed_ids: list) -> None:
         ids = {int(fid) for fid in feed_ids}
         for fid in ids:
@@ -265,7 +268,9 @@ class AppController(QObject):
             ],
         }
         try:
-            path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+            path.write_text(
+                json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
+            )
         except Exception as exc:
             _LOG.error("Export failed: %s", exc)
             self.errorOccurred.emit(f"Export failed: {exc}")
@@ -297,7 +302,9 @@ class AppController(QObject):
     def _sort_feeds(self, feeds: list) -> list:
         match self._feed_sort:
             case "alpha_desc":
-                return sorted(feeds, key=lambda f: (f.title or f.url).lower(), reverse=True)
+                return sorted(
+                    feeds, key=lambda f: (f.title or f.url).lower(), reverse=True
+                )
             case "unread":
                 return sorted(feeds, key=lambda f: f.unread_count, reverse=True)
             case _:  # alpha_asc
@@ -313,7 +320,7 @@ class AppController(QObject):
                 return sorted(items, key=lambda i: i.published_iso, reverse=True)
 
     def notify_new_items(self, feed_id: int, count: int) -> None:
-        # Thread-safe: only emit signal; _refresh_on_new_items runs on Qt thread via auto-queued connection
+        # Thread-safe: only emit signal; _refresh_on_new_items runs on Qt thread via auto-queued connection  # noqa: E501
         self.newItemsAvailable.emit(feed_id, count)
 
     @Slot(int, int)

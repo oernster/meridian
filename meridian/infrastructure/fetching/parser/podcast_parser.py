@@ -1,14 +1,18 @@
 """Parser for podcast feeds (RSS + iTunes/Podcast Index namespace, Appendix D)."""
-from __future__ import annotations
 
-from datetime import datetime, timezone
+from __future__ import annotations
 
 import defusedxml.ElementTree as ET
 
 from meridian.domain.entities.item import Item
 from meridian.domain.value_objects.item_type import ItemType
 from meridian.domain.value_objects.media import (
-    Author, ContentRating, ItemSource, Media, Series, Thumbnail, Transcript,
+    Author,
+    ContentRating,
+    ItemSource,
+    Series,
+    Thumbnail,
+    Transcript,
 )
 from meridian.domain.value_objects.poll_config import PollConfig, POLL_FLOOR_SECONDS
 from meridian.infrastructure.fetching.parser import rss_parser
@@ -17,14 +21,15 @@ _ITUNES_NS = "http://www.itunes.com/dtds/podcast-1.0.dtd"
 _PC_NS = "https://podcastindex.org/namespace/1.0"
 
 
-def parse(feed_id: int, feed_url: str, raw_bytes: bytes) -> tuple[list[Item], PollConfig]:
+def parse(
+    feed_id: int, feed_url: str, raw_bytes: bytes
+) -> tuple[list[Item], PollConfig]:
     root = ET.fromstring(raw_bytes)
     channel_el = root.find("channel")
     channel = channel_el if channel_el is not None else root
     feed_title = rss_parser._text(channel, "title")
     items = [
-        _parse_item(feed_id, feed_url, feed_title, el)
-        for el in channel.findall("item")
+        _parse_item(feed_id, feed_url, feed_title, el) for el in channel.findall("item")
     ]
     ttl_el = channel.find("ttl")
     min_interval = POLL_FLOOR_SECONDS

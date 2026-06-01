@@ -5,6 +5,7 @@ AST-based structural tests enforcing layer boundary invariant:
 Domain must not import Application, Infrastructure, or UI.
 Application must not import Infrastructure or UI.
 """
+
 import ast
 from pathlib import Path
 

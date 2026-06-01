@@ -28,7 +28,8 @@ _ATOM_WITH_VIDEO = b"""<?xml version="1.0" encoding="UTF-8"?>
     <id>https://example.com/video/1</id>
     <title>My Video</title>
     <link rel="alternate" href="https://example.com/video/1"/>
-    <link rel="enclosure" href="https://example.com/video.mp4" type="video/mp4" length="5000000"/>
+    <link rel="enclosure" href="https://example.com/video.mp4"
+          type="video/mp4" length="5000000"/>
     <published>2026-01-01T00:00:00Z</published>
   </entry>
 </feed>"""
@@ -95,7 +96,8 @@ class TestAtomParser:
     <id>https://example.com/ep/1</id>
     <title>Episode</title>
     <link rel="alternate" href="https://example.com/ep/1"/>
-    <link rel="enclosure" href="https://example.com/audio.mp3" type="audio/mpeg" length="5000000"/>
+    <link rel="enclosure" href="https://example.com/audio.mp3"
+          type="audio/mpeg" length="5000000"/>
     <published>2026-01-01T00:00:00Z</published>
   </entry>
 </feed>"""
@@ -110,7 +112,8 @@ class TestAtomParser:
     <id>https://example.com/photo/1</id>
     <title>Photo</title>
     <link rel="alternate" href="https://example.com/photo/1"/>
-    <link rel="enclosure" href="https://example.com/photo.jpg" type="image/jpeg" length="200000"/>
+    <link rel="enclosure" href="https://example.com/photo.jpg"
+          type="image/jpeg" length="200000"/>
     <published>2026-01-01T00:00:00Z</published>
   </entry>
 </feed>"""
@@ -217,7 +220,9 @@ class TestAtomParser:
     </media:group>
   </entry>
 </feed>""".encode()
-        items, _ = atom_parser.parse(1, "https://www.youtube.com/feeds/videos.xml?channel_id=UC123", raw)
+        items, _ = atom_parser.parse(
+            1, "https://www.youtube.com/feeds/videos.xml?channel_id=UC123", raw
+        )
         assert len(items[0].media) == 0
 
     def test_media_group_description_not_overridden_if_already_set(self):
@@ -250,12 +255,15 @@ class TestAtomParser:
     <published>2026-01-01T00:00:00Z</published>
   </entry>
 </feed>"""
-        items, _ = atom_parser.parse(1, "https://www.youtube.com/feeds/videos.xml?channel_id=UC123", raw)
+        items, _ = atom_parser.parse(
+            1, "https://www.youtube.com/feeds/videos.xml?channel_id=UC123", raw
+        )
         assert items[0].type == ItemType.VIDEO
 
     def test_datetime_no_timezone(self):
         from meridian.infrastructure.fetching.parser.atom_parser import _parse_dt
         from datetime import timezone
+
         dt = _parse_dt("2026-01-01T00:00:00")
         assert dt.tzinfo == timezone.utc
 
@@ -354,6 +362,7 @@ class TestAtomParser:
         from meridian.infrastructure.fetching.parser.atom_parser import _infer_type
         from meridian.domain.value_objects.media import Media
         from meridian.domain.value_objects.item_type import ItemType
+
         media = [
             Media(url="https://a.example.com/doc.pdf", mime_type="application/pdf"),
             Media(url="https://b.example.com/v.mp4", mime_type="video/mp4"),
@@ -368,7 +377,8 @@ class TestAtomParser:
     <id>https://example.com/1</id>
     <title>Item</title>
     <link rel="alternate" href="https://example.com/1"/>
-    <link rel="enclosure" href="http://insecure.example.com/video.mp4" type="video/mp4"/>
+    <link rel="enclosure" href="http://insecure.example.com/video.mp4"
+          type="video/mp4"/>
     <published>2026-01-01T00:00:00Z</published>
   </entry>
 </feed>"""

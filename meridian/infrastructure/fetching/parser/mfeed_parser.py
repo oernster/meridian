@@ -1,4 +1,5 @@
 """Parser for native MMSP feed manifests (mfeed source type)."""
+
 from __future__ import annotations
 
 import json
@@ -7,13 +8,24 @@ from datetime import datetime, timezone
 from meridian.domain.entities.item import Item
 from meridian.domain.value_objects.item_type import ItemType
 from meridian.domain.value_objects.media import (
-    Author, Caption, Chapter, ContentRating, GeoRestriction,
-    ItemSource, Media, Paywall, Series, Thumbnail, Transcript,
+    Author,
+    Caption,
+    Chapter,
+    ContentRating,
+    GeoRestriction,
+    ItemSource,
+    Media,
+    Paywall,
+    Series,
+    Thumbnail,
+    Transcript,
 )
 from meridian.domain.value_objects.poll_config import PollConfig, POLL_FLOOR_SECONDS
 
 
-def parse(feed_id: int, feed_url: str, raw_bytes: bytes) -> tuple[list[Item], PollConfig]:
+def parse(
+    feed_id: int, feed_url: str, raw_bytes: bytes
+) -> tuple[list[Item], PollConfig]:
     data = json.loads(raw_bytes)
     poll_data = data.get("poll", {})
     min_interval = max(
@@ -49,7 +61,9 @@ def _parse_item(feed_id: int, feed_url: str, feed_title: str | None, raw: dict) 
         preview_url=raw.get("preview_url"),
         license=raw.get("license"),
         live_status=raw.get("live_status"),
-        scheduled_start=_parse_dt(raw["scheduled_start"]) if raw.get("scheduled_start") else None,
+        scheduled_start=(
+            _parse_dt(raw["scheduled_start"]) if raw.get("scheduled_start") else None
+        ),
         expires=_parse_dt(raw["expires"]) if raw.get("expires") else None,
         authors=tuple(_parse_author(a) for a in raw.get("authors", [])),
         tags=tuple(raw.get("tags", [])),
@@ -57,10 +71,18 @@ def _parse_item(feed_id: int, feed_url: str, feed_title: str | None, raw: dict) 
         thumbnail=tuple(_parse_thumbnail(t) for t in raw.get("thumbnail", [])),
         chapters=tuple(_parse_chapter(c) for c in raw.get("chapters", [])),
         captions=tuple(_parse_caption(c) for c in raw.get("captions", [])),
-        transcript=_parse_transcript(raw["transcript"]) if raw.get("transcript") else None,
+        transcript=(
+            _parse_transcript(raw["transcript"]) if raw.get("transcript") else None
+        ),
         series=_parse_series(raw["series"]) if raw.get("series") else None,
-        content_rating=_parse_content_rating(raw["content_rating"]) if raw.get("content_rating") else None,
-        geo_restriction=_parse_geo(raw["geo_restriction"]) if raw.get("geo_restriction") else None,
+        content_rating=(
+            _parse_content_rating(raw["content_rating"])
+            if raw.get("content_rating")
+            else None
+        ),
+        geo_restriction=(
+            _parse_geo(raw["geo_restriction"]) if raw.get("geo_restriction") else None
+        ),
         paywall=_parse_paywall(raw["paywall"]) if raw.get("paywall") else None,
         source=ItemSource(type="mfeed", feed_url=feed_url, feed_title=feed_title),
     )
@@ -105,7 +127,9 @@ def _parse_chapter(raw: dict) -> Chapter:
 
 
 def _parse_transcript(raw: dict) -> Transcript:
-    return Transcript(url=raw["url"], mime_type=raw["mime_type"], language=raw.get("language"))
+    return Transcript(
+        url=raw["url"], mime_type=raw["mime_type"], language=raw.get("language")
+    )
 
 
 def _parse_caption(raw: dict) -> Caption:

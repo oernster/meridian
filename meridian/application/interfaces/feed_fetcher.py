@@ -23,5 +23,4 @@ class FeedFetcher(ABC):
         feed: Feed,
         etag: str | None = None,
         last_modified: str | None = None,
-    ) -> FetchResult:
-        ...
+    ) -> FetchResult: ...

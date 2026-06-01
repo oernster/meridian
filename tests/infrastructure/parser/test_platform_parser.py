@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock
 
-from meridian.domain.value_objects.item_type import ItemType
-from meridian.infrastructure.fetching.parser import platform_parser, rss_parser
+from meridian.infrastructure.fetching.parser import platform_parser
 
 _RSS_FALLBACK = b"""<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">

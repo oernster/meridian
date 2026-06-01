@@ -3,7 +3,6 @@ import xml.etree.ElementTree as ET
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
-import pytest
 
 from meridian.infrastructure.fetching.http_fetcher import RateLimitedError
 from meridian.infrastructure.fetching.scheduler import PollScheduler
@@ -37,13 +36,16 @@ class TestPollScheduler:
 
     def test_start_in_thread_creates_daemon_thread(self):
         scheduler = PollScheduler(self.feed_repo, self.orchestrator)
-        with patch.object(scheduler, "_run", new=AsyncMock(side_effect=asyncio.CancelledError)):
+        with patch.object(
+            scheduler, "_run", new=AsyncMock(side_effect=asyncio.CancelledError)
+        ):
             scheduler.start_in_thread()
             assert scheduler._thread is not None
             assert scheduler._thread.daemon is True
             assert scheduler._thread.name == "meridian-poll"
             # Give thread time to set _loop
             import time
+
             deadline = time.monotonic() + 2.0
             while scheduler._loop is None and time.monotonic() < deadline:
                 time.sleep(0.01)
@@ -86,15 +88,15 @@ class TestPollScheduler:
             mock_create.assert_not_called()
 
     async def test_poll_one_rate_limit_calls_backoff(self):
-        self.orchestrator.poll_feed = AsyncMock(
-            side_effect=RateLimitedError(120)
-        )
+        self.orchestrator.poll_feed = AsyncMock(side_effect=RateLimitedError(120))
         scheduler = PollScheduler(self.feed_repo, self.orchestrator)
         await scheduler._poll_one(1)
         self.orchestrator.apply_backoff.assert_called_once_with(1, 120)
 
     async def test_poll_one_exception_logged(self):
-        self.orchestrator.poll_feed = AsyncMock(side_effect=RuntimeError("network error"))
+        self.orchestrator.poll_feed = AsyncMock(
+            side_effect=RuntimeError("network error")
+        )
         scheduler = PollScheduler(self.feed_repo, self.orchestrator)
         await scheduler._poll_one(1)
 
@@ -131,7 +133,9 @@ class TestPollScheduler:
         self.orchestrator.apply_backoff.assert_called_once_with(1, 3600)
 
     async def test_poll_one_connect_error_calls_backoff(self):
-        self.orchestrator.poll_feed = AsyncMock(side_effect=httpx.ConnectError("refused"))
+        self.orchestrator.poll_feed = AsyncMock(
+            side_effect=httpx.ConnectError("refused")
+        )
         scheduler = PollScheduler(self.feed_repo, self.orchestrator)
         await scheduler._poll_one(1)
         self.orchestrator.apply_backoff.assert_called_once_with(1, 3600)
@@ -147,6 +151,7 @@ class TestPollScheduler:
     async def test_tick_polls_all_feeds(self):
         from meridian.domain.entities.feed import Feed
         from meridian.domain.value_objects.source_type import SourceType
+
         self.feed_repo.list_all.return_value = [
             Feed(id=1, url="https://a.example.com/feed", source_type=SourceType.MFEED),
             Feed(id=2, url="https://b.example.com/feed", source_type=SourceType.MFEED),
@@ -158,19 +163,26 @@ class TestPollScheduler:
     async def test_run_ticks_then_sleeps(self):
         import asyncio
         from unittest.mock import patch
+
         self.feed_repo.list_all.return_value = []
         scheduler = PollScheduler(self.feed_repo, self.orchestrator)
         tick_count = 0
+
         async def counting_tick():
             nonlocal tick_count
             tick_count += 1
             if tick_count >= 2:
                 raise asyncio.CancelledError()
+
         scheduler._tick = counting_tick
         sleep_calls = []
+
         async def fake_sleep(secs):
             sleep_calls.append(secs)
-        with patch("meridian.infrastructure.fetching.scheduler.asyncio.sleep", new=fake_sleep):
+
+        with patch(
+            "meridian.infrastructure.fetching.scheduler.asyncio.sleep", new=fake_sleep
+        ):
             try:
                 await scheduler._run()
             except asyncio.CancelledError:

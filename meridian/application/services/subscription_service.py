@@ -22,7 +22,9 @@ class SubscriptionService:
         rss_fallback_url: str | None = None,
         title: str | None = None,
     ) -> FeedDTO:
-        resolved = SourceType(source_type) if source_type else self._infer_source_type(url)
+        resolved = (
+            SourceType(source_type) if source_type else self._infer_source_type(url)
+        )
         existing = self._feed_repo.get_by_url(url)
         if existing is not None:
             return self._to_dto(existing)

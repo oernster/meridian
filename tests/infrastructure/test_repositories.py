@@ -1,16 +1,26 @@
 from datetime import datetime, timezone
 
 import pytest
-
-import pytest
 from meridian.domain.entities.feed import Feed
 from meridian.domain.entities.item import Item
 from meridian.domain.value_objects.item_type import ItemType
-from meridian.domain.value_objects.media import Author, ContentRating, Media, Series, Thumbnail
+from meridian.domain.value_objects.media import (
+    Author,
+    ContentRating,
+    Media,
+    Series,
+    Thumbnail,
+)
 from meridian.domain.value_objects.source_type import SourceType
-from meridian.infrastructure.repositories.sqlite_feed_repository import SqliteFeedRepository
-from meridian.infrastructure.repositories.sqlite_item_repository import SqliteItemRepository
-from meridian.infrastructure.repositories.sqlite_poll_state_repository import SqlitePollStateRepository
+from meridian.infrastructure.repositories.sqlite_feed_repository import (
+    SqliteFeedRepository,
+)
+from meridian.infrastructure.repositories.sqlite_item_repository import (
+    SqliteItemRepository,
+)
+from meridian.infrastructure.repositories.sqlite_poll_state_repository import (
+    SqlitePollStateRepository,
+)
 from meridian.application.interfaces.poll_state_repository import PollState
 
 
@@ -30,9 +40,19 @@ def _item(feed_id: int, item_id: str = "https://example.com/item/1") -> Item:
         duration=600,
         authors=(Author(name="Alice", url="https://example.com/alice"),),
         tags=("tech", "python"),
-        media=(Media(url="https://example.com/video.mp4", mime_type="video/mp4", role="primary"),),
-        thumbnail=(Thumbnail(url="https://example.com/thumb.jpg", width=320, height=180),),
-        series=Series(id="https://example.com/series", title="My Series", episode_number=1),
+        media=(
+            Media(
+                url="https://example.com/video.mp4",
+                mime_type="video/mp4",
+                role="primary",
+            ),
+        ),
+        thumbnail=(
+            Thumbnail(url="https://example.com/thumb.jpg", width=320, height=180),
+        ),
+        series=Series(
+            id="https://example.com/series", title="My Series", episode_number=1
+        ),
         content_rating=ContentRating(rating="general"),
     )
 
@@ -95,7 +115,11 @@ class TestSqliteFeedRepository:
 
     def test_save_existing_raises_if_not_found(self, session_factory):
         repo = SqliteFeedRepository(session_factory)
-        phantom = Feed(id=99998, url="https://phantom.example.com/feed", source_type=SourceType.MFEED)
+        phantom = Feed(
+            id=99998,
+            url="https://phantom.example.com/feed",
+            source_type=SourceType.MFEED,
+        )
         with pytest.raises(ValueError, match="not found"):
             repo.save(phantom)
 
@@ -121,9 +145,14 @@ class TestSqliteFeedRepository:
 
 class TestSqliteItemRepository:
     def _setup_feed(self, session_factory) -> Feed:
-        from meridian.infrastructure.repositories.sqlite_feed_repository import SqliteFeedRepository
+        from meridian.infrastructure.repositories.sqlite_feed_repository import (
+            SqliteFeedRepository,
+        )
+
         feed_repo = SqliteFeedRepository(session_factory)
-        return feed_repo.save(_feed(url=f"https://items-test-{id(self)}.example.com/feed"))
+        return feed_repo.save(
+            _feed(url=f"https://items-test-{id(self)}.example.com/feed")
+        )
 
     def test_save_and_get(self, session_factory):
         feed = self._setup_feed(session_factory)
