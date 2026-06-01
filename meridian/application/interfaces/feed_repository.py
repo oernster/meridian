@@ -27,3 +27,7 @@ class FeedRepository(ABC):
     @abstractmethod
     def update_filter(self, feed_id: int, filter_expr: str | None) -> None:
         ...
+
+    @abstractmethod
+    def update_title(self, feed_id: int, title: str) -> None:
+        ...

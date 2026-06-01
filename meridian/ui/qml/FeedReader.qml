@@ -6,7 +6,7 @@ import QtMultimedia
 Item {
     id: root
     required property var theme
-    readonly property int _aspectFill: Image.PreserveAspectFill
+    readonly property int _aspectFill: 2
 
     RowLayout {
         anchors.fill: parent
@@ -81,7 +81,7 @@ Item {
                     model: controller ? controller.itemModel : null
                     delegate: itemDelegate
                     currentIndex: -1
-                    ScrollBar.vertical: ScrollBar { }
+                    ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOn }
                 }
             }
         }

@@ -52,6 +52,13 @@ class SqliteFeedRepository(FeedRepository):
                 row.filter_expr = filter_expr
                 session.commit()
 
+    def update_title(self, feed_id: int, title: str) -> None:
+        with self._session_factory() as session:
+            row = session.get(FeedRow, feed_id)
+            if row is not None:
+                row.title = title
+                session.commit()
+
     def _to_row(self, feed: Feed) -> FeedRow:
         return FeedRow(
             url=feed.url,

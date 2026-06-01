@@ -9,6 +9,36 @@ Rectangle {
 
     color: theme.base
 
+    property var selectedIds: ({})
+    property int selectedCount: 0
+    property var _allIds: []
+
+    function _registerId(feedId) {
+        var a = _allIds.slice(); a.push(feedId); _allIds = a
+    }
+    function _unregisterId(feedId) {
+        _allIds = _allIds.filter(function(x) { return x !== feedId })
+        toggleSelected(feedId, false)
+    }
+    function toggleSelected(feedId, forceState) {
+        var s = Object.assign({}, selectedIds)
+        var on = (forceState !== undefined) ? forceState : !s[feedId]
+        if (on) { s[feedId] = true } else { delete s[feedId] }
+        selectedIds = s
+        selectedCount = Object.keys(selectedIds).length
+    }
+    function selectAll() {
+        var s = {}
+        var model = controller.feedModel
+        for (var i = 0; i < model.rowCount(); i++) {
+            var id = model.data(model.index(i, 0), Qt.UserRole)
+            s[id] = true
+        }
+        selectedIds = s
+        selectedCount = Object.keys(s).length
+    }
+    function clearSelection() { selectedIds = {}; selectedCount = 0 }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -155,15 +185,64 @@ Rectangle {
             height: 36
             color: theme.base
 
-            Label {
-                anchors.left: parent.left
-                anchors.leftMargin: 16
-                anchors.verticalCenter: parent.verticalCenter
-                text: "SUBSCRIBED FEEDS"
-                font.pixelSize: 11
-                font.bold: true
-                font.letterSpacing: 1.2
-                color: theme.overlay
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                spacing: 8
+
+                Rectangle {
+                    width: 18; height: 18; radius: 3
+                    color: (root.selectedCount > 0) ? theme.blue : "transparent"
+                    border.color: theme.blue; border.width: 2
+                    Label {
+                        anchors.centerIn: parent
+                        text: root.selectedCount > 0 && root.selectedCount === controller.feedModel.rowCount() ? "✓" : (root.selectedCount > 0 ? "–" : "")
+                        color: theme.isDark ? "#1e1e2e" : "#ffffff"
+                        font.pixelSize: 12; font.bold: true
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.selectedCount === controller.feedModel.rowCount() ? root.clearSelection() : root.selectAll()
+                    }
+                }
+
+                Label {
+                    text: "SUBSCRIBED FEEDS"
+                    font.pixelSize: 11
+                    font.bold: true
+                    font.letterSpacing: 1.2
+                    color: theme.overlay
+                    Layout.fillWidth: true
+                }
+
+                Rectangle {
+                    visible: root.selectedCount > 0
+                    height: 26
+                    width: removeSelLbl.contentWidth + 16
+                    radius: 5
+                    color: removeSelMouse.containsMouse ? theme.surface0 : "transparent"
+                    border.color: theme.red
+                    border.width: 1
+
+                    Label {
+                        id: removeSelLbl
+                        anchors.centerIn: parent
+                        text: "Remove " + root.selectedCount
+                        color: theme.red
+                        font.pixelSize: 11
+                        font.bold: true
+                    }
+
+                    MouseArea {
+                        id: removeSelMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: bulkConfirmDialog.open()
+                    }
+                }
             }
         }
 
@@ -174,7 +253,28 @@ Rectangle {
             clip: true
             model: controller ? controller.feedModel : null
             delegate: subDelegate
-            ScrollBar.vertical: ScrollBar { }
+            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOn }
+        }
+    }
+
+    Dialog {
+        id: bulkConfirmDialog
+        title: "Remove Subscriptions"
+        modal: true
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        anchors.centerIn: Overlay.overlay
+        background: Rectangle { color: theme.base; border.color: theme.surface0; radius: 8 }
+        Label {
+            text: "Remove " + root.selectedCount + " feed(s)?\nAll downloaded items will be deleted."
+            wrapMode: Text.WordWrap
+            width: 300
+            color: theme.text
+            lineHeight: 1.4
+        }
+        onAccepted: {
+            var ids = Object.keys(root.selectedIds).map(function(k) { return parseInt(k) })
+            root.clearSelection()
+            controller.bulkUnsubscribe(ids)
         }
     }
 
@@ -183,21 +283,44 @@ Rectangle {
         id: subDelegate
 
         Rectangle {
+            id: delegateRoot
             width: subList.width
             height: 80
-            color: subItemMouse.hovered ? theme.mantle : theme.base
+            color: (!!root.selectedIds[model.feedId] || subItemMouse.hovered) ? theme.mantle : theme.base
+
+            Component.onCompleted: root._registerId(model.feedId)
+            Component.onDestruction: root._unregisterId(model.feedId)
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 16
+                anchors.leftMargin: 8
                 anchors.rightMargin: 12
                 anchors.topMargin: 10
                 anchors.bottomMargin: 10
                 spacing: 4
 
+                // Normal row
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 8
+                    spacing: 6
+                    visible: true
+
+                    Rectangle {
+                        width: 18; height: 18; radius: 3
+                        color: !!root.selectedIds[model.feedId] ? theme.blue : "transparent"
+                        border.color: theme.blue; border.width: 2
+                        Label {
+                            anchors.centerIn: parent
+                            text: !!root.selectedIds[model.feedId] ? "✓" : ""
+                            color: theme.isDark ? "#1e1e2e" : "#ffffff"
+                            font.pixelSize: 12; font.bold: true
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.toggleSelected(model.feedId)
+                        }
+                    }
 
                     Label {
                         text: model.feedTitle || model.feedUrl
@@ -241,9 +364,9 @@ Rectangle {
                         implicitHeight: 26
                         implicitWidth: 60
                         onClicked: {
-                            confirmDialog.feedId = model.feedId
-                            confirmDialog.feedTitle = model.feedTitle || model.feedUrl
-                            confirmDialog.open()
+                            // Ensure this feed is selected then open confirm dialog
+                            root.toggleSelected(model.feedId, true)
+                            bulkConfirmDialog.open()
                         }
                         contentItem: Label {
                             text: "Remove"
@@ -262,6 +385,7 @@ Rectangle {
                         }
                     }
                 }
+
 
                 Label {
                     text: model.feedUrl
@@ -282,33 +406,6 @@ Rectangle {
 
             HoverHandler { id: subItemMouse }
         }
-    }
-
-    // Confirm remove dialog
-    Dialog {
-        id: confirmDialog
-        title: "Remove Subscription"
-        property int feedId: 0
-        property string feedTitle: ""
-        modal: true
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        anchors.centerIn: Overlay.overlay
-
-        background: Rectangle {
-            color: theme.base
-            border.color: theme.surface0
-            radius: 8
-        }
-
-        Label {
-            text: "Remove \"" + confirmDialog.feedTitle + "\"?\nAll downloaded items will be deleted."
-            wrapMode: Text.WordWrap
-            width: 300
-            color: theme.text
-            lineHeight: 1.4
-        }
-
-        onAccepted: controller.unsubscribe(confirmDialog.feedId)
     }
 
     // Filter dialog

@@ -24,13 +24,14 @@ class PollOrchestrator:
         self._poll_state_repo = poll_state_repo
         self._fetcher = fetcher
 
-    async def poll_feed(self, feed_id: int) -> int:
+    async def poll_feed(self, feed_id: int) -> tuple[int, bool]:
+        """Return (new_item_count, feeds_changed) where feeds_changed covers title updates."""
         feed = self._feed_repo.get_by_id(feed_id)
         if feed is None:
-            return 0
+            return 0, False
         state = self._poll_state_repo.get(feed_id)
         if not self._is_due(state):
-            return 0
+            return 0, False
         result = await self._fetcher.fetch(
             feed,
             etag=state.etag,
@@ -45,7 +46,7 @@ class PollOrchestrator:
                     moved_to=result.moved_to,
                 )
             )
-            return 0
+            return 0, False
         if result.not_modified:
             next_poll = now + timedelta(seconds=result.poll_config.effective_interval)
             self._poll_state_repo.save(
@@ -57,7 +58,13 @@ class PollOrchestrator:
                     last_modified=state.last_modified,
                 )
             )
-            return 0
+            return 0, False
+        title_updated = False
+        if feed.title is None and result.items:
+            parsed_title = result.items[0].source.feed_title
+            if parsed_title:
+                self._feed_repo.update_title(feed_id, parsed_title)
+                title_updated = True
         new_items = [
             i for i in result.items
             if not self._item_repo.exists(feed_id, i.item_id)
@@ -74,7 +81,7 @@ class PollOrchestrator:
                 last_modified=result.last_modified,
             )
         )
-        return len(new_items)
+        return len(new_items), title_updated
 
     @staticmethod
     def _ensure_utc(dt: datetime) -> datetime:

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 
 ApplicationWindow {
     id: root
@@ -58,6 +59,17 @@ ApplicationWindow {
     color: theme.base
 
     menuBar: MenuBar {
+        Menu {
+            title: "&File"
+            MenuItem {
+                text: "Import Feeds..."
+                onTriggered: importDialog.open()
+            }
+            MenuItem {
+                text: "Export Feeds..."
+                onTriggered: exportDialog.open()
+            }
+        }
         Menu {
             title: "&Help"
             MenuItem {
@@ -206,7 +218,7 @@ ApplicationWindow {
                         model: controller.feedModel
                         delegate: feedDelegate
                         currentIndex: -1
-                        ScrollBar.vertical: ScrollBar { }
+                        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOn }
                     }
 
 
@@ -345,5 +357,20 @@ ApplicationWindow {
             wrapMode: Text.WordWrap
             width: 320
         }
+    }
+
+    FileDialog {
+        id: exportDialog
+        fileMode: FileDialog.SaveFile
+        nameFilters: ["Meridian feeds (*.json)"]
+        defaultSuffix: "json"
+        onAccepted: controller.exportFeeds(selectedFile)
+    }
+
+    FileDialog {
+        id: importDialog
+        fileMode: FileDialog.OpenFile
+        nameFilters: ["Meridian feeds (*.json)", "All files (*)"]
+        onAccepted: controller.importFeeds(selectedFile)
     }
 }

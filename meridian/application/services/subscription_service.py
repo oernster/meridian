@@ -20,6 +20,7 @@ class SubscriptionService:
         source_type: str | None = None,
         platform_id: str | None = None,
         rss_fallback_url: str | None = None,
+        title: str | None = None,
     ) -> FeedDTO:
         resolved = SourceType(source_type) if source_type else self._infer_source_type(url)
         existing = self._feed_repo.get_by_url(url)
@@ -30,6 +31,7 @@ class SubscriptionService:
             source_type=resolved,
             platform_id=platform_id,
             rss_fallback_url=rss_fallback_url,
+            title=title,
         )
         saved = self._feed_repo.save(feed)
         return self._to_dto(saved)

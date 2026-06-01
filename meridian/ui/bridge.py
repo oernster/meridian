@@ -1,15 +1,22 @@
 """QML bridge: exposes Application services as QML-callable QObject."""
 from __future__ import annotations
 
+import json
+import logging
+from pathlib import Path
+
 from PySide6.QtCore import (
     Property,
     QAbstractListModel,
     QModelIndex,
     QObject,
     Qt,
+    QUrl,
     Signal,
     Slot,
 )
+
+_LOG = logging.getLogger(__name__)
 
 from meridian.application.dto.feed_dto import FeedDTO
 from meridian.application.dto.item_dto import ItemDTO
@@ -179,6 +186,16 @@ class AppController(QObject):
         except Exception as exc:
             self.errorOccurred.emit(str(exc))
 
+    @Slot('QVariantList')
+    def bulkUnsubscribe(self, feed_ids: list) -> None:
+        for fid in feed_ids:
+            self._sub_svc.unsubscribe(int(fid))
+            if self._selected_feed_id == int(fid):
+                self._selected_feed_id = 0
+                self._item_model.refresh([])
+                self.itemsChanged.emit()
+        self.loadFeeds()
+
     @Slot(int)
     def unsubscribe(self, feed_id: int) -> None:
         self._sub_svc.unsubscribe(feed_id)
@@ -205,6 +222,47 @@ class AppController(QObject):
         self._item_svc.mark_all_read(feed_id)
         self.selectFeed(feed_id)
         self.loadFeeds()
+
+    @Slot(str)
+    def exportFeeds(self, file_url: str) -> None:
+        path = Path(QUrl(file_url).toLocalFile())
+        feeds = self._sub_svc.list_feeds()
+        data = {
+            "version": 1,
+            "feeds": [
+                {"url": f.url, "source_type": f.source_type, "title": f.title}
+                for f in feeds
+            ],
+        }
+        try:
+            path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        except Exception as exc:
+            _LOG.error("Export failed: %s", exc)
+            self.errorOccurred.emit(f"Export failed: {exc}")
+
+    @Slot(str)
+    def importFeeds(self, file_url: str) -> None:
+        path = Path(QUrl(file_url).toLocalFile())
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            _LOG.error("Import read failed: %s", exc)
+            self.errorOccurred.emit(f"Import failed: {exc}")
+            return
+        imported = 0
+        for entry in data.get("feeds", []):
+            url = (entry.get("url") or "").strip()
+            if not url:
+                continue
+            source_type = entry.get("source_type")
+            title = (entry.get("title") or "").strip() or None
+            try:
+                self._sub_svc.subscribe(url, source_type=source_type, title=title)
+                imported += 1
+            except Exception as exc:
+                _LOG.warning("Skipping %s: %s", url, exc)
+        self.loadFeeds()
+        _LOG.info("Imported %d feeds from %s", imported, path)
 
     def notify_new_items(self, feed_id: int, count: int) -> None:
         # Thread-safe: only emit signal; _refresh_on_new_items runs on Qt thread via auto-queued connection
