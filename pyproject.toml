@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "meridian"
+version = "0.1.0"
+description = "MMSP feed reader and subscription manager"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+dependencies = [
+    "PySide6>=6.7",
+    "sqlalchemy>=2.0",
+    "httpx>=0.27",
+    "defusedxml>=0.7",
+    "python-dateutil>=2.9",
+    "bleach>=6.1",
+]
+
+[project.scripts]
+meridian = "meridian.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["meridian*"]
+
+[tool.setuptools.package-data]
+meridian = ["ui/qml/*.qml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--cov=meridian --cov-report=term-missing --cov-fail-under=100"
+
+[tool.coverage.run]
+branch = true
+source = ["meridian"]
+omit = ["meridian/main.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "\\.\\.\\.",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
