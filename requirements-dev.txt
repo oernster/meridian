@@ -6,3 +6,9 @@ pytest-qt>=4.4
 black>=24.0
 flake8>=7.0
 respx>=0.21
+pyinstaller>=6.10
+pyinstaller-hooks-contrib>=2024.0
+psutil>=5.9
+platformdirs>=4.0
+packaging>=24.0
+pywin32>=311; sys_platform == "win32"

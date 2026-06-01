@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "meridian"
 dynamic = ["version"]
 description = "MMSP feed reader and subscription manager"
-license = { text = "Apache-2.0" }
+license = { text = "LGPL-3.0-or-later" }
 requires-python = ">=3.11"
 dependencies = [
     "PySide6>=6.7",

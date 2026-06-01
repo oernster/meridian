@@ -30,8 +30,13 @@ from meridian.infrastructure.repositories.sqlite_poll_state_repository import Sq
 from meridian.ui.bridge import AppController
 from meridian.version import __version__
 
-_QML_MAIN = Path(__file__).parent / "ui" / "qml" / "main.qml"
-_ICON_PATH = Path(__file__).parent.parent / "meridian.png"
+if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    _BASE = Path(sys._MEIPASS)
+    _QML_MAIN = _BASE / "meridian" / "ui" / "qml" / "main.qml"
+    _ICON_PATH = _BASE / "meridian.png"
+else:
+    _QML_MAIN = Path(__file__).parent / "ui" / "qml" / "main.qml"
+    _ICON_PATH = Path(__file__).parent.parent / "meridian.png"
 
 
 def main() -> None:
@@ -61,6 +66,13 @@ def main() -> None:
     icon_url = QUrl.fromLocalFile(str(_ICON_PATH)).toString() if _ICON_PATH.exists() else ""
 
     engine = QQmlApplicationEngine()
+
+    # In a PyInstaller frozen build the QML import path must be set explicitly
+    # because the engine cannot auto-discover it relative to sys.executable.
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        qml_import_path = str(Path(sys._MEIPASS) / "PySide6" / "qml")
+        engine.addImportPath(qml_import_path)
+
     engine.rootContext().setContextProperty("controller", controller)
     engine.rootContext().setContextProperty("appVersion", __version__)
     engine.rootContext().setContextProperty("appIconUrl", icon_url)
@@ -68,6 +80,12 @@ def main() -> None:
 
     if not engine.rootObjects():
         sys.exit(1)
+
+    try:
+        import pyi_splash  # type: ignore
+        pyi_splash.close()
+    except Exception:
+        pass
 
     scheduler.start_in_thread()
     exit_code = app.exec()
