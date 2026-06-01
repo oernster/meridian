@@ -6,10 +6,23 @@ import sys
 from pathlib import Path
 
 
+def _regen_splash(root: Path) -> int:
+    print("Regenerating splash screen...")
+    result = subprocess.run([sys.executable, str(root / "create_splash.py")], cwd=root)
+    if result.returncode != 0:
+        print("Splash generation failed")
+        return 1
+    return 0
+
+
 def build_exe() -> int:
     print("Building Meridian EXE...")
 
     root = Path(__file__).parent
+
+    if _regen_splash(root) != 0:
+        return 1
+
     dist_dir = root / "dist-pyinstaller"
     build_dir = root / "build"
     spec_file = root / "Meridian.spec"
@@ -46,6 +59,7 @@ def build_exe() -> int:
         "--add-data=meridian_256.png:.",
         "--add-data=meridian_512.png:.",
         "--add-data=meridian.ico:.",
+        "--add-data=LICENSE:.",
         "--icon=meridian.ico",
         "--splash=meridian_splash.png",
         "--hidden-import=PySide6.QtMultimedia",

@@ -7,7 +7,7 @@ Dialog {
     modal: true
     width: 460
     height: 520
-    standardButtons: Dialog.Close
+
     anchors.centerIn: Overlay.overlay
 
     required property var theme
@@ -62,11 +62,12 @@ Dialog {
             height: 1
             color: theme.surface0
         }
-        Button {
+        StyledButton {
             anchors.right: parent.right
             anchors.rightMargin: 12
             anchors.verticalCenter: parent.verticalCenter
             text: "Close"
+            theme: root.theme
             onClicked: root.close()
         }
     }
@@ -156,22 +157,22 @@ Dialog {
                 rowSpacing: 4
 
                 Label { text: "PySide6 (Qt for Python)"; color: theme.subtext; font.pixelSize: 12 }
-                Label { text: "LGPLv3"; color: theme.overlay; font.pixelSize: 11 }
+                Label { text: "LGPLv3"; color: theme.subtext; font.pixelSize: 11 }
 
                 Label { text: "SQLAlchemy"; color: theme.subtext; font.pixelSize: 12 }
-                Label { text: "MIT"; color: theme.overlay; font.pixelSize: 11 }
+                Label { text: "MIT"; color: theme.subtext; font.pixelSize: 11 }
 
                 Label { text: "httpx"; color: theme.subtext; font.pixelSize: 12 }
-                Label { text: "BSD 3-Clause"; color: theme.overlay; font.pixelSize: 11 }
+                Label { text: "BSD 3-Clause"; color: theme.subtext; font.pixelSize: 11 }
 
                 Label { text: "defusedxml"; color: theme.subtext; font.pixelSize: 12 }
-                Label { text: "PSFLv2"; color: theme.overlay; font.pixelSize: 11 }
+                Label { text: "PSFLv2"; color: theme.subtext; font.pixelSize: 11 }
 
                 Label { text: "python-dateutil"; color: theme.subtext; font.pixelSize: 12 }
-                Label { text: "Apache 2.0"; color: theme.overlay; font.pixelSize: 11 }
+                Label { text: "Apache 2.0"; color: theme.subtext; font.pixelSize: 11 }
 
                 Label { text: "bleach"; color: theme.subtext; font.pixelSize: 12 }
-                Label { text: "Apache 2.0"; color: theme.overlay; font.pixelSize: 11 }
+                Label { text: "Apache 2.0"; color: theme.subtext; font.pixelSize: 11 }
             }
 
             Item { Layout.fillHeight: true }
@@ -179,8 +180,8 @@ Dialog {
             Rectangle { Layout.fillWidth: true; height: 1; color: theme.surface0 }
 
             Label {
-                text: "Licensed under the Apache License, Version 2.0"
-                color: theme.overlay
+                text: "Licensed under the GNU Lesser General Public License v3.0 (LGPL-3.0)"
+                color: theme.subtext
                 font.pixelSize: 11
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap

@@ -98,6 +98,10 @@ ApplicationWindow {
                 text: "About Meridian"
                 onTriggered: aboutDialog.open()
             }
+            MenuItem {
+                text: "Licence"
+                onTriggered: licenceDialog.open()
+            }
         }
     }
 
@@ -550,9 +554,23 @@ ApplicationWindow {
         property string targetTitle: ""
         modal: true
         title: "Remove Feed"
-        standardButtons: Dialog.Ok | Dialog.Cancel
         anchors.centerIn: Overlay.overlay
         background: Rectangle { color: theme.base; border.color: theme.surface0; radius: 8 }
+        footer: Rectangle {
+            color: theme.mantle
+            height: 52
+            radius: 8
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 8; color: theme.mantle }
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: theme.surface0 }
+            Row {
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 8
+                StyledButton { text: "Cancel"; theme: theme; onClicked: feedDeleteConfirmDialog.reject() }
+                StyledButton { text: "OK"; theme: theme; onClicked: feedDeleteConfirmDialog.accept() }
+            }
+        }
         Label {
             text: "Remove \"" + feedDeleteConfirmDialog.targetTitle + "\"?\nAll downloaded items will be deleted."
             wrapMode: Text.WordWrap; width: 320; color: theme.text; lineHeight: 1.4
@@ -565,9 +583,23 @@ ApplicationWindow {
         property var pendingBulkIds: []
         modal: true
         title: "Remove Feeds"
-        standardButtons: Dialog.Ok | Dialog.Cancel
         anchors.centerIn: Overlay.overlay
         background: Rectangle { color: theme.base; border.color: theme.surface0; radius: 8 }
+        footer: Rectangle {
+            color: theme.mantle
+            height: 52
+            radius: 8
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 8; color: theme.mantle }
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: theme.surface0 }
+            Row {
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 8
+                StyledButton { text: "Cancel"; theme: theme; onClicked: feedBulkDeleteDialog.reject() }
+                StyledButton { text: "OK"; theme: theme; onClicked: feedBulkDeleteDialog.accept() }
+            }
+        }
         Label {
             text: "Remove " + feedBulkDeleteDialog.pendingBulkIds.length + " feed(s)?\nAll downloaded items will be deleted."
             wrapMode: Text.WordWrap; width: 320; color: theme.text; lineHeight: 1.4
@@ -597,18 +629,38 @@ ApplicationWindow {
         theme: theme
     }
 
+    LicenceDialog {
+        id: licenceDialog
+        theme: theme
+    }
+
     Dialog {
         id: errorDialog
         modal: true
         title: "Error"
         property string message: ""
-        standardButtons: Dialog.Ok
         anchors.centerIn: Overlay.overlay
 
         background: Rectangle {
             color: theme.base
             border.color: theme.surface0
             radius: 8
+        }
+
+        footer: Rectangle {
+            color: theme.mantle
+            height: 52
+            radius: 8
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 8; color: theme.mantle }
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: theme.surface0 }
+            StyledButton {
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                text: "OK"
+                theme: theme
+                onClicked: errorDialog.accept()
+            }
         }
 
         Label {

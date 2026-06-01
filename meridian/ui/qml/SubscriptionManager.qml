@@ -265,9 +265,23 @@ Rectangle {
         id: bulkConfirmDialog
         title: "Remove Subscriptions"
         modal: true
-        standardButtons: Dialog.Ok | Dialog.Cancel
         anchors.centerIn: Overlay.overlay
         background: Rectangle { color: theme.base; border.color: theme.surface0; radius: 8 }
+        footer: Rectangle {
+            color: theme.mantle
+            height: 52
+            radius: 8
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 8; color: theme.mantle }
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: theme.surface0 }
+            Row {
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 8
+                StyledButton { text: "Cancel"; theme: root.theme; onClicked: bulkConfirmDialog.reject() }
+                StyledButton { text: "OK"; theme: root.theme; onClicked: bulkConfirmDialog.accept() }
+            }
+        }
         Label {
             text: "Remove " + root.selectedCount + " feed(s)?\nAll downloaded items will be deleted."
             wrapMode: Text.WordWrap
@@ -420,7 +434,6 @@ Rectangle {
         property int feedId: 0
         property string feedTitle: ""
         modal: true
-        standardButtons: Dialog.Ok | Dialog.Cancel
         anchors.centerIn: Overlay.overlay
         width: 420
 
@@ -428,6 +441,22 @@ Rectangle {
             color: theme.base
             border.color: theme.surface0
             radius: 8
+        }
+
+        footer: Rectangle {
+            color: theme.mantle
+            height: 52
+            radius: 8
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 8; color: theme.mantle }
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: theme.surface0 }
+            Row {
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 8
+                StyledButton { text: "Cancel"; theme: root.theme; onClicked: filterDialog.reject() }
+                StyledButton { text: "OK"; theme: root.theme; onClicked: filterDialog.accept() }
+            }
         }
 
         ColumnLayout {

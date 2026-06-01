@@ -45,9 +45,18 @@ if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     _BASE = Path(sys._MEIPASS)
     _QML_MAIN = _BASE / "meridian" / "ui" / "qml" / "main.qml"
     _ICON_PATH = _BASE / "meridian.png"
+    _LICENCE_PATH = _BASE / "LICENSE"
 else:
     _QML_MAIN = Path(__file__).parent / "ui" / "qml" / "main.qml"
     _ICON_PATH = Path(__file__).parent.parent / "meridian.png"
+    _LICENCE_PATH = Path(__file__).parent.parent / "LICENSE"
+
+
+def _read_licence() -> str:
+    try:
+        return _LICENCE_PATH.read_text(encoding="utf-8")
+    except OSError:
+        return "Licence text unavailable."
 
 
 def main() -> None:
@@ -89,6 +98,7 @@ def main() -> None:
     engine.rootContext().setContextProperty("controller", controller)
     engine.rootContext().setContextProperty("appVersion", __version__)
     engine.rootContext().setContextProperty("appIconUrl", icon_url)
+    engine.rootContext().setContextProperty("appLicenceText", _read_licence())
     engine.load(QUrl.fromLocalFile(str(_QML_MAIN)))
 
     if not engine.rootObjects():
