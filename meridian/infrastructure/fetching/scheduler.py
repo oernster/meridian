@@ -45,6 +45,11 @@ class PollScheduler:
             try:
                 loop.run_forever()
             finally:
+                pending = asyncio.all_tasks(loop)
+                for task in pending:
+                    task.cancel()
+                if pending:
+                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
                 loop.close()
 
         self._thread = threading.Thread(target=_thread_main, daemon=True, name="meridian-poll")

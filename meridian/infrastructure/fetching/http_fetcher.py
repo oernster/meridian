@@ -22,7 +22,7 @@ _MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
 class HttpFetcher(FeedFetcher):
     def __init__(self, client: httpx.AsyncClient | None = None) -> None:
         self._client = client or httpx.AsyncClient(
-            follow_redirects=False,
+            follow_redirects=True,
             headers={"User-Agent": _USER_AGENT},
             timeout=30.0,
         )

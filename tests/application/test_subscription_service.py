@@ -71,3 +71,35 @@ class TestSubscriptionService:
     def test_set_filter_clear(self):
         self.svc.set_filter(1, None)
         self.feed_repo.update_filter.assert_called_once_with(1, None)
+
+    def test_subscribe_auto_detects_rss_default(self):
+        self.feed_repo.get_by_url.return_value = None
+        saved = _make_feed(id=10, url="https://slashdot.org/rss/index.rss")
+        saved = Feed(id=10, url="https://slashdot.org/rss/index.rss", source_type=SourceType.RSS)
+        self.feed_repo.save.return_value = saved
+        dto = self.svc.subscribe("https://slashdot.org/rss/index.rss")
+        assert dto.source_type == "rss"
+
+    def test_infer_source_type_mfeed_json(self):
+        result = SubscriptionService._infer_source_type("https://example.com/feed.json")
+        assert result == SourceType.MFEED
+
+    def test_infer_source_type_mfeed_mmsp(self):
+        result = SubscriptionService._infer_source_type("https://example.com/.well-known/mmsp.json")
+        assert result == SourceType.MFEED
+
+    def test_infer_source_type_atom(self):
+        result = SubscriptionService._infer_source_type("https://example.com/feed.atom")
+        assert result == SourceType.ATOM
+
+    def test_infer_source_type_youtube(self):
+        result = SubscriptionService._infer_source_type("https://www.youtube.com/feeds/videos.xml?channel_id=UC123")
+        assert result == SourceType.ATOM
+
+    def test_infer_source_type_podcast(self):
+        result = SubscriptionService._infer_source_type("https://example.com/podcast/feed.xml")
+        assert result == SourceType.PODCAST
+
+    def test_infer_source_type_rss_default(self):
+        result = SubscriptionService._infer_source_type("https://example.com/feed.rss")
+        assert result == SourceType.RSS

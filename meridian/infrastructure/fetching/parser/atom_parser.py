@@ -68,17 +68,39 @@ def _parse_entry(feed_id: int, feed_url: str, feed_title: str | None, ns: str, e
                 enc_size = int(length) if length else None
                 media = [Media(url=enc_url, mime_type=enc_type, size_bytes=enc_size)]
             break
-    item_type = _infer_type(media)
+    # media:group (YouTube Atom): contains thumbnail, content, and description
+    group_el = el.find(f"{{{_MEDIA_NS}}}group")
     thumbnail = []
-    thumb_el = el.find(f"{{{_MEDIA_NS}}}thumbnail")
-    if thumb_el is not None:
-        thumb_url = thumb_el.get("url")
-        if thumb_url:
-            thumbnail = [Thumbnail(
-                url=thumb_url,
-                width=int(thumb_el.get("width")) if thumb_el.get("width") else None,
-                height=int(thumb_el.get("height")) if thumb_el.get("height") else None,
-            )]
+    if group_el is not None:
+        thumb_el = group_el.find(f"{{{_MEDIA_NS}}}thumbnail")
+        content_el = group_el.find(f"{{{_MEDIA_NS}}}content")
+        desc_el = group_el.find(f"{{{_MEDIA_NS}}}description")
+        if desc_el is not None and desc_el.text and description is None:
+            description = desc_el.text.strip()
+        if thumb_el is not None:
+            thumb_url = thumb_el.get("url")
+            if thumb_url:
+                thumbnail = [Thumbnail(
+                    url=thumb_url,
+                    width=int(thumb_el.get("width")) if thumb_el.get("width") else None,
+                    height=int(thumb_el.get("height")) if thumb_el.get("height") else None,
+                )]
+        if content_el is not None and not media:
+            content_url = content_el.get("url", "")
+            content_type = content_el.get("type", "")
+            if "youtube.com" not in content_url and content_url.startswith("https://"):
+                media = [Media(url=content_url, mime_type=content_type)]
+    else:
+        thumb_el = el.find(f"{{{_MEDIA_NS}}}thumbnail")
+        if thumb_el is not None:
+            thumb_url = thumb_el.get("url")
+            if thumb_url:
+                thumbnail = [Thumbnail(
+                    url=thumb_url,
+                    width=int(thumb_el.get("width")) if thumb_el.get("width") else None,
+                    height=int(thumb_el.get("height")) if thumb_el.get("height") else None,
+                )]
+    item_type = _infer_type(media, feed_url)
     return Item(
         feed_id=feed_id,
         item_id=item_id or url,
@@ -103,7 +125,9 @@ def _find_link(el, ns: str, rel: str) -> str | None:
     return None
 
 
-def _infer_type(media: list[Media]) -> ItemType:
+def _infer_type(media: list[Media], feed_url: str = "") -> ItemType:
+    if "youtube.com" in feed_url:
+        return ItemType.VIDEO
     for m in media:
         if m.mime_type.startswith("video/"):
             return ItemType.VIDEO

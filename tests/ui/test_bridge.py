@@ -176,15 +176,15 @@ class TestAppController:
         self.sub_svc.subscribe.return_value = _feed_dto(5)
         self.sub_svc.list_feeds.return_value = [_feed_dto(5)]
         controller = AppController(self.sub_svc, self.item_svc)
-        controller.subscribe("https://example.com/feed/5", "mfeed")
-        self.sub_svc.subscribe.assert_called_once_with("https://example.com/feed/5", "mfeed")
+        controller.subscribe("https://example.com/feed/5")
+        self.sub_svc.subscribe.assert_called_once_with("https://example.com/feed/5")
 
     def test_subscribe_error_emits_signal(self, qapp):
         self.sub_svc.subscribe.side_effect = ValueError("bad URL")
         controller = AppController(self.sub_svc, self.item_svc)
         errors = []
         controller.errorOccurred.connect(errors.append)
-        controller.subscribe("http://insecure.com/feed", "mfeed")
+        controller.subscribe("http://insecure.com/feed")
         assert len(errors) == 1
         assert "bad URL" in errors[0]
 

@@ -17,21 +17,35 @@ class SubscriptionService:
     def subscribe(
         self,
         url: str,
-        source_type: str,
+        source_type: str | None = None,
         platform_id: str | None = None,
         rss_fallback_url: str | None = None,
     ) -> FeedDTO:
+        resolved = SourceType(source_type) if source_type else self._infer_source_type(url)
         existing = self._feed_repo.get_by_url(url)
         if existing is not None:
             return self._to_dto(existing)
         feed = Feed(
             url=url,
-            source_type=SourceType(source_type),
+            source_type=resolved,
             platform_id=platform_id,
             rss_fallback_url=rss_fallback_url,
         )
         saved = self._feed_repo.save(feed)
         return self._to_dto(saved)
+
+    @staticmethod
+    def _infer_source_type(url: str) -> SourceType:
+        lower = url.lower().rstrip("/")
+        if lower.endswith(".json") or "mmsp" in lower:
+            return SourceType.MFEED
+        if lower.endswith(".atom"):
+            return SourceType.ATOM
+        if "youtube.com" in lower:
+            return SourceType.ATOM
+        if "podcast" in lower:
+            return SourceType.PODCAST
+        return SourceType.RSS
 
     def unsubscribe(self, feed_id: int) -> None:
         self._feed_repo.delete(feed_id)

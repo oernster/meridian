@@ -171,10 +171,10 @@ class AppController(QObject):
         self._item_model.refresh(items)
         self.itemsChanged.emit()
 
-    @Slot(str, str)
-    def subscribe(self, url: str, source_type: str) -> None:
+    @Slot(str)
+    def subscribe(self, url: str) -> None:
         try:
-            self._sub_svc.subscribe(url, source_type)
+            self._sub_svc.subscribe(url)
             self.loadFeeds()
         except Exception as exc:
             self.errorOccurred.emit(str(exc))

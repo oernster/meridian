@@ -1,4 +1,4 @@
-"""Parser for RSS 2.0 feeds (Appendix B normalization)."""
+"""Parser for RSS 2.0 and RSS 1.0 (RDF) feeds."""
 from __future__ import annotations
 
 import re
@@ -13,16 +13,22 @@ from meridian.domain.value_objects.media import Author, ItemSource, Media, Thumb
 from meridian.domain.value_objects.poll_config import PollConfig, POLL_FLOOR_SECONDS
 
 _MEDIA_NS = "http://search.yahoo.com/mrss/"
+_DC_NS = "http://purl.org/dc/elements/1.1/"
+_RSS1_DEFAULT_NS = b'xmlns="http://purl.org/rss/1.0/"'
 
 
 def parse(feed_id: int, feed_url: str, raw_bytes: bytes) -> tuple[list[Item], PollConfig]:
+    # Strip RSS 1.0 default namespace so element names become unqualified.
+    # RSS 1.0 (RDF) puts <item> elements as siblings of <channel> at root level.
+    raw_bytes = raw_bytes.replace(_RSS1_DEFAULT_NS, b'')
     root = ET.fromstring(raw_bytes)
     channel_el = root.find("channel")
     channel = channel_el if channel_el is not None else root
     feed_title = _text(channel, "title")
+    item_els = channel.findall("item") or root.findall("item")
     items = [
         _parse_item(feed_id, feed_url, feed_title, el)
-        for el in channel.findall("item")
+        for el in item_els
     ]
     ttl_el = channel.find("ttl")
     min_interval = POLL_FLOOR_SECONDS
@@ -39,7 +45,7 @@ def _parse_item(feed_id: int, feed_url: str, feed_title: str | None, el) -> Item
     if guid and not guid.startswith("http"):
         guid = f"{feed_url}#{guid}"
     url = _text(el, "link") or guid
-    pub_date = _text(el, "pubDate")
+    pub_date = _text(el, "pubDate") or _text_dc(el, "date")
     published = _parse_rss_date(pub_date) if pub_date else datetime.now(tz=timezone.utc)
     enclosure = el.find("enclosure")
     media_els = el.findall(f"{{{_MEDIA_NS}}}content")
@@ -58,7 +64,7 @@ def _parse_item(feed_id: int, feed_url: str, feed_title: str | None, el) -> Item
                 height=int(h) if h else None,
             )]
     item_type = _infer_type(media)
-    author_str = _text(el, "author") or _text(el, "dc:creator")
+    author_str = _text(el, "author") or _text_dc(el, "creator")
     authors = []
     if author_str:
         paren = re.search(r"\(([^)]+)\)", author_str)
@@ -126,8 +132,18 @@ def _text(el, tag: str) -> str | None:
     return child.text.strip() if child is not None and child.text else None
 
 
+def _text_dc(el, local_name: str) -> str | None:
+    child = el.find(f"{{{_DC_NS}}}{local_name}")
+    return child.text.strip() if child is not None and child.text else None
+
+
 def _parse_rss_date(value: str) -> datetime:
     try:
         return parsedate_to_datetime(value)
+    except Exception:
+        pass
+    try:
+        dt = datetime.fromisoformat(value)
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
     except Exception:
         return datetime.now(tz=timezone.utc)

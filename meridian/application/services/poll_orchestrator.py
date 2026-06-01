@@ -76,18 +76,23 @@ class PollOrchestrator:
         )
         return len(new_items)
 
+    @staticmethod
+    def _ensure_utc(dt: datetime) -> datetime:
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
     def _is_due(self, state: PollState) -> bool:
+        now = datetime.now(tz=timezone.utc)
         if state.backoff_until:
-            return datetime.now(tz=timezone.utc) >= state.backoff_until
+            return now >= self._ensure_utc(state.backoff_until)
         if state.next_poll is None:
             return True
-        return datetime.now(tz=timezone.utc) >= state.next_poll
+        return now >= self._ensure_utc(state.next_poll)
 
     def seconds_until_next_poll(self, feed_id: int) -> int:
         state = self._poll_state_repo.get(feed_id)
         if state.next_poll is None:
             return 0
-        delta = (state.next_poll - datetime.now(tz=timezone.utc)).total_seconds()
+        delta = (self._ensure_utc(state.next_poll) - datetime.now(tz=timezone.utc)).total_seconds()
         return max(0, int(delta))
 
     def apply_backoff(self, feed_id: int, retry_after_seconds: int) -> None:

@@ -5,44 +5,71 @@ import QtMultimedia
 
 Item {
     id: root
-    required property var controller
+    required property var theme
+    readonly property int _aspectFill: Image.PreserveAspectFill
 
     RowLayout {
         anchors.fill: parent
         spacing: 0
 
-        // Item list
+        // Item list panel
         Rectangle {
-            Layout.preferredWidth: 340
+            Layout.preferredWidth: 360
             Layout.fillHeight: true
-            color: "#181825"
-            border.color: "#313244"
-            border.width: 1
+            color: theme.mantle
 
             ColumnLayout {
                 anchors.fill: parent
                 spacing: 0
 
-                RowLayout {
+                // Panel header
+                Rectangle {
                     Layout.fillWidth: true
-                    Layout.margins: 8
+                    height: 48
+                    color: theme.mantle
 
-                    Label {
-                        text: "Items"
-                        color: "#cdd6f4"
-                        font.pixelSize: 14
-                        font.bold: true
-                        Layout.fillWidth: true
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 14
+                        anchors.rightMargin: 8
+
+                        Label {
+                            text: "Items"
+                            font.pixelSize: 14
+                            font.bold: true
+                            color: theme.text
+                            Layout.fillWidth: true
+                        }
+
+                        Button {
+                            flat: true
+                            font.pixelSize: 11
+                            implicitHeight: 30
+                            onClicked: {
+                                if (controller.selectedFeedId > 0)
+                                    controller.markAllRead(controller.selectedFeedId)
+                            }
+                            contentItem: Label {
+                                text: "Mark all read"
+                                color: theme.subtext
+                                font.pixelSize: 11
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                color: parent.pressed ? theme.surface1
+                                     : parent.hovered ? theme.surface0
+                                     : "transparent"
+                                radius: 5
+                            }
+                        }
                     }
 
-                    Button {
-                        text: "Mark All Read"
-                        flat: true
-                        font.pixelSize: 11
-                        onClicked: {
-                            if (controller.selectedFeedId > 0)
-                                controller.markAllRead(controller.selectedFeedId)
-                        }
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width
+                        height: 1
+                        color: theme.surface0
                     }
                 }
 
@@ -51,51 +78,98 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
-                    model: controller.itemModel
+                    model: controller ? controller.itemModel : null
                     delegate: itemDelegate
                     currentIndex: -1
+                    ScrollBar.vertical: ScrollBar { }
                 }
             }
         }
 
-        // Detail / player pane
+        // Divider
+        Rectangle {
+            width: 1
+            Layout.fillHeight: true
+            color: theme.surface0
+        }
+
+        // Detail pane
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: "#11111b"
+            color: theme.base
+
+            // Empty state
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: 12
+                visible: detailTitle.text === ""
+
+                Label {
+                    text: "📰"
+                    font.pixelSize: 48
+                    Layout.alignment: Qt.AlignHCenter
+                }
+                Label {
+                    text: "Select a feed and item to read"
+                    color: theme.overlay
+                    font.pixelSize: 15
+                    Layout.alignment: Qt.AlignHCenter
+                }
+            }
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 16
-                spacing: 12
+                anchors.margins: 20
+                spacing: 14
                 visible: detailTitle.text !== ""
 
                 Label {
                     id: detailTitle
                     text: ""
-                    color: "#cdd6f4"
+                    color: theme.text
                     font.pixelSize: 20
                     font.bold: true
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
                 }
 
-                Label {
-                    id: detailMeta
-                    text: ""
-                    color: "#6c7086"
-                    font.pixelSize: 11
-                    Layout.fillWidth: true
+                RowLayout {
+                    spacing: 8
+
+                    Rectangle {
+                        height: 22
+                        width: typeLabel.contentWidth + 14
+                        radius: 4
+                        color: theme.surface0
+
+                        Label {
+                            id: typeLabel
+                            anchors.centerIn: parent
+                            text: detailTypeStor.text.toUpperCase()
+                            color: theme.blue
+                            font.pixelSize: 10
+                            font.bold: true
+                            font.letterSpacing: 0.8
+                        }
+                    }
+
+                    Label {
+                        id: detailMeta
+                        text: ""
+                        color: theme.subtext
+                        font.pixelSize: 12
+                    }
                 }
 
-                // Inline media player (video/audio/short/livestream)
+                // Media player
                 Rectangle {
                     id: playerContainer
                     visible: false
                     Layout.fillWidth: true
-                    height: Math.min(root.height * 0.4, 360)
+                    height: Math.min(root.height * 0.38, 340)
                     color: "#000"
-                    radius: 8
+                    radius: 10
 
                     MediaPlayer {
                         id: mediaPlayer
@@ -105,58 +179,77 @@ Item {
                     VideoOutput {
                         id: videoOutput
                         anchors.fill: parent
+                        anchors.bottomMargin: 48
                     }
 
-                    // Audio-only fallback visual
+                    // Audio-only visual
                     Rectangle {
                         anchors.fill: parent
-                        color: "#1e1e2e"
-                        visible: detailType.text === "audio" || detailType.text === "podcast"
-                        radius: 8
+                        anchors.bottomMargin: 48
+                        color: theme.mantle
+                        visible: detailTypeStor.text === "audio" || detailTypeStor.text === "podcast"
+                        radius: 10
 
                         Label {
                             anchors.centerIn: parent
-                            text: "Audio"
-                            color: "#89b4fa"
-                            font.pixelSize: 24
+                            text: "🎵"
+                            font.pixelSize: 40
                         }
                     }
 
-                    RowLayout {
+                    // Controls bar
+                    Rectangle {
                         anchors.bottom: parent.bottom
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.margins: 8
+                        width: parent.width
+                        height: 48
+                        color: theme.mantle
+                        radius: 10
+                        Rectangle {
+                            anchors.top: parent.top
+                            width: parent.width
+                            height: 10
+                            color: theme.mantle
+                        }
 
-                        Button {
-                            text: mediaPlayer.playbackState === MediaPlayer.PlayingState ? "Pause" : "Play"
-                            onClicked: {
-                                if (mediaPlayer.playbackState === MediaPlayer.PlayingState)
-                                    mediaPlayer.pause()
-                                else
-                                    mediaPlayer.play()
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 8
+
+                            Button {
+                                flat: true
+                                font.pixelSize: 16
+                                text: mediaPlayer.playbackState === MediaPlayer.PlayingState ? "⏸" : "▶"
+                                implicitWidth: 36
+                                implicitHeight: 36
+                                onClicked: {
+                                    if (mediaPlayer.playbackState === MediaPlayer.PlayingState)
+                                        mediaPlayer.pause()
+                                    else
+                                        mediaPlayer.play()
+                                }
                             }
-                        }
 
-                        Slider {
-                            Layout.fillWidth: true
-                            from: 0
-                            to: mediaPlayer.duration > 0 ? mediaPlayer.duration : 1
-                            value: mediaPlayer.position
-                            onMoved: mediaPlayer.position = value
-                        }
+                            Slider {
+                                Layout.fillWidth: true
+                                from: 0
+                                to: mediaPlayer.duration > 0 ? mediaPlayer.duration : 1
+                                value: mediaPlayer.position
+                                onMoved: mediaPlayer.position = value
+                            }
 
-                        Label {
-                            text: _formatTime(mediaPlayer.position) + " / " + _formatTime(mediaPlayer.duration)
-                            color: "#cdd6f4"
-                            font.pixelSize: 10
+                            Label {
+                                text: _formatTime(mediaPlayer.position) + " / " + _formatTime(mediaPlayer.duration)
+                                color: theme.subtext
+                                font.pixelSize: 10
+                            }
                         }
                     }
                 }
 
-                Label { id: detailType; visible: false; text: "" }
+                Label { id: detailTypeStor; visible: false; text: "" }
 
-                // Thumbnail for non-media items
                 Image {
                     id: detailThumbnail
                     visible: !playerContainer.visible && source.toString() !== ""
@@ -174,64 +267,116 @@ Item {
                         id: detailDescription
                         readOnly: true
                         wrapMode: Text.WordWrap
-                        color: "#cdd6f4"
+                        color: theme.text
                         background: null
                         textFormat: Text.RichText
+                        font.pixelSize: 14
                         onLinkActivated: (link) => Qt.openUrlExternally(link)
                     }
                 }
 
-                RowLayout {
-                    Button {
-                        text: "Open in Browser"
+                Rectangle {
+                    height: 36
+                    width: openBtn.contentWidth + 32
+                    radius: 8
+                    color: openBtn.pressed ? theme.blue + "cc"
+                         : openBtn.containsMouse ? theme.blue
+                         : theme.surface0
+
+                    Label {
+                        id: openBtn
+                        anchors.centerIn: parent
+                        text: "Open in Browser →"
+                        color: openBtn.containsMouse ? (theme.isDark ? "#1e1e2e" : "#ffffff")
+                             : theme.text
+                        font.pixelSize: 13
+                        property bool pressed: false
+                        property bool containsMouse: false
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onEntered: openBtn.containsMouse = true
+                        onExited:  openBtn.containsMouse = false
+                        onPressed: openBtn.pressed = true
+                        onReleased: openBtn.pressed = false
                         onClicked: Qt.openUrlExternally(detailUrl.text)
                     }
-                    Label { id: detailUrl; visible: false; text: "" }
                 }
-            }
 
-            Label {
-                anchors.centerIn: parent
-                text: "Select a feed and item to read"
-                color: "#6c7086"
-                font.pixelSize: 16
-                visible: detailTitle.text === ""
+                Label { id: detailUrl; visible: false; text: "" }
             }
         }
     }
 
+    // Item delegate
     Component {
         id: itemDelegate
+
         Rectangle {
             width: itemList.width
-            height: 72
+            height: 84
             color: itemList.currentIndex === index
-                ? "#313244"
-                : (model.itemIsRead ? "transparent" : "#1e1e2e")
-            radius: 4
+                ? theme.surface0
+                : itemMouse.containsMouse ? theme.surface0 + "80"
+                : model.itemIsRead ? "transparent"
+                : theme.mantle
+
+            // Unread indicator dot
+            Rectangle {
+                visible: !model.itemIsRead && itemList.currentIndex !== index
+                width: 6
+                height: 6
+                radius: 3
+                color: theme.blue
+                anchors.left: parent.left
+                anchors.leftMargin: 6
+                anchors.verticalCenter: parent.verticalCenter
+            }
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 8
-                spacing: 8
+                anchors.leftMargin: 16
+                anchors.rightMargin: 12
+                anchors.topMargin: 10
+                anchors.bottomMargin: 10
+                spacing: 10
 
-                Image {
-                    source: model.itemThumbnail
-                    width: 48
-                    height: 48
-                    fillMode: Image.PreserveAspectFill
+                Item {
+                    Layout.preferredWidth: 56
+                    Layout.maximumWidth: 56
+                    Layout.preferredHeight: 56
+                    Layout.maximumHeight: 56
+                    Layout.alignment: Qt.AlignVCenter
                     visible: model.itemThumbnail !== ""
-                    layer.enabled: true
+                    clip: true
+
+                    Image {
+                        anchors.centerIn: parent
+                        source: model.itemThumbnail
+                        width: 56
+                        height: 56
+                        fillMode: root._aspectFill
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "transparent"
+                        border.color: theme.surface0
+                        border.width: 1
+                    }
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 2
+                    spacing: 5
 
                     Label {
                         text: model.itemTitle
-                        color: model.itemIsRead ? "#6c7086" : "#cdd6f4"
-                        font.pixelSize: 12
+                        color: model.itemIsRead ? theme.subtext : theme.text
+                        font.pixelSize: 13
                         font.bold: !model.itemIsRead
                         wrapMode: Text.WordWrap
                         maximumLineCount: 2
@@ -240,19 +385,32 @@ Item {
                     }
 
                     RowLayout {
-                        Label {
-                            text: model.itemType
-                            color: "#89b4fa"
-                            font.pixelSize: 10
+                        spacing: 6
+
+                        Rectangle {
+                            height: 18
+                            width: typeChip.contentWidth + 10
+                            radius: 3
+                            color: theme.surface0
+
+                            Label {
+                                id: typeChip
+                                anchors.centerIn: parent
+                                text: model.itemType
+                                color: theme.blue
+                                font.pixelSize: 10
+                            }
                         }
+
                         Label {
                             text: model.itemPublished.substring(0, 10)
-                            color: "#6c7086"
+                            color: theme.overlay
                             font.pixelSize: 10
                         }
+
                         Label {
                             text: model.itemDuration > 0 ? _formatTime(model.itemDuration * 1000) : ""
-                            color: "#6c7086"
+                            color: theme.overlay
                             font.pixelSize: 10
                             visible: model.itemDuration > 0
                         }
@@ -260,11 +418,31 @@ Item {
                 }
             }
 
+            Rectangle {
+                anchors.bottom: parent.bottom
+                width: parent.width
+                height: 1
+                color: theme.surface0
+                opacity: 0.5
+            }
+
             MouseArea {
+                id: itemMouse
                 anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
                 onClicked: {
                     itemList.currentIndex = index
-                    _loadItem(model)
+                    console.log("Item clicked title:", model.itemTitle, "id:", model.itemId)
+                    _loadItem({
+                        itemTitle:       model.itemTitle,
+                        itemPublished:   model.itemPublished,
+                        itemType:        model.itemType,
+                        itemDescription: model.itemDescription,
+                        itemUrl:         model.itemUrl,
+                        itemMediaUrl:    model.itemMediaUrl,
+                        itemThumbnail:   model.itemThumbnail
+                    })
                     controller.markRead(model.itemId)
                 }
             }
@@ -272,11 +450,12 @@ Item {
     }
 
     function _loadItem(item) {
+        console.log("_loadItem called, title:", item.itemTitle, "desc length:", item.itemDescription ? item.itemDescription.length : "null")
         detailTitle.text = item.itemTitle
-        detailMeta.text = item.itemType + " · " + item.itemPublished.substring(0, 16).replace("T", " ")
+        detailMeta.text = item.itemPublished.substring(0, 16).replace("T", "  ")
+        detailTypeStor.text = item.itemType
         detailDescription.text = item.itemDescription
         detailUrl.text = item.itemUrl
-        detailType.text = item.itemType
         const isMedia = ["video", "audio", "short", "livestream"].includes(item.itemType)
         playerContainer.visible = isMedia && item.itemMediaUrl !== ""
         if (isMedia && item.itemMediaUrl !== "") {

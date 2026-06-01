@@ -49,6 +49,23 @@ class TestPollScheduler:
             scheduler._loop.call_soon_threadsafe(scheduler._loop.stop)
             scheduler._thread.join(timeout=2.0)
 
+    def test_start_in_thread_cleanup_cancels_pending_tasks(self):
+        import time
+
+        async def slow_run():
+            await asyncio.sleep(999)
+
+        scheduler = PollScheduler(self.feed_repo, self.orchestrator)
+        with patch.object(scheduler, "_run", new=MagicMock(side_effect=slow_run)):
+            scheduler.start_in_thread()
+            deadline = time.monotonic() + 2.0
+            while scheduler._loop is None and time.monotonic() < deadline:
+                time.sleep(0.01)
+            time.sleep(0.05)  # let task enter sleep
+            scheduler._loop.call_soon_threadsafe(scheduler._loop.stop)
+            scheduler._thread.join(timeout=3.0)
+            assert scheduler._loop.is_closed()
+
     def test_stop_uses_loop_when_available(self):
         scheduler = PollScheduler(self.feed_repo, self.orchestrator)
         mock_loop = MagicMock()
