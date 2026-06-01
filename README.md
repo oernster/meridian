@@ -1,2 +1,43 @@
-# meridian
-MMSP feed client / subscription manager
+# Meridian
+
+A desktop feed reader and subscription manager built on the [MMSP](https://github.com/MMSP-Spec) protocol. Supports RSS, Atom, podcast feeds, and YouTube channels with a native Qt Quick UI.
+
+## Quick Start
+
+```bash
+# 1. Create and activate a virtual environment
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS / Linux
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Run
+python -m meridian.main
+```
+
+Or, if installed as a package:
+
+```bash
+pip install -e .
+meridian
+```
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for Python version requirements, dev tooling, and how to run the test suite.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full project structure and design.
+
+## Features
+
+- Subscribe to RSS, Atom, podcast, and YouTube feeds
+- Per-feed filter expressions (MMSP Appendix A ABNF)
+- Background polling with conditional GET and rate-limit backoff
+- Bulk feed management with select-all checkboxes
+- Import / export subscriptions as JSON
+- Catppuccin Mocha / Latte theme toggle
+- Full-text `content:encoded` rendering for article feeds
+
+## License
+
+Apache-2.0. See [ARCHITECTURE.md](ARCHITECTURE.md) for third-party licence notes.

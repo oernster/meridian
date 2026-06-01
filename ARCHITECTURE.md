@@ -1,95 +1,157 @@
 # Meridian Architecture
 
-## Invariant
+## Layer Invariant
 
-`UI -> Application -> Domain <- Infrastructure`
+```
+UI -> Application -> Domain <- Infrastructure
+```
 
-- **Domain**: stdlib only. No I/O. No framework imports. Pure Python dataclasses and services.
+- **Domain**: stdlib only. No I/O, no framework imports. Pure Python dataclasses and services.
 - **Application**: Domain + stdlib only. Never imports Infrastructure or UI. Defines interfaces (ABCs) that Infrastructure implements.
-- **Infrastructure**: Implements Application interfaces. Owns I/O (SQLite, HTTP). Never imported by Domain or Application.
+- **Infrastructure**: Implements Application interfaces. Owns all I/O (SQLite, HTTP). Never imported by Domain or Application.
 - **UI**: Client of Application only via `AppController`. No direct access to Domain entities or Infrastructure.
 
-Structural tests in `tests/structural/test_boundaries.py` enforce this via AST scanning. Boundary violation = test failure.
+Structural boundary tests in `tests/structural/test_boundaries.py` enforce this via AST scanning at every test run. A boundary violation is a test failure.
 
-## Components
+## Directory Structure
 
 ```
 meridian/
   domain/
-    entities/         Feed, Item (frozen dataclasses)
-    value_objects/    SourceType, ItemType, PollConfig, Media types, FilterExpression
-    services/         FilterEvaluator (Appendix A ABNF), Deduplication
+    entities/
+      feed.py               Feed (frozen dataclass: id, url, title, source_type, filter_expr)
+      item.py               Item (frozen dataclass: feed_id, item_id, type, title, url, published, description, media, authors, tags)
+    value_objects/
+      source_type.py        SourceType enum (rss, atom, mfeed, podcast, youtube)
+      item_type.py          ItemType enum (article, video, audio, short, livestream, podcast)
+      media.py              Media, Thumbnail, Author, ItemSource value objects
+      poll_config.py        PollConfig (min_interval_seconds); POLL_FLOOR_SECONDS = 300
+      filter_expression.py  FilterExpression wrapper
+    services/
+      filter_evaluator.py   ABNF filter evaluation against Item entities (pure, no I/O)
+      deduplication.py      Dedup logic (item_id uniqueness within a feed)
+
   application/
-    dto/              FeedDTO, ItemDTO (cross-boundary data carriers)
-    interfaces/       FeedRepository, ItemRepository, FeedFetcher, PollStateRepository (ABCs)
-    services/         SubscriptionService, ItemService, PollOrchestrator
+    dto/
+      feed_dto.py           FeedDTO (cross-boundary carrier: id, url, title, source_type, unread_count, ...)
+      item_dto.py           ItemDTO (cross-boundary carrier: all item fields as primitives)
+    interfaces/
+      feed_repository.py    FeedRepository ABC (get_by_id, list, save, delete, update_filter, update_title)
+      item_repository.py    ItemRepository ABC (list_by_feed, save, mark_read, mark_all_read, unread_count, exists)
+      poll_state_repository.py  PollStateRepository ABC (get, save)
+    services/
+      subscription_service.py   subscribe, unsubscribe, list_feeds, set_filter, get_feed
+      item_service.py           get_items (dedup + filter), mark_read, mark_all_read
+      poll_orchestrator.py      poll_feed (HTTP fetch, parse, persist new items, auto-discover title)
+
   infrastructure/
-    db/               SQLAlchemy ORM models, session factory (SQLite)
-    repositories/     SqliteFeedRepository, SqliteItemRepository, SqlitePollStateRepository
+    db/
+      orm_models.py         SQLAlchemy ORM: FeedRow, ItemRow, PollStateRow; session_factory()
+    repositories/
+      sqlite_feed_repository.py
+      sqlite_item_repository.py
+      sqlite_poll_state_repository.py
     fetching/
-      parser/         mfeed_parser, rss_parser, atom_parser, podcast_parser, platform_parser
-      http_fetcher    HttpFetcher (httpx, MMSP/1.0 UA, conditional GET, 300s floor)
-      scheduler       PollScheduler (asyncio, per-feed poll tasks)
+      http_fetcher.py       HttpFetcher: httpx async client, MMSP/1.0 UA, conditional GET (ETag/Last-Modified), HTTPS-only, 300s poll floor
+      scheduler.py          PollScheduler: asyncio task per feed, 10s tick, per-feed backoff state
+      parser/
+        platform_parser.py  Dispatcher: registered adapters first, RSS fallback
+        rss_parser.py       RSS 2.0 + RSS 1.0/RDF; content:encoded preferred over description
+        atom_parser.py      Atom 1.0; content preferred over summary; media:group (YouTube)
+        podcast_parser.py   RSS with <itunes:*> extensions
+        mfeed_parser.py     MMSP JSON feed format
+
   ui/
-    bridge.py         FeedListModel, ItemListModel, AppController (QObject/QML bridge)
-    qml/              main.qml, FeedReader.qml, SubscriptionManager.qml
-  main.py             Explicit composition root
+    bridge.py
+      FeedListModel         QAbstractListModel: feedId, feedUrl, feedTitle, feedIcon, feedSourceType, feedUnreadCount; remove_rows_by_ids() for in-place removal
+      ItemListModel         QAbstractListModel: all ItemDTO fields as QML roles
+      AppController         QObject: loadFeeds, selectFeed, subscribe, unsubscribe, bulkUnsubscribe, markRead, markAllRead, setFeedSort, setItemSort, setFilter, importFeeds, exportFeeds
+    qml/
+      main.qml              Application window: feed sidebar (checkboxes, sort, bulk remove, right-click context menu), header bar, theme toggle
+      FeedReader.qml        Two-panel reader: item list with sort + mark-all-read; detail pane with media player, full-text description (ScrollView), open-in-browser
+      SubscriptionManager.qml  Drawer: add subscription, filter config, bulk select/remove
+      AboutDialog.qml       About dialog
+
+  main.py                   Composition root (excluded from coverage)
+  version.py                __version__ string
+
+tests/
+  structural/
+    test_boundaries.py      AST-based layer boundary enforcement + module size limits
+  domain/                   Unit tests for domain services and entities
+  application/              Unit tests for application services (mocked infrastructure)
+  infrastructure/
+    parser/                 Parser tests for RSS, Atom, podcast, mfeed formats
+    test_repositories.py    SQLite repository integration tests
+  ui/
+    test_bridge.py          QML bridge unit tests (pytest-qt)
 ```
 
-## Dependency Direction
+## Dependency Graph
 
 ```
 main.py
   builds: session_factory, repositories, fetcher, services, controller, scheduler
-  
+
 AppController (UI)
-  <- SubscriptionService (Application)
-  <- ItemService (Application)
+  <- SubscriptionService
+  <- ItemService
 
 SubscriptionService / ItemService / PollOrchestrator (Application)
   <- FeedRepository, ItemRepository, PollStateRepository (interfaces)
   <- FeedFetcher (interface)
 
 SqliteFeedRepository, SqliteItemRepository, SqlitePollStateRepository (Infrastructure)
-  -> implements Application interfaces
-  -> uses SQLAlchemy ORM
+  implements Application interfaces via SQLAlchemy ORM
 
 HttpFetcher (Infrastructure)
-  -> implements FeedFetcher
-  -> delegates to source-type parsers
-  -> enforces 300s poll floor, MMSP/1.0 User-Agent, HTTPS-only
+  implements FeedFetcher
+  delegates to platform_parser -> rss/atom/podcast/mfeed parsers
+  enforces: HTTPS-only, 300s poll floor, MMSP/1.0 User-Agent, conditional GET
 
-FilterEvaluator (Domain service)
-  -> tokenizes and parses Appendix A ABNF filter expressions
-  -> evaluates against Item entities (pure, no I/O)
+FilterEvaluator (Domain)
+  pure evaluation of ABNF filter expressions against Item entities
 ```
 
 ## Execution Flow
 
-1. `main.py` builds all dependencies and wires composition root
-2. `QQmlApplicationEngine` loads `main.qml`, `controller` injected via context property
-3. `AppController.loadFeeds()` called on startup: queries `SubscriptionService`, populates `FeedListModel`
-4. User selects feed: `AppController.selectFeed(id)` -> `ItemService.get_items(id)` -> dedup + filter -> `ItemListModel`
-5. `PollScheduler` runs background asyncio tasks, ticks every 10s, polls each feed when due
-6. On new items: `AppController.notify_new_items()` refreshes models
+1. `main.py` wires all dependencies and calls `QQmlApplicationEngine.load("main.qml")`
+2. `controller` injected as QML context property
+3. `AppController.loadFeeds()` on startup: `SubscriptionService.list_feeds()` → `FeedListModel.refresh()`
+4. User selects feed: `AppController.selectFeed(id)` → `ItemService.get_items(id)` (dedup + filter) → `ItemListModel.refresh()`
+5. User selects item: QML `_loadItem()` renders title, meta, media player or description in detail pane
+6. `PollScheduler` runs background asyncio tasks, ticks every 10s, polls each feed when its interval has elapsed
+7. On new items: `AppController.notify_new_items()` refreshes the relevant `ItemListModel` if that feed is selected
+8. Bulk feed removal: `bulkUnsubscribe()` calls `remove_rows_by_ids()` on `FeedListModel` (row-level removal, scroll position preserved)
 
-## Design Choices
+## Key Design Decisions
 
-- **Frozen domain entities**: all domain objects are `@dataclass(frozen=True, slots=True)`. State mutation happens in Infrastructure (ORM rows) and is re-hydrated into new entity instances.
-- **PollState separate from Feed**: feed subscription intent (Feed entity) is immutable; poll operational state (PollState) lives in Infrastructure, separate table.
-- **No push/notify**: per MMSP spec, no subscriber notifications on new items. `PollScheduler` is silent; items appear on next user-initiated view.
-- **Platform adapters**: registered at runtime via `platform_parser.register_adapter()`. None built-in; RSS fallback always available.
-- **HTML sanitization**: `bleach` used at render time in QML via `TextArea.textFormat = Text.RichText`. Do not trust raw HTML from feeds.
-- **HTTPS enforcement**: Feed URLs validated in `Feed.__post_init__`. Non-HTTPS media URLs excluded in parsers. HttpFetcher rejects non-HTTPS 301 locations.
+**Frozen domain entities**: all domain objects are `@dataclass(frozen=True, slots=True)`. State mutation lives in Infrastructure ORM rows; entities are re-hydrated into new instances on each read.
+
+**PollState separate from Feed**: subscription intent (`Feed`) is immutable; polling operational state (`PollState`) is a separate Infrastructure table. A Feed can be added without ever being polled.
+
+**No push/notify**: per MMSP spec, no subscriber notifications on new items. `PollScheduler` is silent; new items appear on the next user-initiated view or on the 10s scheduler tick for the selected feed.
+
+**content:encoded preferred**: RSS parser reads `content:encoded` before `<description>` so full-text article HTML is shown where available.
+
+**In-place model removal**: `bulkUnsubscribe` uses `beginRemoveRows`/`endRemoveRows` instead of a full model reset so the feed list scroll position is preserved after bulk deletion.
+
+**Platform adapters**: registered at runtime via `platform_parser.register_adapter()`. No adapters are built-in; RSS is always the fallback.
+
+**HTML rendering**: `TextArea { textFormat: Text.RichText }` in QML. Plain-text descriptions (no HTML tags) are converted to `<br/>`-separated HTML before display. Raw HTML from `content:encoded` is passed through directly.
+
+**HTTPS enforcement**: `Feed.__post_init__` rejects non-HTTPS URLs. Non-HTTPS media URLs are excluded in parsers. `HttpFetcher` rejects non-HTTPS redirect targets.
 
 ## Quality Enforcement
 
-- `--cov-fail-under=100` in `pyproject.toml`
-- Structural AST boundary tests in `tests/structural/`
-- Module size limit: 400 lines enforced via structural test (domain + application layers)
-- No magic numbers: `POLL_FLOOR_SECONDS = 300` in `poll_config.py`, referenced everywhere
+- `--cov-fail-under=100`: 100% branch coverage required
+- Structural AST tests enforce layer boundaries and 400-line module size limits (domain + application layers)
+- `POLL_FLOOR_SECONDS = 300` is the single source of truth for the polling floor; no magic numbers in logic
 
-## License
+## Licence
 
 Apache-2.0 (matches MMSP specification ecosystem).
 PySide6: LGPL-3.0 (dynamically linked; compliant by default install).
+bleach: Apache-2.0.
+SQLAlchemy: MIT.
+httpx: BSD-3-Clause.
