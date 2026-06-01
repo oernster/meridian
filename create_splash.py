@@ -1,8 +1,17 @@
 """Generate splash screen PNG with app name, version, and author."""
 
+import importlib.util
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
-from meridian.version import __version__, APP_NAME, APP_AUTHOR
+
+_version_path = Path(__file__).parent / "meridian" / "version.py"
+_spec = importlib.util.spec_from_file_location("meridian.version", _version_path)
+_version_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_version_mod)
+
+__version__: str = _version_mod.__version__
+APP_NAME: str = _version_mod.APP_NAME
+APP_AUTHOR: str = _version_mod.APP_AUTHOR
 
 
 def main() -> int:

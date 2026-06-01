@@ -3,6 +3,10 @@
 from pathlib import Path
 from PIL import Image
 
+# Covers 100/125/150/175/200% DPI for all Windows shell icon slots.
+_PNG_SIZES = [16, 20, 24, 28, 32, 40, 48, 56, 64, 72, 96, 128, 256, 512]
+_ICO_SIZES = [16, 20, 24, 28, 32, 40, 48, 56, 64, 72, 96, 128, 256]
+
 
 def main() -> int:
     root = Path(__file__).parent
@@ -14,24 +18,21 @@ def main() -> int:
 
     base = Image.open(src).convert("RGBA")
 
-    sizes = [16, 32, 48, 64, 128, 256, 512]
     resized: dict[int, Image.Image] = {}
 
     print("Generating PNGs...")
-    for size in sizes:
+    for size in _PNG_SIZES:
         img = base.resize((size, size), Image.LANCZOS)
         out = root / f"meridian_{size}.png"
         img.save(out, "PNG")
         resized[size] = img
         print(f"  [OK] {out.name}")
 
-    ico_imgs = [resized[s] for s in [16, 32, 48, 64, 128, 256] if s in resized]
     ico_path = root / "meridian.ico"
-    ico_imgs[0].save(
+    base.save(
         ico_path,
         format="ICO",
-        sizes=[(img.width, img.height) for img in ico_imgs],
-        append_images=ico_imgs[1:],
+        sizes=[(s, s) for s in _ICO_SIZES],
     )
     print(f"  [OK] {ico_path.name}")
 

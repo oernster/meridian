@@ -37,9 +37,16 @@ build/
 
 # Generated icon and splash assets (rebuilt by create_icons.py / create_splash.py)
 meridian_16.png
+meridian_20.png
+meridian_24.png
+meridian_28.png
 meridian_32.png
+meridian_40.png
 meridian_48.png
+meridian_56.png
 meridian_64.png
+meridian_72.png
+meridian_96.png
 meridian_128.png
 meridian_256.png
 meridian_512.png

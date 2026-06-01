@@ -13,7 +13,7 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 
-from PySide6.QtCore import QUrl  # noqa: E402
+from PySide6.QtCore import QSize, QUrl  # noqa: E402
 from PySide6.QtGui import QIcon  # noqa: E402
 from PySide6.QtQml import QQmlApplicationEngine  # noqa: E402
 from PySide6.QtQuickControls2 import QQuickStyle  # noqa: E402
@@ -44,12 +44,27 @@ from meridian.version import __version__  # noqa: E402
 if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     _BASE = Path(sys._MEIPASS)
     _QML_MAIN = _BASE / "meridian" / "ui" / "qml" / "main.qml"
+    _ICON_DIR = _BASE
     _ICON_PATH = _BASE / "meridian.png"
     _LICENCE_PATH = _BASE / "LICENSE"
 else:
     _QML_MAIN = Path(__file__).parent / "ui" / "qml" / "main.qml"
-    _ICON_PATH = Path(__file__).parent.parent / "meridian.png"
-    _LICENCE_PATH = Path(__file__).parent.parent / "LICENSE"
+    _ICON_DIR = Path(__file__).parent.parent
+    _ICON_PATH = _ICON_DIR / "meridian.png"
+    _LICENCE_PATH = _ICON_DIR / "LICENSE"
+
+_ICON_SIZES = (16, 20, 24, 28, 32, 40, 48, 56, 64, 72, 96, 128, 256, 512)
+
+
+def _build_app_icon() -> QIcon:
+    icon = QIcon()
+    for size in _ICON_SIZES:
+        p = _ICON_DIR / f"meridian_{size}.png"
+        if p.exists():
+            icon.addFile(str(p), QSize(size, size))
+    if icon.isNull() and _ICON_PATH.exists():
+        icon = QIcon(str(_ICON_PATH))
+    return icon
 
 
 def _read_licence() -> str:
@@ -64,8 +79,9 @@ def main() -> None:
     app = QApplication(sys.argv)
     app.setApplicationName("Meridian")
     app.setApplicationVersion(__version__)
-    if _ICON_PATH.exists():
-        app.setWindowIcon(QIcon(str(_ICON_PATH)))
+    app_icon = _build_app_icon()
+    if not app_icon.isNull():
+        app.setWindowIcon(app_icon)
 
     session_factory = build_session_factory()
     feed_repo = SqliteFeedRepository(session_factory)
