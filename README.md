@@ -1,6 +1,8 @@
-# Meridian
+# <img width="128" height="128" alt="meridian-icon" src="https://github.com/user-attachments/assets/11d9d338-774b-47e7-88d1-918d9b89313b" /> Meridian
 
 A desktop feed reader and subscription manager built on the [MMSP](https://github.com/MMSP-Spec) protocol. Supports RSS, Atom, podcast feeds, and YouTube channels with a native Qt Quick UI.
+
+<img width="1265" height="827" alt="meridian" src="https://github.com/user-attachments/assets/54ff3fbb-5abc-445b-a2ee-808829ec214e" />
 
 ## Quick Start
 
