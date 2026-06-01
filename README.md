@@ -30,6 +30,18 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for Python version requirements, dev toolin
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full project structure and design.
 
+## Sample Feeds
+
+A `feeds_export.json` file is included in the repository with a curated set of RSS, Atom, and MFEED subscriptions ready to import.
+
+To load them:
+
+1. Launch Meridian
+2. Open **File > Import Feeds...**
+3. Select `feeds_export.json` from the repository root
+
+All feeds will be added and begin polling immediately.
+
 ## Features
 
 - Subscribe to RSS, Atom, podcast, and YouTube feeds
