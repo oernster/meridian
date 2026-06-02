@@ -33,9 +33,13 @@ class TestFeed:
         assert feed.source_type == SourceType.MFEED
         assert feed.id == UNSET_ID
 
-    def test_rejects_http_url(self):
-        with pytest.raises(ValueError, match="HTTPS"):
-            Feed(url="http://example.com/feed", source_type=SourceType.RSS)
+    def test_accepts_http_url(self):
+        feed = Feed(url="http://example.com/feed", source_type=SourceType.RSS)
+        assert feed.url == "http://example.com/feed"
+
+    def test_rejects_invalid_scheme(self):
+        with pytest.raises(ValueError, match="http"):
+            Feed(url="ftp://example.com/feed", source_type=SourceType.RSS)
 
     def test_platform_requires_platform_id(self):
         with pytest.raises(ValueError, match="platform_id"):

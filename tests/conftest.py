@@ -13,4 +13,6 @@ def tmp_db_path(tmp_path_factory) -> Path:
 
 @pytest.fixture(scope="session")
 def session_factory(tmp_db_path) -> sessionmaker:
-    return build_session_factory(tmp_db_path)
+    factory = build_session_factory(tmp_db_path)
+    yield factory
+    factory.kw["bind"].dispose()

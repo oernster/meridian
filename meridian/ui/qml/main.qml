@@ -149,39 +149,47 @@ ApplicationWindow {
                 anchors.verticalCenter: parent.verticalCenter
             }
 
-            // Theme toggle
+            // Discover Feeds
             Rectangle {
-                id: themeToggleBtn
-                width: 40; height: 34; radius: 6
-                anchors.right: parent.right
-                anchors.rightMargin: 10
+                id: discoverBtn
+                width: discoverLbl.contentWidth + 24; height: 34; radius: 8
+                anchors.right: manageBtn.left
+                anchors.rightMargin: 8
                 anchors.verticalCenter: parent.verticalCenter
-                color: themeToggleMouse.containsMouse ? theme.surface0 : "transparent"
-                border.color: themeToggleMouse.containsMouse ? theme.amber : "transparent"
+                activeFocusOnTab: true
+                color: discoverHeaderMouse.containsMouse ? theme.surface0 : theme.surface1
+                border.color: (discoverHeaderMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
                 border.width: 1
                 Label {
+                    id: discoverLbl
                     anchors.centerIn: parent
-                    text: theme.isDark ? "☀️" : "🌙"
-                    font.pixelSize: 16
+                    text: "🔍  Search"
+                    font.pixelSize: 13
                     color: theme.text
                 }
                 MouseArea {
-                    id: themeToggleMouse
+                    id: discoverHeaderMouse
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: theme.isDark = !theme.isDark
+                    onClicked: feedDiscoveryDrawer.open()
+                }
+                Keys.onReturnPressed: feedDiscoveryDrawer.open()
+                Keys.onPressed: function(event) {
+                    if (event.key === Qt.Key_Space) { feedDiscoveryDrawer.open(); event.accepted = true }
                 }
             }
 
             // Manage Subscriptions
             Rectangle {
+                id: manageBtn
                 width: manageLbl.contentWidth + 24; height: 34; radius: 8
                 anchors.right: themeToggleBtn.left
                 anchors.rightMargin: 8
                 anchors.verticalCenter: parent.verticalCenter
+                activeFocusOnTab: true
                 color: manageHeaderMouse.containsMouse ? theme.surface0 : theme.surface1
-                border.color: manageHeaderMouse.containsMouse ? theme.amber : "transparent"
+                border.color: (manageHeaderMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
                 border.width: 1
                 Label {
                     id: manageLbl
@@ -196,6 +204,40 @@ ApplicationWindow {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: subManagerDrawer.open()
+                }
+                Keys.onReturnPressed: subManagerDrawer.open()
+                Keys.onPressed: function(event) {
+                    if (event.key === Qt.Key_Space) { subManagerDrawer.open(); event.accepted = true }
+                }
+            }
+
+            // Theme toggle
+            Rectangle {
+                id: themeToggleBtn
+                width: 40; height: 34; radius: 6
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+                anchors.verticalCenter: parent.verticalCenter
+                activeFocusOnTab: true
+                color: themeToggleMouse.containsMouse ? theme.surface0 : "transparent"
+                border.color: (themeToggleMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
+                border.width: 1
+                Label {
+                    anchors.centerIn: parent
+                    text: theme.isDark ? "☀️" : "🌙"
+                    font.pixelSize: 16
+                    color: theme.text
+                }
+                MouseArea {
+                    id: themeToggleMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: theme.isDark = !theme.isDark
+                }
+                Keys.onReturnPressed: theme.isDark = !theme.isDark
+                Keys.onPressed: function(event) {
+                    if (event.key === Qt.Key_Space) { theme.isDark = !theme.isDark; event.accepted = true }
                 }
             }
 
@@ -238,9 +280,12 @@ ApplicationWindow {
                             spacing: 6
 
                             Rectangle {
+                                id: feedCheckAll
                                 width: 18; height: 18; radius: 3
+                                activeFocusOnTab: true
                                 color: root._selectedFeedCount > 0 ? theme.blue : "transparent"
-                                border.color: theme.blue; border.width: 2
+                                border.color: activeFocus ? theme.amber : theme.blue
+                                border.width: activeFocus ? 2 : 2
                                 Label {
                                     anchors.centerIn: parent
                                     text: root._selectedFeedCount > 0 && root._selectedFeedCount === controller.feedModel.rowCount() ? "✓" : (root._selectedFeedCount > 0 ? "–" : "")
@@ -251,6 +296,13 @@ ApplicationWindow {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: root._selectedFeedCount === controller.feedModel.rowCount() ? root._clearFeedSelection() : root._selectAllFeeds()
+                                }
+                                Keys.onReturnPressed: root._selectedFeedCount === controller.feedModel.rowCount() ? root._clearFeedSelection() : root._selectAllFeeds()
+                                Keys.onPressed: function(event) {
+                                    if (event.key === Qt.Key_Space) {
+                                        root._selectedFeedCount === controller.feedModel.rowCount() ? root._clearFeedSelection() : root._selectAllFeeds()
+                                        event.accepted = true
+                                    }
                                 }
                             }
 
@@ -268,9 +320,10 @@ ApplicationWindow {
                                 height: 24
                                 width: _removeFeedsLbl.contentWidth + 14
                                 radius: 4
+                                activeFocusOnTab: true
                                 color: _removeFeedsMouse.containsMouse ? theme.surface0 : "transparent"
-                                border.color: theme.red
-                                border.width: 1
+                                border.color: (_removeFeedsMouse.containsMouse || activeFocus) ? theme.red : theme.red
+                                border.width: activeFocus ? 2 : 1
                                 Label {
                                     id: _removeFeedsLbl
                                     anchors.centerIn: parent
@@ -288,6 +341,17 @@ ApplicationWindow {
                                         feedBulkDeleteDialog.open()
                                     }
                                 }
+                                Keys.onReturnPressed: {
+                                    feedBulkDeleteDialog.pendingBulkIds = Object.keys(root._selectedFeedIds).map(function(k) { return parseInt(k) })
+                                    feedBulkDeleteDialog.open()
+                                }
+                                Keys.onPressed: function(event) {
+                                    if (event.key === Qt.Key_Space) {
+                                        feedBulkDeleteDialog.pendingBulkIds = Object.keys(root._selectedFeedIds).map(function(k) { return parseInt(k) })
+                                        feedBulkDeleteDialog.open()
+                                        event.accepted = true
+                                    }
+                                }
                             }
 
                             Row {
@@ -303,14 +367,15 @@ ApplicationWindow {
                                         property bool _hov: false
                                         height: 24; radius: 4
                                         implicitWidth: _sl.implicitWidth + 12
+                                        activeFocusOnTab: true
                                         color: isActive ? theme.surface0 : "transparent"
-                                        border.color: isActive ? theme.blue : _hov ? theme.amber : "transparent"
-                                        border.width: 1
+                                        border.color: isActive ? theme.blue : (_hov || activeFocus) ? theme.amber : "transparent"
+                                        border.width: activeFocus ? 2 : 1
                                         Label {
                                             id: _sl
                                             anchors.centerIn: parent
                                             text: modelData.label
-                                            color: parent.isActive ? theme.blue : parent._hov ? theme.text : theme.overlay
+                                            color: parent.isActive ? theme.blue : (parent._hov || parent.activeFocus) ? theme.text : theme.overlay
                                             font.pixelSize: 10; font.bold: parent.isActive
                                         }
                                         HoverHandler { onHoveredChanged: parent._hov = hovered }
@@ -321,6 +386,14 @@ ApplicationWindow {
                                             onClicked: {
                                                 feedsHeader._feedSort = modelData.key
                                                 controller.setFeedSort(modelData.key)
+                                            }
+                                        }
+                                        Keys.onReturnPressed: { if (!isActive) { feedsHeader._feedSort = modelData.key; controller.setFeedSort(modelData.key) } }
+                                        Keys.onPressed: function(event) {
+                                            if (event.key === Qt.Key_Space && !isActive) {
+                                                feedsHeader._feedSort = modelData.key
+                                                controller.setFeedSort(modelData.key)
+                                                event.accepted = true
                                             }
                                         }
                                     }
@@ -337,7 +410,28 @@ ApplicationWindow {
                         model: controller.feedModel
                         delegate: feedDelegate
                         currentIndex: -1
+                        activeFocusOnTab: true
+                        keyNavigationEnabled: true
                         ScrollBar.vertical: ScrollBar { id: feedVScroll; policy: ScrollBar.AlwaysOn }
+                        onActiveFocusChanged: {
+                            if (activeFocus && currentIndex < 0 && count > 0)
+                                currentIndex = 0
+                        }
+                        onCurrentIndexChanged: {
+                            if (activeFocus && currentIndex >= 0) {
+                                var feedId = controller.feedModel.data(
+                                    controller.feedModel.index(currentIndex, 0), Qt.UserRole)
+                                controller.selectFeed(feedId)
+                            }
+                        }
+                        Keys.onPressed: function(event) {
+                            if (event.key === Qt.Key_Space && currentIndex >= 0) {
+                                var feedId = controller.feedModel.data(
+                                    controller.feedModel.index(currentIndex, 0), Qt.UserRole)
+                                root._toggleFeed(feedId)
+                                event.accepted = true
+                            }
+                        }
                     }
 
 
@@ -368,7 +462,7 @@ ApplicationWindow {
             width: feedList.width - feedVScroll.width
             height: 64
             color: feedList.currentIndex === index ? theme.surface0 : "transparent"
-            border.color: feedRowMouse.containsMouse && feedList.currentIndex !== index ? theme.amber : "transparent"
+            border.color: (feedRowMouse.containsMouse || ListView.isCurrentItem) ? theme.amber : "transparent"
             border.width: 1
 
             MouseArea {
@@ -429,22 +523,31 @@ ApplicationWindow {
                     }
                 }
 
-                Rectangle {
-                    width: 36; height: 36; radius: 8
-                    color: theme.surface0
-                    visible: model.feedIcon === ""
-                    Label {
-                        anchors.centerIn: parent
-                        text: (model.feedTitle || model.feedUrl).charAt(0).toUpperCase()
-                        color: theme.blue; font.pixelSize: 15; font.bold: true
-                    }
-                }
+                Item {
+                    Layout.preferredWidth: 36
+                    Layout.preferredHeight: 36
+                    Layout.minimumWidth: 36
+                    Layout.minimumHeight: 36
+                    Layout.maximumWidth: 36
+                    Layout.maximumHeight: 36
 
-                Image {
-                    source: model.feedIcon
-                    width: 36; height: 36
-                    fillMode: Image.PreserveAspectFit
-                    visible: model.feedIcon !== ""
+                    Rectangle {
+                        width: 36; height: 36; radius: 8
+                        color: theme.surface0
+                        visible: model.feedIcon === ""
+                        Label {
+                            anchors.centerIn: parent
+                            text: (model.feedTitle || model.feedUrl).charAt(0).toUpperCase()
+                            color: theme.blue; font.pixelSize: 15; font.bold: true
+                        }
+                    }
+                    Image {
+                        width: 36; height: 36
+                        source: model.feedIcon
+                        sourceSize: Qt.size(36, 36)
+                        fillMode: Image.PreserveAspectFit
+                        visible: model.feedIcon !== ""
+                    }
                 }
 
                 ColumnLayout {
@@ -621,6 +724,23 @@ ApplicationWindow {
             anchors.fill: parent
             theme: theme
             onClose: subManagerDrawer.close()
+        }
+    }
+
+    Drawer {
+        id: feedDiscoveryDrawer
+        width: Math.min(560, root.width * 0.50)
+        height: root.height
+        edge: Qt.RightEdge
+
+        onClosed: controller.cancelSearch()
+        onOpened: feedDiscovery.focusSearch()
+
+        FeedDiscovery {
+            id: feedDiscovery
+            anchors.fill: parent
+            theme: theme
+            onClose: feedDiscoveryDrawer.close()
         }
     }
 

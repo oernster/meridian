@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
+import concurrent.futures
+import dataclasses
 import json
 import logging
+import threading
 from pathlib import Path
 
 from PySide6.QtCore import (
@@ -19,8 +23,15 @@ from PySide6.QtCore import (
 
 _LOG = logging.getLogger(__name__)
 
+from meridian.application.dto.feed_candidate_dto import FeedCandidateDTO  # noqa: E402
 from meridian.application.dto.feed_dto import FeedDTO  # noqa: E402
 from meridian.application.dto.item_dto import ItemDTO  # noqa: E402
+from meridian.application.interfaces.discovery_fetcher import (  # noqa: E402
+    DEFAULT_RESULT_CAP,
+)
+from meridian.application.services.discovery_service import (  # noqa: E402
+    DiscoveryService,
+)
 from meridian.application.services.item_service import ItemService  # noqa: E402
 from meridian.application.services.subscription_service import (  # noqa: E402
     SubscriptionService,
@@ -146,27 +157,119 @@ class ItemListModel(QAbstractListModel):
         self.endResetModel()
 
 
+class FeedCandidateModel(QAbstractListModel):
+    _ROLES = {
+        Qt.UserRole + 0: b"candidateUrl",
+        Qt.UserRole + 1: b"candidateTitle",
+        Qt.UserRole + 2: b"candidateDescription",
+        Qt.UserRole + 3: b"candidateFaviconUrl",
+        Qt.UserRole + 4: b"candidateSourceType",
+        Qt.UserRole + 5: b"candidateIsSubscribed",
+    }
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._candidates: list[FeedCandidateDTO] = []
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self._candidates)
+
+    def roleNames(self) -> dict[int, bytes]:
+        return self._ROLES
+
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
+        if not index.isValid() or index.row() >= len(self._candidates):
+            return None
+        c = self._candidates[index.row()]
+        match role:
+            case v if v == Qt.UserRole + 0:
+                return c.url
+            case v if v == Qt.UserRole + 1:
+                return c.title or c.url
+            case v if v == Qt.UserRole + 2:
+                return c.description or ""
+            case v if v == Qt.UserRole + 3:
+                return c.favicon_url or ""
+            case v if v == Qt.UserRole + 4:
+                return c.source_type
+            case v if v == Qt.UserRole + 5:
+                return c.is_subscribed
+        return None
+
+    def refresh(self, candidates: list[FeedCandidateDTO]) -> None:
+        self.beginResetModel()
+        self._candidates = list(candidates)
+        self.endResetModel()
+
+    def mark_subscribed(self, url: str) -> None:
+        for i, c in enumerate(self._candidates):
+            if c.url == url:
+                self._candidates[i] = dataclasses.replace(c, is_subscribed=True)
+                idx = self.index(i, 0)
+                self.dataChanged.emit(idx, idx, [Qt.UserRole + 5])
+                break
+
+
 class AppController(QObject):
     feedsChanged = Signal()
     itemsChanged = Signal()
     errorOccurred = Signal(str)
     newItemsAvailable = Signal(int, int)
 
+    searchStarted = Signal()
+    searchFinished = Signal()
+    searchError = Signal(str)
+    searchCancelled = Signal()
+    candidatesChanged = Signal()
+
+    _searchResultReady = Signal(object)
+
     def __init__(
         self,
         subscription_service: SubscriptionService,
         item_service: ItemService,
+        discovery_service: DiscoveryService,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._sub_svc = subscription_service
         self._item_svc = item_service
+        self._discovery_svc = discovery_service
         self._feed_model = FeedListModel(self)
         self._item_model = ItemListModel(self)
+        self._candidate_model = FeedCandidateModel(self)
         self._selected_feed_id: int = 0
         self._feed_sort: str = "alpha_asc"
         self._item_sort: str = "newest"
+        self._result_cap: int = DEFAULT_RESULT_CAP
+        self._last_query: str = ""
+        self._search_generation: int = 0
+        self._current_search_future: concurrent.futures.Future | None = None
+
+        self._discovery_loop = asyncio.new_event_loop()
+
+        def _run_discovery_loop() -> None:
+            asyncio.set_event_loop(self._discovery_loop)
+            try:
+                self._discovery_loop.run_forever()
+            finally:
+                pending = asyncio.all_tasks(self._discovery_loop)
+                for task in pending:
+                    task.cancel()
+                if pending:
+                    self._discovery_loop.run_until_complete(
+                        asyncio.gather(*pending, return_exceptions=True)
+                    )
+                self._discovery_loop.close()
+
+        threading.Thread(
+            target=_run_discovery_loop,
+            daemon=True,
+            name="meridian-discovery",
+        ).start()
+
         self.newItemsAvailable.connect(self._refresh_on_new_items)
+        self._searchResultReady.connect(self._apply_search_result)
 
     @Property(QObject, notify=feedsChanged)
     def feedModel(self) -> FeedListModel:
@@ -175,6 +278,10 @@ class AppController(QObject):
     @Property(QObject, notify=itemsChanged)
     def itemModel(self) -> ItemListModel:
         return self._item_model
+
+    @Property(QObject, notify=candidatesChanged)
+    def candidateModel(self) -> FeedCandidateModel:
+        return self._candidate_model
 
     @Property(int, notify=feedsChanged)
     def selectedFeedId(self) -> int:
@@ -299,6 +406,78 @@ class AppController(QObject):
         self.loadFeeds()
         _LOG.info("Imported %d feeds from %s", imported, path)
 
+    @Slot(str)
+    def searchFeeds(self, query: str) -> None:
+        query = query.strip()
+        if not query:
+            return
+        self._last_query = query
+        if self._current_search_future and not self._current_search_future.done():
+            self._current_search_future.cancel()
+        self._search_generation += 1
+        generation = self._search_generation
+        self.searchStarted.emit()
+
+        async def _run() -> list[FeedCandidateDTO]:
+            return await self._discovery_svc.search(
+                query, limit=self._result_cap, page=0
+            )
+
+        future = asyncio.run_coroutine_threadsafe(_run(), self._discovery_loop)
+        self._current_search_future = future
+
+        def _on_done(f: concurrent.futures.Future) -> None:
+            if f.cancelled():
+                return
+            if generation != self._search_generation:  # pragma: no cover
+                return
+            exc = f.exception()
+            if exc is not None:
+                self.searchError.emit(str(exc))
+                return
+            self._searchResultReady.emit(f.result())
+
+        future.add_done_callback(_on_done)
+
+    @Slot()
+    def cancelSearch(self) -> None:
+        if self._current_search_future and not self._current_search_future.done():
+            self._search_generation += 1
+            self._current_search_future.cancel()
+            self.searchCancelled.emit()
+
+    @Slot(int)
+    def setResultCap(self, cap: int) -> None:
+        self._result_cap = cap
+        if self._last_query:
+            self.searchFeeds(self._last_query)
+
+    @Slot(str)
+    def subscribeFromDiscovery(self, url: str) -> None:
+        try:
+            self._sub_svc.subscribe(url)
+            self._candidate_model.mark_subscribed(url)
+            self.loadFeeds()
+        except Exception as exc:
+            _LOG.warning("Discovery subscribe failed for %s: %s", url, exc)
+            self.errorOccurred.emit(str(exc))
+
+    @Slot("QVariantList")
+    def bulkSubscribeFromDiscovery(self, urls: list) -> None:
+        for url in urls:
+            try:
+                self._sub_svc.subscribe(str(url))
+                self._candidate_model.mark_subscribed(str(url))
+            except Exception as exc:
+                _LOG.warning("Skip discovery subscribe %s: %s", url, exc)
+        self.loadFeeds()
+
+    @Slot(object)
+    def _apply_search_result(self, candidates: object) -> None:
+        self._candidate_model.refresh(candidates)  # type: ignore[arg-type]
+        self.candidatesChanged.emit()
+        self.searchFinished.emit()
+
     def _sort_feeds(self, feeds: list) -> list:
         match self._feed_sort:
             case "alpha_desc":
@@ -322,6 +501,12 @@ class AppController(QObject):
     def notify_new_items(self, feed_id: int, count: int) -> None:
         # Thread-safe: only emit signal; _refresh_on_new_items runs on Qt thread via auto-queued connection  # noqa: E501
         self.newItemsAvailable.emit(feed_id, count)
+
+    def shutdown(self) -> None:
+        if self._current_search_future and not self._current_search_future.done():
+            self._current_search_future.cancel()
+        if not self._discovery_loop.is_closed():
+            self._discovery_loop.call_soon_threadsafe(self._discovery_loop.stop)
 
     @Slot(int, int)
     def _refresh_on_new_items(self, feed_id: int, count: int) -> None:

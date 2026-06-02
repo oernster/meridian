@@ -19,6 +19,9 @@ from PySide6.QtQml import QQmlApplicationEngine  # noqa: E402
 from PySide6.QtQuickControls2 import QQuickStyle  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
+from meridian.application.services.discovery_service import (  # noqa: E402
+    DiscoveryService,
+)
 from meridian.application.services.item_service import ItemService  # noqa: E402
 from meridian.application.services.poll_orchestrator import (  # noqa: E402
     PollOrchestrator,
@@ -27,6 +30,9 @@ from meridian.application.services.subscription_service import (  # noqa: E402
     SubscriptionService,
 )
 from meridian.infrastructure.db.session import build_session_factory  # noqa: E402
+from meridian.infrastructure.fetching.feedsearch_fetcher import (  # noqa: E402
+    FeedsearchFetcher,
+)
 from meridian.infrastructure.fetching.http_fetcher import HttpFetcher  # noqa: E402
 from meridian.infrastructure.fetching.scheduler import PollScheduler  # noqa: E402
 from meridian.infrastructure.repositories.sqlite_feed_repository import (  # noqa: E402
@@ -39,7 +45,27 @@ from meridian.infrastructure.repositories.sqlite_poll_state_repository import ( 
     SqlitePollStateRepository,
 )
 from meridian.ui.bridge import AppController  # noqa: E402
-from meridian.version import __version__  # noqa: E402
+from meridian.version import APP_APPUSERMODELID, __version__  # noqa: E402
+
+
+def _acquire_single_instance_lock() -> object:
+    """Return a mutex handle that keeps this process the sole running instance.
+
+    Returns None on non-Windows platforms (no-op). Exits immediately if another
+    instance already holds the mutex (ERROR_ALREADY_EXISTS = 183).
+    """
+    if sys.platform != "win32":
+        return None
+    import ctypes
+
+    ERROR_ALREADY_EXISTS = 183
+    handle = ctypes.windll.kernel32.CreateMutexW(
+        None, False, f"Global\\{APP_APPUSERMODELID}"
+    )
+    if ctypes.windll.kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
+        sys.exit(0)
+    return handle
+
 
 if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     _BASE = Path(sys._MEIPASS)
@@ -75,6 +101,7 @@ def _read_licence() -> str:
 
 
 def main() -> None:
+    _lock = _acquire_single_instance_lock()  # noqa: F841 — held for process lifetime
     QQuickStyle.setStyle("Fusion")
     app = QApplication(sys.argv)
     app.setApplicationName("Meridian")
@@ -89,10 +116,12 @@ def main() -> None:
     poll_state_repo = SqlitePollStateRepository(session_factory)
     fetcher = HttpFetcher()
 
+    discovery_fetcher = FeedsearchFetcher()
     sub_svc = SubscriptionService(feed_repo, item_repo)
     item_svc = ItemService(item_repo, feed_repo)
+    discovery_svc = DiscoveryService(discovery_fetcher, feed_repo)
     orchestrator = PollOrchestrator(feed_repo, item_repo, poll_state_repo, fetcher)
-    controller = AppController(sub_svc, item_svc)
+    controller = AppController(sub_svc, item_svc, discovery_svc)
 
     async def on_new_items(feed_id: int, count: int) -> None:
         controller.notify_new_items(feed_id, count)
@@ -127,8 +156,13 @@ def main() -> None:
     except Exception:
         pass
 
+    root_window = engine.rootObjects()[0]
+    root_window.raise_()
+    root_window.requestActivate()
+
     scheduler.start_in_thread()
     exit_code = app.exec()
+    controller.shutdown()
     if scheduler._loop and not scheduler._loop.is_closed():
         future = asyncio.run_coroutine_threadsafe(fetcher.aclose(), scheduler._loop)
         try:

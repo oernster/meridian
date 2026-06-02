@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from meridian.application.services.source_type_inference import infer_source_type
 from meridian.application.services.subscription_service import SubscriptionService
 from meridian.domain.entities.feed import Feed
 from meridian.domain.value_objects.source_type import SourceType
@@ -37,7 +38,7 @@ class TestSubscriptionService:
     def test_subscribe_invalid_url_raises(self):
         self.feed_repo.get_by_url.return_value = None
         with pytest.raises(ValueError):
-            self.svc.subscribe("http://insecure.com/feed", "mfeed")
+            self.svc.subscribe("ftp://insecure.com/feed", "mfeed")
 
     def test_unsubscribe(self):
         self.svc.unsubscribe(7)
@@ -86,33 +87,29 @@ class TestSubscriptionService:
         assert dto.source_type == "rss"
 
     def test_infer_source_type_mfeed_json(self):
-        result = SubscriptionService._infer_source_type("https://example.com/feed.json")
+        result = infer_source_type("https://example.com/feed.json")
         assert result == SourceType.MFEED
 
     def test_infer_source_type_mfeed_mmsp(self):
-        result = SubscriptionService._infer_source_type(
-            "https://example.com/.well-known/mmsp.json"
-        )
+        result = infer_source_type("https://example.com/.well-known/mmsp.json")
         assert result == SourceType.MFEED
 
     def test_infer_source_type_atom(self):
-        result = SubscriptionService._infer_source_type("https://example.com/feed.atom")
+        result = infer_source_type("https://example.com/feed.atom")
         assert result == SourceType.ATOM
 
     def test_infer_source_type_youtube(self):
-        result = SubscriptionService._infer_source_type(
+        result = infer_source_type(
             "https://www.youtube.com/feeds/videos.xml?channel_id=UC123"
         )
         assert result == SourceType.ATOM
 
     def test_infer_source_type_podcast(self):
-        result = SubscriptionService._infer_source_type(
-            "https://example.com/podcast/feed.xml"
-        )
+        result = infer_source_type("https://example.com/podcast/feed.xml")
         assert result == SourceType.PODCAST
 
     def test_infer_source_type_rss_default(self):
-        result = SubscriptionService._infer_source_type("https://example.com/feed.rss")
+        result = infer_source_type("https://example.com/feed.rss")
         assert result == SourceType.RSS
 
     def test_subscribe_with_title(self):

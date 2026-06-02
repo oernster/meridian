@@ -19,8 +19,8 @@ class Feed:
     language: str | None = None
 
     def __post_init__(self) -> None:
-        if not self.url.startswith("https://"):
-            raise ValueError(f"Feed URL must use HTTPS: {self.url}")
+        if not (self.url.startswith("https://") or self.url.startswith("http://")):
+            raise ValueError(f"Feed URL must use http:// or https://: {self.url}")
         if self.source_type == SourceType.PLATFORM and self.platform_id is None:
             raise ValueError("Platform source type requires platform_id")
 

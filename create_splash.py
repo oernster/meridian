@@ -29,14 +29,14 @@ def main() -> int:
 
     logo_size = 100
     if logo_src.exists():
-        logo = (
-            Image.open(logo_src)
-            .convert("RGBA")
-            .resize((logo_size, logo_size), Image.LANCZOS)
-        )
+        logo_full = Image.open(logo_src).convert("RGBA")
+        backed = Image.new("RGBA", logo_full.size, BG)
+        backed.alpha_composite(logo_full)
+        logo_rgb = backed.resize((logo_size, logo_size), Image.LANCZOS).convert("RGB")
+        logo_mask = logo_full.split()[3].resize((logo_size, logo_size), Image.LANCZOS)
         logo_x = (W - logo_size) // 2
         logo_y = 30
-        img.paste(logo, (logo_x, logo_y), logo)
+        img.paste(logo_rgb, (logo_x, logo_y), logo_mask)
 
     def _font(size: int, bold: bool = False) -> ImageFont.ImageFont:
         for name in (
@@ -62,8 +62,16 @@ def main() -> int:
     y += 32
     _center_text(f"by {APP_AUTHOR}", y, _font(15), WHITE)
 
+    corner_radius = 18
+    mask = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        [(0, 0), (W - 1, H - 1)], radius=corner_radius, fill=255
+    )
+    img_out = img.convert("RGBA")
+    img_out.putalpha(mask)
+
     out = root / "meridian_splash.png"
-    img.convert("RGB").save(out, "PNG")
+    img_out.save(out, "PNG")
     print(f"[OK] {out.name}  ({W}x{H})")
     return 0
 

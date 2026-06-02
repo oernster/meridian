@@ -1,6 +1,7 @@
 from meridian.application.dto.feed_dto import FeedDTO
 from meridian.application.interfaces.feed_repository import FeedRepository
 from meridian.application.interfaces.item_repository import ItemRepository
+from meridian.application.services.source_type_inference import infer_source_type
 from meridian.domain.entities.feed import Feed
 from meridian.domain.value_objects.source_type import SourceType
 
@@ -22,9 +23,7 @@ class SubscriptionService:
         rss_fallback_url: str | None = None,
         title: str | None = None,
     ) -> FeedDTO:
-        resolved = (
-            SourceType(source_type) if source_type else self._infer_source_type(url)
-        )
+        resolved = SourceType(source_type) if source_type else infer_source_type(url)
         existing = self._feed_repo.get_by_url(url)
         if existing is not None:
             return self._to_dto(existing)
@@ -37,19 +36,6 @@ class SubscriptionService:
         )
         saved = self._feed_repo.save(feed)
         return self._to_dto(saved)
-
-    @staticmethod
-    def _infer_source_type(url: str) -> SourceType:
-        lower = url.lower().rstrip("/")
-        if lower.endswith(".json") or "mmsp" in lower:
-            return SourceType.MFEED
-        if lower.endswith(".atom"):
-            return SourceType.ATOM
-        if "youtube.com" in lower:
-            return SourceType.ATOM
-        if "podcast" in lower:
-            return SourceType.PODCAST
-        return SourceType.RSS
 
     def unsubscribe(self, feed_id: int) -> None:
         self._feed_repo.delete(feed_id)

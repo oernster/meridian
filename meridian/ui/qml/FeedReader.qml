@@ -73,14 +73,15 @@ Item {
                                     property bool _hov: false
                                     height: 26; radius: 4
                                     implicitWidth: _il.implicitWidth + 12
+                                    activeFocusOnTab: true
                                     color: isActive ? theme.surface0 : "transparent"
-                                    border.color: isActive ? theme.blue : _hov ? theme.amber : "transparent"
-                                    border.width: 1
+                                    border.color: isActive ? theme.blue : (_hov || activeFocus) ? theme.amber : "transparent"
+                                    border.width: activeFocus ? 2 : 1
                                     Label {
                                         id: _il
                                         anchors.centerIn: parent
                                         text: modelData.label
-                                        color: parent.isActive ? theme.blue : parent._hov ? theme.text : theme.overlay
+                                        color: parent.isActive ? theme.blue : (parent._hov || parent.activeFocus) ? theme.text : theme.overlay
                                         font.pixelSize: 10; font.bold: parent.isActive
                                     }
                                     HoverHandler { onHoveredChanged: parent._hov = hovered }
@@ -93,14 +94,25 @@ Item {
                                             controller.setItemSort(modelData.key)
                                         }
                                     }
+                                    Keys.onReturnPressed: { if (!isActive) { itemsHeader._itemSort = modelData.key; controller.setItemSort(modelData.key) } }
+                                    Keys.onPressed: function(event) {
+                                        if (event.key === Qt.Key_Space && !isActive) {
+                                            itemsHeader._itemSort = modelData.key
+                                            controller.setItemSort(modelData.key)
+                                            event.accepted = true
+                                        }
+                                    }
                                 }
                             }
                         }
 
                         Button {
+                            id: markAllReadBtn
                             flat: true
                             font.pixelSize: 11
                             implicitHeight: 30
+                            activeFocusOnTab: true
+                            KeyNavigation.tab: itemList
                             onClicked: {
                                 if (controller.selectedFeedId > 0)
                                     controller.markAllRead(controller.selectedFeedId)
@@ -116,7 +128,7 @@ Item {
                                 color: parent.pressed ? theme.surface1
                                      : parent.hovered ? theme.surface0
                                      : "transparent"
-                                border.color: parent.hovered ? theme.amber : "transparent"
+                                border.color: (parent.hovered || parent.activeFocus) ? theme.amber : "transparent"
                                 border.width: 1
                                 radius: 5
                             }
@@ -139,7 +151,31 @@ Item {
                     model: controller ? controller.itemModel : null
                     delegate: itemDelegate
                     currentIndex: -1
+                    activeFocusOnTab: true
+                    keyNavigationEnabled: true
+                    KeyNavigation.tab: openBtnRect
                     ScrollBar.vertical: ScrollBar { id: itemVScroll; policy: ScrollBar.AlwaysOn }
+                    onActiveFocusChanged: {
+                        if (activeFocus && currentIndex < 0 && count > 0)
+                            currentIndex = 0
+                    }
+                    onCurrentIndexChanged: {
+                        if (activeFocus && currentIndex >= 0) {
+                            var m = controller.itemModel
+                            var mi = m.index(currentIndex, 0)
+                            var itemId = m.data(mi, Qt.UserRole)
+                            _loadItem({
+                                itemTitle:       m.data(mi, Qt.UserRole + 1),
+                                itemPublished:   m.data(mi, Qt.UserRole + 4),
+                                itemType:        m.data(mi, Qt.UserRole + 2),
+                                itemDescription: m.data(mi, Qt.UserRole + 8),
+                                itemUrl:         m.data(mi, Qt.UserRole + 3),
+                                itemMediaUrl:    m.data(mi, Qt.UserRole + 10),
+                                itemThumbnail:   m.data(mi, Qt.UserRole + 5)
+                            })
+                            controller.markRead(itemId)
+                        }
+                    }
                 }
             }
         }
@@ -181,6 +217,7 @@ Item {
             Label { id: detailUrl;      visible: false; text: "" }
 
             ScrollView {
+                id: detailScroll
                 anchors.fill: parent
                 clip: true
                 contentWidth: availableWidth
@@ -346,13 +383,25 @@ Item {
                         }
 
                         Rectangle {
+                            id: openBtnRect
                             height: 36
                             Layout.preferredWidth: openBtn.implicitWidth + 32
                             radius: 8
+                            activeFocusOnTab: true
+                            KeyNavigation.backtab: itemList
+                            onActiveFocusChanged: {
+                                if (activeFocus) {
+                                    Qt.callLater(function() {
+                                        var btnY = openBtnRect.mapToItem(detailScroll.contentItem, 0, 0).y
+                                        var maxY = detailScroll.contentItem.contentHeight - detailScroll.height
+                                        detailScroll.contentItem.contentY = Math.max(0, Math.min(btnY - 20, maxY))
+                                    })
+                                }
+                            }
                             color: openBtn.pressed ? theme.blue + "cc"
                                  : openBtn.containsMouse ? theme.blue
                                  : theme.surface0
-                            border.color: openBtn.containsMouse ? theme.amber : "transparent"
+                            border.color: (openBtn.containsMouse || openBtnRect.activeFocus) ? theme.amber : "transparent"
                             border.width: 1
 
                             Label {
@@ -376,6 +425,10 @@ Item {
                                 onReleased: openBtn.pressed = false
                                 onClicked: Qt.openUrlExternally(detailUrl.text)
                             }
+                            Keys.onReturnPressed: Qt.openUrlExternally(detailUrl.text)
+                            Keys.onPressed: function(event) {
+                                if (event.key === Qt.Key_Space) { Qt.openUrlExternally(detailUrl.text); event.accepted = true }
+                            }
                         }
                     }
                 }
@@ -395,7 +448,7 @@ Item {
                 : itemMouse.containsMouse ? theme.surface0 + "80"
                 : model.itemIsRead ? "transparent"
                 : theme.mantle
-            border.color: itemMouse.containsMouse && itemList.currentIndex !== index ? theme.amber : "transparent"
+            border.color: (itemMouse.containsMouse || ListView.isCurrentItem) ? theme.amber : "transparent"
             border.width: 1
 
             // Unread indicator dot
@@ -498,7 +551,7 @@ Item {
                 height: 1
                 color: theme.surface0
                 opacity: 0.5
-                visible: !(itemMouse.containsMouse && itemList.currentIndex !== index)
+                visible: !(itemMouse.containsMouse || itemList.currentIndex === index)
             }
 
             MouseArea {
