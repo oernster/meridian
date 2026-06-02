@@ -63,14 +63,16 @@ meridian/
 
   ui/
     bridge.py
-      FeedListModel         QAbstractListModel: feedId, feedUrl, feedTitle, feedIcon, feedSourceType, feedUnreadCount; remove_rows_by_ids() for in-place removal
+      FeedListModel         QAbstractListModel: feedId, feedUrl, feedTitle, feedIcon, feedSourceType, feedUnreadCount, feedDescription, feedFilter (UserRole+0..7); remove_rows_by_ids() for in-place removal
       ItemListModel         QAbstractListModel: all ItemDTO fields as QML roles
-      AppController         QObject: loadFeeds, selectFeed, subscribe, unsubscribe, bulkUnsubscribe, markRead, markAllRead, setFeedSort, setItemSort, setFilter, importFeeds, exportFeeds
+      AppController         QObject: loadFeeds, selectFeed, subscribe, unsubscribe, bulkUnsubscribe, markRead, markAllRead, setFeedSort, setItemSort, setFilter (calls loadFeeds to refresh filter label), updateFeedUrl, importFeeds, exportFeeds, searchFeeds, cancelSearch, subscribeFromDiscovery, bulkSubscribeFromDiscovery
     qml/
-      main.qml              Application window: feed sidebar (checkboxes, sort, bulk remove, right-click context menu), header bar, theme toggle
+      main.qml              Application window: feed sidebar (checkboxes, sort, bulk remove, right-click context menu), header bar, theme toggle; full keyboard nav with Enter/Space/Left/Right on all interactive controls
       FeedReader.qml        Two-panel reader: item list with sort + mark-all-read; detail pane with media player, full-text description (ScrollView), open-in-browser
-      SubscriptionManager.qml  Drawer: add subscription, filter config, bulk select/remove
-      AboutDialog.qml       About dialog
+      SubscriptionManager.qml  Drawer: add subscription URL field, subscribe button, bulk select/remove, per-feed filter/edit/remove buttons; full keyboard nav (Tab chain, Enter/Space/Left/Right); filter dialog shows existing terms as tabbable toggleable rows, new terms appended on accept
+      FeedDiscovery.qml     Feed discovery drawer: search, candidate list with bulk subscribe
+      AboutDialog.qml       About dialog (keyboard: Enter/Escape closes)
+      LicenceDialog.qml     Licence dialog (keyboard: scroll text, Tab to Close, Enter/Escape closes)
 
   main.py                   Composition root (excluded from coverage)
   version.py                __version__ string
@@ -141,6 +143,8 @@ FilterEvaluator (Domain)
 **HTML rendering**: `TextArea { textFormat: Text.RichText }` in QML. Plain-text descriptions (no HTML tags) are converted to `<br/>`-separated HTML before display. Raw HTML from `content:encoded` is passed through directly.
 
 **HTTPS enforcement**: `Feed.__post_init__` rejects non-HTTPS URLs. Non-HTTPS media URLs are excluded in parsers. `HttpFetcher` rejects non-HTTPS redirect targets.
+
+**Keyboard navigation**: Qt Quick Controls `Button` handles Space natively but not Enter/Return. Every `StyledButton` instance and interactive `Rectangle` in the QML layer has an explicit `Keys.onReturnPressed` handler. Dialog footer buttons are given IDs and Left/Right key handlers to allow lateral navigation between Cancel and OK without leaving the keyboard. Qt6 TextField intercepts Tab internally; tab-chain control uses `activeFocusOnTab` on surrounding items rather than `KeyNavigation.tab` on the field itself.
 
 ## Quality Enforcement
 

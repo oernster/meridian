@@ -48,6 +48,12 @@ Rectangle {
         function onSearchFinished() {
             var n = controller.candidateModel.rowCount()
             root._searchState = n > 0 ? "results" : "empty"
+            if (n > 0) {
+                Qt.callLater(function() {
+                    resultsList.currentIndex = 0
+                    resultsList.forceActiveFocus(Qt.TabFocusReason)
+                })
+            }
         }
         function onSearchError(msg) {
             root._searchState = "error"
@@ -158,7 +164,7 @@ Rectangle {
                         bottomPadding: 8
 
                         Keys.onReturnPressed: function(event) {
-                            if (autocompletePopup.opened && autocompleteList.currentIndex >= 0) {
+                            if (autocompletePopup.visible && autocompleteList.currentIndex >= 0) {
                                 queryField.text = autocompleteList.model[autocompleteList.currentIndex]
                                 autocompleteList.currentIndex = -1
                                 autocompletePopup.close()
@@ -168,7 +174,7 @@ Rectangle {
                             event.accepted = true
                         }
                         Keys.onDownPressed: function(event) {
-                            if (autocompletePopup.opened) {
+                            if (autocompletePopup.visible) {
                                 autocompleteList.currentIndex = Math.min(
                                     autocompleteList.currentIndex + 1,
                                     autocompleteList.count - 1
@@ -180,7 +186,7 @@ Rectangle {
                             }
                         }
                         Keys.onUpPressed: function(event) {
-                            if (autocompletePopup.opened) {
+                            if (autocompletePopup.visible) {
                                 autocompleteList.currentIndex = Math.max(
                                     autocompleteList.currentIndex - 1, -1
                                 )
@@ -194,7 +200,7 @@ Rectangle {
                         }
                         Keys.onPressed: function(event) {
                             if (event.key === Qt.Key_Space
-                                    && autocompletePopup.opened
+                                    && autocompletePopup.visible
                                     && autocompleteList.currentIndex >= 0) {
                                 queryField.text = autocompleteList.model[autocompleteList.currentIndex]
                                 autocompleteList.currentIndex = -1
@@ -202,8 +208,16 @@ Rectangle {
                                 event.accepted = true
                             }
                         }
+                        Keys.onTabPressed: function(event) {
+                            event.accepted = true
+                            if (autocompletePopup.visible) {
+                                autocompleteList.currentIndex = -1
+                                autocompletePopup.close()
+                            }
+                            capCombo.forceActiveFocus(Qt.TabFocusReason)
+                        }
                         Keys.onEscapePressed: {
-                            if (autocompletePopup.opened) {
+                            if (autocompletePopup.visible) {
                                 autocompleteList.currentIndex = -1
                                 autocompletePopup.close()
                             } else if (root._searchState === "searching") {
@@ -304,8 +318,8 @@ Rectangle {
                         }
                         background: Rectangle {
                             color: theme.base
-                            border.color: capCombo.hovered ? theme.blue : theme.surface1
-                            border.width: 1
+                            border.color: capCombo.activeFocus ? theme.amber : (capCombo.hovered ? theme.blue : theme.surface1)
+                            border.width: capCombo.activeFocus ? 2 : 1
                             radius: 6
                         }
                         contentItem: Label {
@@ -329,6 +343,16 @@ Rectangle {
                                 clip: true
                             }
                         }
+                        Keys.onTabPressed: {
+                            event.accepted = true
+                            if (searchBtn.activeFocusOnTab) searchBtn.forceActiveFocus(Qt.TabFocusReason)
+                            else _focusResults()
+                        }
+                        Keys.onRightPressed: {
+                            event.accepted = true
+                            if (searchBtn.activeFocusOnTab) searchBtn.forceActiveFocus(Qt.TabFocusReason)
+                            else _focusResults()
+                        }
                     }
 
                     Item { Layout.fillWidth: true }
@@ -338,13 +362,13 @@ Rectangle {
                         height: 34
                         width: searchBtnLbl.contentWidth + 28
                         radius: 8
-                        activeFocusOnTab: true
+                        activeFocusOnTab: queryField.text.trim().length > 0
                         color: {
                             if (root._searchState === "searching") return theme.surface1
                             return searchBtnMouse.containsMouse ? theme.blue + "dd" : theme.blue
                         }
                         border.color: (searchBtnMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
-                        border.width: 1
+                        border.width: activeFocus ? 2 : 1
 
                         Label {
                             id: searchBtnLbl
@@ -375,6 +399,10 @@ Rectangle {
                                 event.accepted = true
                             }
                         }
+                        Keys.onTabPressed:   { event.accepted = true; _focusResults() }
+                        Keys.onRightPressed: { event.accepted = true; _focusResults() }
+                        Keys.onBacktabPressed: { event.accepted = true; capCombo.forceActiveFocus(Qt.BacktabFocusReason) }
+                        Keys.onLeftPressed:    { event.accepted = true; capCombo.forceActiveFocus(Qt.BacktabFocusReason) }
                     }
                 }
 
@@ -533,6 +561,10 @@ Rectangle {
                             Keys.onPressed: function(event) {
                                 if (event.key === Qt.Key_Space) { bulkConfirmDialog.open(); event.accepted = true }
                             }
+                            Keys.onTabPressed:     { event.accepted = true; resultsList.forceActiveFocus(Qt.TabFocusReason) }
+                            Keys.onRightPressed:   { event.accepted = true; resultsList.forceActiveFocus(Qt.TabFocusReason) }
+                            Keys.onBacktabPressed: { event.accepted = true; _focusBeforeResults() }
+                            Keys.onLeftPressed:    { event.accepted = true; _focusBeforeResults() }
                         }
                     }
                 }
@@ -561,6 +593,10 @@ Rectangle {
                             event.accepted = true
                         }
                     }
+                    Keys.onTabPressed:     { event.accepted = true; queryField.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onRightPressed:   { event.accepted = true; queryField.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onBacktabPressed: { event.accepted = true; if (subSelBtn.visible) subSelBtn.forceActiveFocus(Qt.BacktabFocusReason); else _focusBeforeResults() }
+                    Keys.onLeftPressed:    { event.accepted = true; if (subSelBtn.visible) subSelBtn.forceActiveFocus(Qt.BacktabFocusReason); else _focusBeforeResults() }
 
                     footer: Rectangle {
                         width: resultsList.width
@@ -605,7 +641,7 @@ Rectangle {
         Rectangle {
             id: delegateRoot
             width: resultsList.width - resultsVScroll.width
-            height: 76
+            height: 78
             clip: true
             property string candidateUrl: model.candidateUrl
             property bool candidateIsSubscribed: model.candidateIsSubscribed
@@ -792,6 +828,7 @@ Rectangle {
                 height: 1
                 color: theme.surface0
                 opacity: 0.5
+                visible: !rowHover.hovered && !delegateRoot.ListView.isCurrentItem && !root.selectedUrls[model.candidateUrl]
             }
 
             HoverHandler { id: rowHover }
@@ -816,8 +853,18 @@ Rectangle {
                 anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
-                StyledButton { text: "Cancel"; theme: root.theme; onClicked: bulkConfirmDialog.reject() }
-                StyledButton { text: "Subscribe"; theme: root.theme; onClicked: bulkConfirmDialog.accept() }
+                StyledButton {
+                    id: discoveryCancelBtn
+                    text: "Cancel"; theme: root.theme; onClicked: bulkConfirmDialog.reject()
+                    Keys.onReturnPressed: { bulkConfirmDialog.reject(); event.accepted = true }
+                    Keys.onRightPressed: { discoverySubscribeBtn.forceActiveFocus(); event.accepted = true }
+                }
+                StyledButton {
+                    id: discoverySubscribeBtn
+                    text: "Subscribe"; theme: root.theme; onClicked: bulkConfirmDialog.accept()
+                    Keys.onReturnPressed: { bulkConfirmDialog.accept(); event.accepted = true }
+                    Keys.onLeftPressed: { discoveryCancelBtn.forceActiveFocus(); event.accepted = true }
+                }
             }
         }
         ColumnLayout {
@@ -887,6 +934,7 @@ Rectangle {
                 text: "OK"
                 theme: root.theme
                 onClicked: bulkResultDialog.accept()
+                Keys.onReturnPressed: { bulkResultDialog.accept(); event.accepted = true }
             }
         }
         ColumnLayout {
@@ -972,6 +1020,15 @@ Rectangle {
     }
 
     function focusSearch() { queryField.forceActiveFocus() }
+    function _focusResults() {
+        if (root._searchState !== "results") return
+        if (subSelBtn.visible) subSelBtn.forceActiveFocus(Qt.TabFocusReason)
+        else resultsList.forceActiveFocus(Qt.TabFocusReason)
+    }
+    function _focusBeforeResults() {
+        if (searchBtn.activeFocusOnTab) searchBtn.forceActiveFocus(Qt.BacktabFocusReason)
+        else capCombo.forceActiveFocus(Qt.BacktabFocusReason)
+    }
 
     function _doSearch() {
         var q = queryField.text.trim()

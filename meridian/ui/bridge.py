@@ -47,6 +47,7 @@ class FeedListModel(QAbstractListModel):
         Qt.UserRole + 4: b"feedSourceType",
         Qt.UserRole + 5: b"feedUnreadCount",
         Qt.UserRole + 6: b"feedDescription",
+        Qt.UserRole + 7: b"feedFilter",
     }
 
     def __init__(self, parent: QObject | None = None) -> None:
@@ -78,6 +79,8 @@ class FeedListModel(QAbstractListModel):
                 return feed.unread_count
             case v if v == Qt.UserRole + 6:
                 return feed.description or ""
+            case v if v == Qt.UserRole + 7:
+                return feed.filter_expr or ""
         return None
 
     def refresh(self, feeds: list[FeedDTO]) -> None:
@@ -348,8 +351,17 @@ class AppController(QObject):
     @Slot(int, str)
     def setFilter(self, feed_id: int, filter_expr: str) -> None:
         self._sub_svc.set_filter(feed_id, filter_expr.strip() or None)
+        self.loadFeeds()
         if self._selected_feed_id == feed_id:
             self.selectFeed(feed_id)
+
+    @Slot(int, str)
+    def updateFeedUrl(self, feed_id: int, new_url: str) -> None:
+        try:
+            self._sub_svc.update_url(feed_id, new_url.strip())
+            self.loadFeeds()
+        except Exception as exc:
+            self.errorOccurred.emit(str(exc))
 
     @Slot(int)
     def markRead(self, item_id: int) -> None:

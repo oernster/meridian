@@ -81,26 +81,101 @@ ApplicationWindow {
     function _clearFeedSelection() { _selectedFeedIds = {}; _selectedFeedCount = 0 }
 
     menuBar: MenuBar {
+        id: appMenuBar
+        activeFocusOnTab: true
+
+        delegate: MenuBarItem {
+            id: menuBarDelegate
+
+            contentItem: Text {
+                text: menuBarDelegate.text.replace("&", "")
+                color: theme.text
+                font: menuBarDelegate.font
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
+
+            background: Rectangle {
+                color: menuBarDelegate.highlighted ? theme.surface0 : "transparent"
+                border.color: menuBarDelegate.activeFocus ? theme.amber : "transparent"
+                border.width: 1
+                radius: 4
+            }
+
+            function navigateNext() {
+                for (var i = 0; i < appMenuBar.count; i++) {
+                    if (appMenuBar.itemAt(i) === menuBarDelegate) {
+                        var next = i + 1
+                        if (next < appMenuBar.count)
+                            appMenuBar.itemAt(next).forceActiveFocus(Qt.TabFocusReason)
+                        else
+                            discoverBtn.forceActiveFocus(Qt.TabFocusReason)
+                        return
+                    }
+                }
+            }
+
+            function navigatePrev() {
+                for (var i = 0; i < appMenuBar.count; i++) {
+                    if (appMenuBar.itemAt(i) === menuBarDelegate) {
+                        var prev = i - 1
+                        if (prev >= 0)
+                            appMenuBar.itemAt(prev).forceActiveFocus(Qt.BacktabFocusReason)
+                        else
+                            initialFocusItem.forceActiveFocus(Qt.BacktabFocusReason)
+                        return
+                    }
+                }
+            }
+
+            Keys.onTabPressed:     { event.accepted = true; navigateNext() }
+            Keys.onBacktabPressed: { event.accepted = true; navigatePrev() }
+            Keys.onRightPressed:   { event.accepted = true; navigateNext() }
+            Keys.onLeftPressed:    { event.accepted = true; navigatePrev() }
+            Keys.onDownPressed:    { event.accepted = true; menuBarDelegate.menu.open(); Qt.callLater(function() { menuBarDelegate.menu.currentIndex = 0 }) }
+            Keys.onReturnPressed:  { event.accepted = true; menuBarDelegate.menu.open(); Qt.callLater(function() { menuBarDelegate.menu.currentIndex = 0 }) }
+            Keys.onSpacePressed:   { event.accepted = true; menuBarDelegate.menu.open(); Qt.callLater(function() { menuBarDelegate.menu.currentIndex = 0 }) }
+        }
+
         Menu {
+            id: fileMenu
             title: "&File"
             MenuItem {
                 text: "Import Feeds..."
                 onTriggered: importDialog.open()
+                Keys.onTabPressed:     { event.accepted = true; fileMenu.close(); appMenuBar.itemAt(1).forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onRightPressed:   { event.accepted = true; fileMenu.close(); appMenuBar.itemAt(1).forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onBacktabPressed: { event.accepted = true; fileMenu.close(); initialFocusItem.forceActiveFocus(Qt.BacktabFocusReason) }
+                Keys.onLeftPressed:    { event.accepted = true; fileMenu.close(); initialFocusItem.forceActiveFocus(Qt.BacktabFocusReason) }
             }
             MenuItem {
                 text: "Export Feeds..."
                 onTriggered: exportDialog.open()
+                Keys.onTabPressed:     { event.accepted = true; fileMenu.close(); appMenuBar.itemAt(1).forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onRightPressed:   { event.accepted = true; fileMenu.close(); appMenuBar.itemAt(1).forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onBacktabPressed: { event.accepted = true; fileMenu.close(); initialFocusItem.forceActiveFocus(Qt.BacktabFocusReason) }
+                Keys.onLeftPressed:    { event.accepted = true; fileMenu.close(); initialFocusItem.forceActiveFocus(Qt.BacktabFocusReason) }
             }
         }
         Menu {
+            id: helpMenu
             title: "&Help"
             MenuItem {
                 text: "About Meridian"
                 onTriggered: aboutDialog.open()
+                Keys.onTabPressed:     { event.accepted = true; helpMenu.close(); discoverBtn.forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onRightPressed:   { event.accepted = true; helpMenu.close(); discoverBtn.forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onBacktabPressed: { event.accepted = true; helpMenu.close(); appMenuBar.itemAt(0).forceActiveFocus(Qt.BacktabFocusReason) }
+                Keys.onLeftPressed:    { event.accepted = true; helpMenu.close(); appMenuBar.itemAt(0).forceActiveFocus(Qt.BacktabFocusReason) }
             }
             MenuItem {
                 text: "Licence"
                 onTriggered: licenceDialog.open()
+                Keys.onTabPressed:     { event.accepted = true; helpMenu.close(); discoverBtn.forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onRightPressed:   { event.accepted = true; helpMenu.close(); discoverBtn.forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onBacktabPressed: { event.accepted = true; helpMenu.close(); appMenuBar.itemAt(0).forceActiveFocus(Qt.BacktabFocusReason) }
+                Keys.onLeftPressed:    { event.accepted = true; helpMenu.close(); appMenuBar.itemAt(0).forceActiveFocus(Qt.BacktabFocusReason) }
             }
         }
     }
@@ -114,6 +189,20 @@ ApplicationWindow {
             errorDialog.open()
         }
         function onNewItemsAvailable(feedId, count) { }
+    }
+
+    // Absorbs initial focus so no item shows an orange border on startup.
+    // First Tab press explicitly navigates to the File menu.
+    Item {
+        id: initialFocusItem
+        focus: true
+        activeFocusOnTab: false
+        width: 0; height: 0
+        Keys.onTabPressed: {
+            event.accepted = true
+            if (appMenuBar.count > 0)
+                appMenuBar.itemAt(0).forceActiveFocus(Qt.TabFocusReason)
+        }
     }
 
     // ── Layout ────────────────────────────────────────────────────────
@@ -178,6 +267,10 @@ ApplicationWindow {
                 Keys.onPressed: function(event) {
                     if (event.key === Qt.Key_Space) { feedDiscoveryDrawer.open(); event.accepted = true }
                 }
+                Keys.onTabPressed:     { event.accepted = true; manageBtn.forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onBacktabPressed: { event.accepted = true; appMenuBar.itemAt(appMenuBar.count - 1).forceActiveFocus(Qt.BacktabFocusReason) }
+                Keys.onRightPressed:   { event.accepted = true; manageBtn.forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onLeftPressed:    { event.accepted = true; appMenuBar.itemAt(appMenuBar.count - 1).forceActiveFocus(Qt.BacktabFocusReason) }
             }
 
             // Manage Subscriptions
@@ -209,6 +302,10 @@ ApplicationWindow {
                 Keys.onPressed: function(event) {
                     if (event.key === Qt.Key_Space) { subManagerDrawer.open(); event.accepted = true }
                 }
+                Keys.onTabPressed:     { event.accepted = true; themeToggleBtn.forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onBacktabPressed: { event.accepted = true; discoverBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                Keys.onRightPressed:   { event.accepted = true; themeToggleBtn.forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onLeftPressed:    { event.accepted = true; discoverBtn.forceActiveFocus(Qt.BacktabFocusReason) }
             }
 
             // Theme toggle
@@ -239,6 +336,10 @@ ApplicationWindow {
                 Keys.onPressed: function(event) {
                     if (event.key === Qt.Key_Space) { theme.isDark = !theme.isDark; event.accepted = true }
                 }
+                Keys.onTabPressed:     { event.accepted = true; feedCheckAll.forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onBacktabPressed: { event.accepted = true; manageBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                Keys.onRightPressed:   { event.accepted = true; feedCheckAll.forceActiveFocus(Qt.TabFocusReason) }
+                Keys.onLeftPressed:    { event.accepted = true; manageBtn.forceActiveFocus(Qt.BacktabFocusReason) }
             }
 
             Rectangle {
@@ -304,6 +405,28 @@ ApplicationWindow {
                                         event.accepted = true
                                     }
                                 }
+                                Keys.onTabPressed: {
+                                    event.accepted = true
+                                    if (removeFeedsBtn.visible) { removeFeedsBtn.forceActiveFocus(Qt.TabFocusReason); return }
+                                    var found = false
+                                    for (var i = 0; i < sortRepeater.count; i++) {
+                                        var it = sortRepeater.itemAt(i)
+                                        if (it && !it.isActive) { it.forceActiveFocus(Qt.TabFocusReason); found = true; break }
+                                    }
+                                    if (!found) feedList.forceActiveFocus(Qt.TabFocusReason)
+                                }
+                                Keys.onBacktabPressed: { event.accepted = true; themeToggleBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                                Keys.onRightPressed: {
+                                    event.accepted = true
+                                    if (removeFeedsBtn.visible) { removeFeedsBtn.forceActiveFocus(Qt.TabFocusReason); return }
+                                    var found = false
+                                    for (var i = 0; i < sortRepeater.count; i++) {
+                                        var it = sortRepeater.itemAt(i)
+                                        if (it && !it.isActive) { it.forceActiveFocus(Qt.TabFocusReason); found = true; break }
+                                    }
+                                    if (!found) feedList.forceActiveFocus(Qt.TabFocusReason)
+                                }
+                                Keys.onLeftPressed:    { event.accepted = true; themeToggleBtn.forceActiveFocus(Qt.BacktabFocusReason) }
                             }
 
                             Label {
@@ -316,11 +439,12 @@ ApplicationWindow {
                             }
 
                             Rectangle {
+                                id: removeFeedsBtn
                                 visible: root._selectedFeedCount > 0
                                 height: 24
                                 width: _removeFeedsLbl.contentWidth + 14
                                 radius: 4
-                                activeFocusOnTab: true
+                                activeFocusOnTab: visible
                                 color: _removeFeedsMouse.containsMouse ? theme.surface0 : "transparent"
                                 border.color: (_removeFeedsMouse.containsMouse || activeFocus) ? theme.red : theme.red
                                 border.width: activeFocus ? 2 : 1
@@ -352,11 +476,32 @@ ApplicationWindow {
                                         event.accepted = true
                                     }
                                 }
+                                Keys.onTabPressed: {
+                                    event.accepted = true
+                                    var found = false
+                                    for (var i = 0; i < sortRepeater.count; i++) {
+                                        var it = sortRepeater.itemAt(i)
+                                        if (it && !it.isActive) { it.forceActiveFocus(Qt.TabFocusReason); found = true; break }
+                                    }
+                                    if (!found) feedList.forceActiveFocus(Qt.TabFocusReason)
+                                }
+                                Keys.onRightPressed: {
+                                    event.accepted = true
+                                    var found = false
+                                    for (var i = 0; i < sortRepeater.count; i++) {
+                                        var it = sortRepeater.itemAt(i)
+                                        if (it && !it.isActive) { it.forceActiveFocus(Qt.TabFocusReason); found = true; break }
+                                    }
+                                    if (!found) feedList.forceActiveFocus(Qt.TabFocusReason)
+                                }
+                                Keys.onBacktabPressed: { event.accepted = true; feedCheckAll.forceActiveFocus(Qt.BacktabFocusReason) }
+                                Keys.onLeftPressed:    { event.accepted = true; feedCheckAll.forceActiveFocus(Qt.BacktabFocusReason) }
                             }
 
                             Row {
                                 spacing: 4
                                 Repeater {
+                                    id: sortRepeater
                                     model: [
                                         { key: "alpha_asc",  label: "A→Z"    },
                                         { key: "alpha_desc", label: "Z→A"    },
@@ -367,7 +512,7 @@ ApplicationWindow {
                                         property bool _hov: false
                                         height: 24; radius: 4
                                         implicitWidth: _sl.implicitWidth + 12
-                                        activeFocusOnTab: true
+                                        activeFocusOnTab: !isActive
                                         color: isActive ? theme.surface0 : "transparent"
                                         border.color: isActive ? theme.blue : (_hov || activeFocus) ? theme.amber : "transparent"
                                         border.width: activeFocus ? 2 : 1
@@ -394,6 +539,48 @@ ApplicationWindow {
                                                 feedsHeader._feedSort = modelData.key
                                                 controller.setFeedSort(modelData.key)
                                                 event.accepted = true
+                                            }
+                                        }
+                                        Keys.onTabPressed: {
+                                            event.accepted = true
+                                            var found = false
+                                            for (var i = index + 1; i < sortRepeater.count; i++) {
+                                                var it = sortRepeater.itemAt(i)
+                                                if (it && !it.isActive) { it.forceActiveFocus(Qt.TabFocusReason); found = true; break }
+                                            }
+                                            if (!found) feedList.forceActiveFocus(Qt.TabFocusReason)
+                                        }
+                                        Keys.onBacktabPressed: {
+                                            event.accepted = true
+                                            var found = false
+                                            for (var i = index - 1; i >= 0; i--) {
+                                                var it = sortRepeater.itemAt(i)
+                                                if (it && !it.isActive) { it.forceActiveFocus(Qt.BacktabFocusReason); found = true; break }
+                                            }
+                                            if (!found) {
+                                                if (removeFeedsBtn.visible) removeFeedsBtn.forceActiveFocus(Qt.BacktabFocusReason)
+                                                else feedCheckAll.forceActiveFocus(Qt.BacktabFocusReason)
+                                            }
+                                        }
+                                        Keys.onRightPressed: {
+                                            event.accepted = true
+                                            var found = false
+                                            for (var i = index + 1; i < sortRepeater.count; i++) {
+                                                var it = sortRepeater.itemAt(i)
+                                                if (it && !it.isActive) { it.forceActiveFocus(Qt.TabFocusReason); found = true; break }
+                                            }
+                                            if (!found) feedList.forceActiveFocus(Qt.TabFocusReason)
+                                        }
+                                        Keys.onLeftPressed: {
+                                            event.accepted = true
+                                            var found = false
+                                            for (var i = index - 1; i >= 0; i--) {
+                                                var it = sortRepeater.itemAt(i)
+                                                if (it && !it.isActive) { it.forceActiveFocus(Qt.BacktabFocusReason); found = true; break }
+                                            }
+                                            if (!found) {
+                                                if (removeFeedsBtn.visible) removeFeedsBtn.forceActiveFocus(Qt.BacktabFocusReason)
+                                                else feedCheckAll.forceActiveFocus(Qt.BacktabFocusReason)
                                             }
                                         }
                                     }
@@ -431,6 +618,29 @@ ApplicationWindow {
                                 root._toggleFeed(feedId)
                                 event.accepted = true
                             }
+                        }
+                        Keys.onRightPressed: {
+                            event.accepted = true
+                            var next = feedList.nextItemInFocusChain(true)
+                            if (next && next !== feedList) next.forceActiveFocus(Qt.TabFocusReason)
+                        }
+                        Keys.onBacktabPressed: {
+                            event.accepted = true
+                            var found = false
+                            for (var i = sortRepeater.count - 1; i >= 0; i--) {
+                                var it = sortRepeater.itemAt(i)
+                                if (it && !it.isActive) { it.forceActiveFocus(Qt.BacktabFocusReason); found = true; break }
+                            }
+                            if (!found) feedCheckAll.forceActiveFocus(Qt.BacktabFocusReason)
+                        }
+                        Keys.onLeftPressed: {
+                            event.accepted = true
+                            var found = false
+                            for (var i = sortRepeater.count - 1; i >= 0; i--) {
+                                var it = sortRepeater.itemAt(i)
+                                if (it && !it.isActive) { it.forceActiveFocus(Qt.BacktabFocusReason); found = true; break }
+                            }
+                            if (!found) feedCheckAll.forceActiveFocus(Qt.BacktabFocusReason)
                         }
                     }
 
@@ -670,8 +880,18 @@ ApplicationWindow {
                 anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
-                StyledButton { text: "Cancel"; theme: theme; onClicked: feedDeleteConfirmDialog.reject() }
-                StyledButton { text: "OK"; theme: theme; onClicked: feedDeleteConfirmDialog.accept() }
+                StyledButton {
+                    id: deleteCancelBtn
+                    text: "Cancel"; theme: theme; onClicked: feedDeleteConfirmDialog.reject()
+                    Keys.onReturnPressed: { feedDeleteConfirmDialog.reject(); event.accepted = true }
+                    Keys.onRightPressed: { deleteOkBtn.forceActiveFocus(); event.accepted = true }
+                }
+                StyledButton {
+                    id: deleteOkBtn
+                    text: "OK"; theme: theme; onClicked: feedDeleteConfirmDialog.accept()
+                    Keys.onReturnPressed: { feedDeleteConfirmDialog.accept(); event.accepted = true }
+                    Keys.onLeftPressed: { deleteCancelBtn.forceActiveFocus(); event.accepted = true }
+                }
             }
         }
         Label {
@@ -699,8 +919,18 @@ ApplicationWindow {
                 anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
-                StyledButton { text: "Cancel"; theme: theme; onClicked: feedBulkDeleteDialog.reject() }
-                StyledButton { text: "OK"; theme: theme; onClicked: feedBulkDeleteDialog.accept() }
+                StyledButton {
+                    id: bulkDeleteCancelBtn
+                    text: "Cancel"; theme: theme; onClicked: feedBulkDeleteDialog.reject()
+                    Keys.onReturnPressed: { feedBulkDeleteDialog.reject(); event.accepted = true }
+                    Keys.onRightPressed: { bulkDeleteOkBtn.forceActiveFocus(); event.accepted = true }
+                }
+                StyledButton {
+                    id: bulkDeleteOkBtn
+                    text: "OK"; theme: theme; onClicked: feedBulkDeleteDialog.accept()
+                    Keys.onReturnPressed: { feedBulkDeleteDialog.accept(); event.accepted = true }
+                    Keys.onLeftPressed: { bulkDeleteCancelBtn.forceActiveFocus(); event.accepted = true }
+                }
             }
         }
         Label {
@@ -719,8 +949,10 @@ ApplicationWindow {
         width: Math.min(520, root.width * 0.46)
         height: root.height
         edge: Qt.RightEdge
+        onOpened: subManager.focusUrlField()
 
         SubscriptionManager {
+            id: subManager
             anchors.fill: parent
             theme: theme
             onClose: subManagerDrawer.close()
@@ -780,6 +1012,7 @@ ApplicationWindow {
                 text: "OK"
                 theme: theme
                 onClicked: errorDialog.accept()
+                Keys.onReturnPressed: { errorDialog.accept(); event.accepted = true }
             }
         }
 

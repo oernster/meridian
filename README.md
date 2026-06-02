@@ -51,12 +51,13 @@ All feeds will be added and begin polling immediately.
 ## Features
 
 - Subscribe to RSS, Atom, podcast, and YouTube feeds
-- Per-feed filter expressions (MMSP Appendix A ABNF)
+- Per-feed filter expressions (MMSP Appendix A ABNF); filter dialog shows existing terms as toggleable rows
 - Background polling with conditional GET and rate-limit backoff
 - Bulk feed management with select-all checkboxes
 - Import / export subscriptions as JSON
 - Catppuccin Mocha / Latte theme toggle
 - Full-text `content:encoded` rendering for article feeds
+- Full keyboard navigation throughout: every control reachable and operable without a mouse; Enter and Space activate focused items; Left/Right navigate between buttons and dialog footer actions; amber focus ring on all focusable controls
 
 ## License
 

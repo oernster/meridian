@@ -51,6 +51,9 @@ class SubscriptionService:
     def set_filter(self, feed_id: int, filter_expr: str | None) -> None:
         self._feed_repo.update_filter(feed_id, filter_expr)
 
+    def update_url(self, feed_id: int, new_url: str) -> None:
+        self._feed_repo.update_url(feed_id, new_url.strip())
+
     def _to_dto(self, feed: Feed) -> FeedDTO:
         unread = self._item_repo.unread_count(feed.id) if feed.is_saved() else 0
         return FeedDTO(

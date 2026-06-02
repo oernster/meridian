@@ -9,6 +9,8 @@ Button {
     implicitHeight: 32
     implicitWidth: contentItem.implicitWidth + 28
 
+    focusPolicy: Qt.TabFocus
+
     contentItem: Text {
         text: root.text
         color: root.textColor
@@ -22,7 +24,9 @@ Button {
         color: root.pressed ? root.theme.surface1
              : root.hovered ? root.theme.surface0
              : "transparent"
-        border.color: root.hovered ? root.theme.amber : root.theme.surface0
-        border.width: 1
+        border.color: root.activeFocus ? root.theme.amber
+                    : root.hovered    ? root.theme.amber
+                    : root.theme.surface0
+        border.width: root.activeFocus ? 2 : 1
     }
 }

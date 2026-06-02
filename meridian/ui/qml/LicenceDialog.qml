@@ -12,6 +12,8 @@ Dialog {
 
     required property var theme
 
+    onOpened: licenceText.forceActiveFocus(Qt.OtherFocusReason)
+
     background: Rectangle {
         color: theme.base
         border.color: theme.surface0
@@ -63,12 +65,19 @@ Dialog {
             color: theme.surface0
         }
         StyledButton {
+            id: closeBtn
             anchors.right: parent.right
             anchors.rightMargin: 12
             anchors.verticalCenter: parent.verticalCenter
             text: "Close"
             theme: root.theme
             onClicked: root.close()
+            Keys.onReturnPressed: root.close()
+            Keys.onEscapePressed: root.close()
+            Keys.onBacktabPressed: {
+                event.accepted = true
+                licenceText.forceActiveFocus(Qt.BacktabFocusReason)
+            }
         }
     }
 
@@ -77,6 +86,7 @@ Dialog {
         contentWidth: availableWidth
 
         TextArea {
+            id: licenceText
             readOnly: true
             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
             text: appLicenceText
@@ -88,6 +98,11 @@ Dialog {
             rightPadding: 16
             topPadding: 12
             bottomPadding: 12
+
+            Keys.onTabPressed: {
+                event.accepted = true
+                closeBtn.forceActiveFocus(Qt.TabFocusReason)
+            }
         }
     }
 }

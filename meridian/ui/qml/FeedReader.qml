@@ -63,6 +63,7 @@ Item {
                         Row {
                             spacing: 4
                             Repeater {
+                                id: itemSortRepeater
                                 model: [
                                     { key: "newest", label: "Newest" },
                                     { key: "oldest", label: "Oldest" },
@@ -73,7 +74,7 @@ Item {
                                     property bool _hov: false
                                     height: 26; radius: 4
                                     implicitWidth: _il.implicitWidth + 12
-                                    activeFocusOnTab: true
+                                    activeFocusOnTab: !isActive
                                     color: isActive ? theme.surface0 : "transparent"
                                     border.color: isActive ? theme.blue : (_hov || activeFocus) ? theme.amber : "transparent"
                                     border.width: activeFocus ? 2 : 1
@@ -102,6 +103,48 @@ Item {
                                             event.accepted = true
                                         }
                                     }
+                                    Keys.onTabPressed: {
+                                        event.accepted = true
+                                        var found = false
+                                        for (var i = index + 1; i < itemSortRepeater.count; i++) {
+                                            var it = itemSortRepeater.itemAt(i)
+                                            if (it && !it.isActive) { it.forceActiveFocus(Qt.TabFocusReason); found = true; break }
+                                        }
+                                        if (!found) markAllReadBtn.forceActiveFocus(Qt.TabFocusReason)
+                                    }
+                                    Keys.onBacktabPressed: {
+                                        event.accepted = true
+                                        var found = false
+                                        for (var i = index - 1; i >= 0; i--) {
+                                            var it = itemSortRepeater.itemAt(i)
+                                            if (it && !it.isActive) { it.forceActiveFocus(Qt.BacktabFocusReason); found = true; break }
+                                        }
+                                        if (!found) {
+                                            var prev = nextItemInFocusChain(false)
+                                            if (prev && prev !== this) prev.forceActiveFocus(Qt.BacktabFocusReason)
+                                        }
+                                    }
+                                    Keys.onRightPressed: {
+                                        event.accepted = true
+                                        var found = false
+                                        for (var i = index + 1; i < itemSortRepeater.count; i++) {
+                                            var it = itemSortRepeater.itemAt(i)
+                                            if (it && !it.isActive) { it.forceActiveFocus(Qt.TabFocusReason); found = true; break }
+                                        }
+                                        if (!found) markAllReadBtn.forceActiveFocus(Qt.TabFocusReason)
+                                    }
+                                    Keys.onLeftPressed: {
+                                        event.accepted = true
+                                        var found = false
+                                        for (var i = index - 1; i >= 0; i--) {
+                                            var it = itemSortRepeater.itemAt(i)
+                                            if (it && !it.isActive) { it.forceActiveFocus(Qt.BacktabFocusReason); found = true; break }
+                                        }
+                                        if (!found) {
+                                            var prev = nextItemInFocusChain(false)
+                                            if (prev && prev !== this) prev.forceActiveFocus(Qt.BacktabFocusReason)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -112,7 +155,6 @@ Item {
                             font.pixelSize: 11
                             implicitHeight: 30
                             activeFocusOnTab: true
-                            KeyNavigation.tab: itemList
                             onClicked: {
                                 if (controller.selectedFeedId > 0)
                                     controller.markAllRead(controller.selectedFeedId)
@@ -131,6 +173,32 @@ Item {
                                 border.color: (parent.hovered || parent.activeFocus) ? theme.amber : "transparent"
                                 border.width: 1
                                 radius: 5
+                            }
+                            Keys.onTabPressed:     { event.accepted = true; itemList.forceActiveFocus(Qt.TabFocusReason) }
+                            Keys.onRightPressed:   { event.accepted = true; itemList.forceActiveFocus(Qt.TabFocusReason) }
+                            Keys.onBacktabPressed: {
+                                event.accepted = true
+                                var found = false
+                                for (var i = itemSortRepeater.count - 1; i >= 0; i--) {
+                                    var it = itemSortRepeater.itemAt(i)
+                                    if (it && !it.isActive) { it.forceActiveFocus(Qt.BacktabFocusReason); found = true; break }
+                                }
+                                if (!found) {
+                                    var prev = markAllReadBtn.nextItemInFocusChain(false)
+                                    if (prev && prev !== markAllReadBtn) prev.forceActiveFocus(Qt.BacktabFocusReason)
+                                }
+                            }
+                            Keys.onLeftPressed: {
+                                event.accepted = true
+                                var found = false
+                                for (var i = itemSortRepeater.count - 1; i >= 0; i--) {
+                                    var it = itemSortRepeater.itemAt(i)
+                                    if (it && !it.isActive) { it.forceActiveFocus(Qt.BacktabFocusReason); found = true; break }
+                                }
+                                if (!found) {
+                                    var prev = markAllReadBtn.nextItemInFocusChain(false)
+                                    if (prev && prev !== markAllReadBtn) prev.forceActiveFocus(Qt.BacktabFocusReason)
+                                }
                             }
                         }
                     }
@@ -153,7 +221,6 @@ Item {
                     currentIndex: -1
                     activeFocusOnTab: true
                     keyNavigationEnabled: true
-                    KeyNavigation.tab: openBtnRect
                     ScrollBar.vertical: ScrollBar { id: itemVScroll; policy: ScrollBar.AlwaysOn }
                     onActiveFocusChanged: {
                         if (activeFocus && currentIndex < 0 && count > 0)
@@ -176,6 +243,10 @@ Item {
                             controller.markRead(itemId)
                         }
                     }
+                    Keys.onTabPressed:     { event.accepted = true; openBtnRect.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onRightPressed:   { event.accepted = true; openBtnRect.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onBacktabPressed: { event.accepted = true; markAllReadBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                    Keys.onLeftPressed:    { event.accepted = true; markAllReadBtn.forceActiveFocus(Qt.BacktabFocusReason) }
                 }
             }
         }
@@ -388,7 +459,6 @@ Item {
                             Layout.preferredWidth: openBtn.implicitWidth + 32
                             radius: 8
                             activeFocusOnTab: true
-                            KeyNavigation.backtab: itemList
                             onActiveFocusChanged: {
                                 if (activeFocus) {
                                     Qt.callLater(function() {
@@ -428,6 +498,18 @@ Item {
                             Keys.onReturnPressed: Qt.openUrlExternally(detailUrl.text)
                             Keys.onPressed: function(event) {
                                 if (event.key === Qt.Key_Space) { Qt.openUrlExternally(detailUrl.text); event.accepted = true }
+                            }
+                            Keys.onBacktabPressed: { event.accepted = true; itemList.forceActiveFocus(Qt.BacktabFocusReason) }
+                            Keys.onLeftPressed:    { event.accepted = true; itemList.forceActiveFocus(Qt.BacktabFocusReason) }
+                            Keys.onTabPressed: {
+                                event.accepted = true
+                                var next = openBtnRect.nextItemInFocusChain(true)
+                                if (next && next !== openBtnRect) next.forceActiveFocus(Qt.TabFocusReason)
+                            }
+                            Keys.onRightPressed: {
+                                event.accepted = true
+                                var next = openBtnRect.nextItemInFocusChain(true)
+                                if (next && next !== openBtnRect) next.forceActiveFocus(Qt.TabFocusReason)
                             }
                         }
                     }

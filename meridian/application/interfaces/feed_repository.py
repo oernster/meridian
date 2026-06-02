@@ -24,3 +24,6 @@ class FeedRepository(ABC):
 
     @abstractmethod
     def update_title(self, feed_id: int, title: str) -> None: ...
+
+    @abstractmethod
+    def update_url(self, feed_id: int, new_url: str) -> None: ...

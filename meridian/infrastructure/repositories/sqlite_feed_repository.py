@@ -59,6 +59,13 @@ class SqliteFeedRepository(FeedRepository):
                 row.title = title
                 session.commit()
 
+    def update_url(self, feed_id: int, new_url: str) -> None:
+        with self._session_factory() as session:
+            row = session.get(FeedRow, feed_id)
+            if row is not None:
+                row.url = new_url
+                session.commit()
+
     def _to_row(self, feed: Feed) -> FeedRow:
         return FeedRow(
             url=feed.url,
