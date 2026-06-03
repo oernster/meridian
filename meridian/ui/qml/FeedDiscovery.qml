@@ -20,17 +20,8 @@ Rectangle {
     readonly property var _capOptions: [10, 25, 50, 100, 200]
     property int _capIndex: 1  // default 25
 
-    readonly property var _categories: [
-        "AI", "Architecture", "Art", "Astronomy", "Basketball", "Biology",
-        "Books", "Business", "Climate", "Cricket", "Cybersecurity",
-        "Data Science", "Design", "Economics", "Environment", "Film",
-        "Finance", "Football", "Gaming", "Health", "History", "Investing",
-        "JavaScript", "Linux", "Machine Learning", "Mathematics", "Medicine",
-        "Music", "Open Source", "Philosophy", "Photography", "Physics",
-        "Podcasts", "Politics", "Programming", "Python", "Science",
-        "Space", "Sports", "Startups", "Stock Market", "Technology",
-        "Tennis", "Travel", "UX", "World News"
-    ]
+    property var _suggestions: []
+    property var _currentXhr: null
 
     function _toggleUrl(url) {
         var s = Object.assign({}, selectedUrls)
@@ -229,14 +220,11 @@ Rectangle {
                         }
                         onTextChanged: {
                             autocompleteList.currentIndex = -1
-                            if (text.length > 0) {
-                                autocompleteList.filterText = text.toLowerCase()
-                                if (autocompleteList.count > 0) {
-                                    autocompletePopup.open()
-                                } else {
-                                    autocompletePopup.close()
-                                }
+                            if (text.trim().length >= 2) {
+                                autocompleteDebounce.restart()
                             } else {
+                                autocompleteDebounce.stop()
+                                root._suggestions = []
                                 autocompletePopup.close()
                             }
                         }
@@ -257,13 +245,10 @@ Rectangle {
 
                         contentItem: ListView {
                             id: autocompleteList
-                            property string filterText: ""
                             currentIndex: -1
                             implicitHeight: Math.min(contentHeight, 180)
                             clip: true
-                            model: root._categories.filter(function(c) {
-                                return c.toLowerCase().indexOf(autocompleteList.filterText) >= 0
-                            })
+                            model: root._suggestions
                             delegate: Rectangle {
                                 width: autocompleteList.width
                                 height: 32
@@ -844,6 +829,8 @@ Rectangle {
         title: "Subscribe to Feeds"
         modal: true
         anchors.centerIn: Overlay.overlay
+        width: 400
+        topPadding: 16; leftPadding: 16; rightPadding: 16; bottomPadding: 8
         background: Rectangle { color: theme.base; border.color: theme.surface0; radius: 8 }
         footer: Rectangle {
             color: theme.mantle
@@ -870,9 +857,8 @@ Rectangle {
                 }
             }
         }
-        ColumnLayout {
+        contentItem: ColumnLayout {
             spacing: 12
-            width: 320
 
             Label {
                 text: "Subscribe to " + root.selectedCount + " feed(s)?"
@@ -882,33 +868,25 @@ Rectangle {
                 Layout.fillWidth: true
             }
 
-            ScrollView {
+            ListView {
+                id: confirmUrlList
                 Layout.fillWidth: true
-                implicitHeight: Math.min(selectedUrlsRepeater.count * 22, 132)
+                Layout.preferredHeight: Math.min(contentHeight, 220)
                 clip: true
-
-                Column {
-                    spacing: 2
-                    Repeater {
-                        id: selectedUrlsRepeater
-                        model: Object.keys(root.selectedUrls)
-                        delegate: Label {
-                            text: "• " + modelData
-                            color: theme.subtext
-                            font.pixelSize: 11
-                            elide: Text.ElideRight
-                            width: 300
-                        }
-                    }
+                model: Object.keys(root.selectedUrls)
+                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                delegate: Label {
+                    text: "• " + modelData
+                    color: theme.subtext
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                    width: confirmUrlList.width - 12
+                    height: 22
                 }
             }
         }
         onAccepted: {
             var urls = Object.keys(root.selectedUrls)
-            var titles = urls.map(function(u) {
-                // Title shown in result dialog comes from the model
-                return u
-            })
             controller.bulkSubscribeFromDiscovery(urls)
             root._clearSelection()
             bulkResultDialog.subscribedUrls = urls
@@ -923,6 +901,8 @@ Rectangle {
         title: "Subscribed"
         modal: true
         anchors.centerIn: Overlay.overlay
+        width: 400
+        topPadding: 16; leftPadding: 16; rightPadding: 16; bottomPadding: 8
         background: Rectangle { color: theme.base; border.color: theme.surface0; radius: 8 }
         footer: Rectangle {
             color: theme.mantle
@@ -940,9 +920,8 @@ Rectangle {
                 Keys.onReturnPressed: { bulkResultDialog.accept(); event.accepted = true }
             }
         }
-        ColumnLayout {
+        contentItem: ColumnLayout {
             spacing: 12
-            width: 320
 
             Label {
                 text: "Subscribed to " + bulkResultDialog.subscribedUrls.length + " feed(s):"
@@ -951,24 +930,20 @@ Rectangle {
                 Layout.fillWidth: true
             }
 
-            ScrollView {
+            ListView {
+                id: resultUrlList
                 Layout.fillWidth: true
-                implicitHeight: Math.min(bulkResultRepeater.count * 22, 132)
+                Layout.preferredHeight: Math.min(contentHeight, 220)
                 clip: true
-
-                Column {
-                    spacing: 2
-                    Repeater {
-                        id: bulkResultRepeater
-                        model: bulkResultDialog.subscribedUrls
-                        delegate: Label {
-                            text: "• " + modelData
-                            color: theme.subtext
-                            font.pixelSize: 11
-                            elide: Text.ElideRight
-                            width: 300
-                        }
-                    }
+                model: bulkResultDialog.subscribedUrls
+                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                delegate: Label {
+                    text: "• " + modelData
+                    color: theme.subtext
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                    width: resultUrlList.width - 12
+                    height: 22
                 }
             }
         }
@@ -1020,6 +995,51 @@ Rectangle {
             to: 0.0
             duration: 300
         }
+    }
+
+    Timer {
+        id: autocompleteDebounce
+        interval: 250
+        repeat: false
+        onTriggered: root._fetchSuggestions(queryField.text.trim())
+    }
+
+    function _fetchSuggestions(query) {
+        if (root._currentXhr) {
+            root._currentXhr.abort()
+            root._currentXhr = null
+        }
+        if (query.length < 2) {
+            root._suggestions = []
+            autocompletePopup.close()
+            return
+        }
+        var xhr = new XMLHttpRequest()
+        root._currentXhr = xhr
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return
+            root._currentXhr = null
+            if (xhr.status === 200) {
+                try {
+                    var data = JSON.parse(xhr.responseText)
+                    root._suggestions = data[1] || []
+                } catch(e) {
+                    root._suggestions = []
+                }
+            } else {
+                root._suggestions = []
+            }
+            if (root._suggestions.length > 0 && queryField.activeFocus) {
+                autocompletePopup.open()
+            } else {
+                autocompletePopup.close()
+            }
+        }
+        var url = "https://en.wikipedia.org/w/api.php?action=opensearch&search="
+                  + encodeURIComponent(query)
+                  + "&limit=10&format=json&namespace=0"
+        xhr.open("GET", url)
+        xhr.send()
     }
 
     function focusSearch() { queryField.forceActiveFocus() }
