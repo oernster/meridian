@@ -2,11 +2,21 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtMultimedia
+import QtWebEngine
+import Qt.labs.settings
 
 Item {
     id: root
     required property var theme
     readonly property int _aspectFill: 2
+    property var firstHeaderBtn: null
+    readonly property var lastFocusItem: openBtnRect
+
+    Settings {
+        id: appSettings
+        category: "Player"
+        property real volume: 0.2
+    }
 
     Connections {
         target: controller
@@ -243,8 +253,20 @@ Item {
                             controller.markRead(itemId)
                         }
                     }
-                    Keys.onTabPressed:     { event.accepted = true; openBtnRect.forceActiveFocus(Qt.TabFocusReason) }
-                    Keys.onRightPressed:   { event.accepted = true; openBtnRect.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onTabPressed: {
+                        event.accepted = true
+                        if (playerContainer.visible && !playerContainer.isYoutube)
+                            playPauseBtn.forceActiveFocus(Qt.TabFocusReason)
+                        else
+                            openBtnRect.forceActiveFocus(Qt.TabFocusReason)
+                    }
+                    Keys.onRightPressed: {
+                        event.accepted = true
+                        if (playerContainer.visible && !playerContainer.isYoutube)
+                            playPauseBtn.forceActiveFocus(Qt.TabFocusReason)
+                        else
+                            openBtnRect.forceActiveFocus(Qt.TabFocusReason)
+                    }
                     Keys.onBacktabPressed: { event.accepted = true; markAllReadBtn.forceActiveFocus(Qt.BacktabFocusReason) }
                     Keys.onLeftPressed:    { event.accepted = true; markAllReadBtn.forceActiveFocus(Qt.BacktabFocusReason) }
                 }
@@ -289,7 +311,11 @@ Item {
 
             ScrollView {
                 id: detailScroll
-                anchors.fill: parent
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: openBtnRect.top
+                anchors.bottomMargin: 8
                 clip: true
                 contentWidth: availableWidth
                 visible: detailTitle.text !== ""
@@ -303,13 +329,13 @@ Item {
                         id: detailThumbnail
                         visible: source.toString() !== "" && !playerContainer.visible
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 260
+                        Layout.preferredHeight: implicitHeight
                         Layout.maximumHeight: 360
-                        fillMode: Image.PreserveAspectCrop
-                        clip: true
+                        fillMode: Image.PreserveAspectFit
+                        clip: false
                     }
 
-                    // Media player (video/audio)
+                    // Media player (video/audio/YouTube embed)
                     Rectangle {
                         id: playerContainer
                         visible: false
@@ -318,22 +344,38 @@ Item {
                         color: "#000"
                         radius: 0
 
+                        property bool isYoutube: false
+
                         MediaPlayer {
                             id: mediaPlayer
                             videoOutput: videoOutput
+                            audioOutput: audioOutput
+                        }
+
+                        AudioOutput {
+                            id: audioOutput
+                            Component.onCompleted: volume = appSettings.volume
                         }
 
                         VideoOutput {
                             id: videoOutput
                             anchors.fill: parent
                             anchors.bottomMargin: 48
+                            visible: !playerContainer.isYoutube
+                        }
+
+                        WebEngineView {
+                            id: youtubeView
+                            anchors.fill: parent
+                            anchors.bottomMargin: 0
+                            visible: playerContainer.isYoutube
                         }
 
                         Rectangle {
                             anchors.fill: parent
                             anchors.bottomMargin: 48
                             color: theme.mantle
-                            visible: detailTypeStor.text === "audio" || detailTypeStor.text === "podcast"
+                            visible: !playerContainer.isYoutube && (detailTypeStor.text === "audio" || detailTypeStor.text === "podcast")
 
                             Label {
                                 anchors.centerIn: parent
@@ -347,6 +389,7 @@ Item {
                             width: parent.width
                             height: 48
                             color: theme.mantle
+                            visible: !playerContainer.isYoutube
 
                             RowLayout {
                                 anchors.fill: parent
@@ -355,31 +398,81 @@ Item {
                                 spacing: 8
 
                                 Button {
+                                    id: playPauseBtn
                                     flat: true
                                     font.pixelSize: 16
                                     text: mediaPlayer.playbackState === MediaPlayer.PlayingState ? "⏸" : "▶"
                                     implicitWidth: 36
                                     implicitHeight: 36
+                                    activeFocusOnTab: true
                                     onClicked: {
                                         if (mediaPlayer.playbackState === MediaPlayer.PlayingState)
                                             mediaPlayer.pause()
                                         else
                                             mediaPlayer.play()
                                     }
+                                    Keys.onTabPressed:     { event.accepted = true; seekSlider.forceActiveFocus(Qt.TabFocusReason) }
+                                    Keys.onRightPressed:   { event.accepted = true; seekSlider.forceActiveFocus(Qt.TabFocusReason) }
+                                    Keys.onBacktabPressed: { event.accepted = true; itemList.forceActiveFocus(Qt.BacktabFocusReason) }
+                                    Keys.onLeftPressed:    { event.accepted = true; itemList.forceActiveFocus(Qt.BacktabFocusReason) }
+                                    background: Rectangle {
+                                        radius: 6
+                                        color: playPauseBtn.pressed ? theme.surface0 : playPauseBtn.hovered ? theme.surface1 : "transparent"
+                                        border.color: playPauseBtn.activeFocus ? theme.amber : "transparent"
+                                        border.width: playPauseBtn.activeFocus ? 2 : 0
+                                    }
                                 }
 
                                 Slider {
+                                    id: seekSlider
                                     Layout.fillWidth: true
                                     from: 0
                                     to: mediaPlayer.duration > 0 ? mediaPlayer.duration : 1
                                     value: mediaPlayer.position
+                                    activeFocusOnTab: true
                                     onMoved: mediaPlayer.position = value
+                                    Keys.onTabPressed:     { event.accepted = true; volumeSlider.forceActiveFocus(Qt.TabFocusReason) }
+                                    Keys.onBacktabPressed: { event.accepted = true; playPauseBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                                    handle: Rectangle {
+                                        x: seekSlider.leftPadding + seekSlider.visualPosition * (seekSlider.availableWidth - width)
+                                        y: seekSlider.topPadding + seekSlider.availableHeight / 2 - height / 2
+                                        width: 14; height: 14; radius: 7
+                                        color: seekSlider.pressed ? theme.amber : theme.surface1
+                                        border.color: seekSlider.activeFocus ? theme.amber : theme.subtext
+                                        border.width: seekSlider.activeFocus ? 2 : 1
+                                    }
                                 }
 
                                 Label {
                                     text: _formatTime(mediaPlayer.position) + " / " + _formatTime(mediaPlayer.duration)
                                     color: theme.subtext
                                     font.pixelSize: 10
+                                }
+
+                                Label {
+                                    text: "🔊"
+                                    color: theme.subtext
+                                    font.pixelSize: 12
+                                }
+
+                                Slider {
+                                    id: volumeSlider
+                                    Layout.preferredWidth: 80
+                                    from: 0.0
+                                    to: 1.0
+                                    value: appSettings.volume
+                                    activeFocusOnTab: true
+                                    onMoved: { audioOutput.volume = value; appSettings.volume = value }
+                                    Keys.onTabPressed:     { event.accepted = true; openBtnRect.forceActiveFocus(Qt.TabFocusReason) }
+                                    Keys.onBacktabPressed: { event.accepted = true; seekSlider.forceActiveFocus(Qt.BacktabFocusReason) }
+                                    handle: Rectangle {
+                                        x: volumeSlider.leftPadding + volumeSlider.visualPosition * (volumeSlider.availableWidth - width)
+                                        y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
+                                        width: 14; height: 14; radius: 7
+                                        color: volumeSlider.pressed ? theme.amber : theme.surface1
+                                        border.color: volumeSlider.activeFocus ? theme.amber : theme.subtext
+                                        border.width: volumeSlider.activeFocus ? 2 : 1
+                                    }
                                 }
                             }
                         }
@@ -452,67 +545,75 @@ Item {
                             Layout.fillWidth: true
                             onLinkActivated: (link) => Qt.openUrlExternally(link)
                         }
-
-                        Rectangle {
-                            id: openBtnRect
-                            height: 36
-                            Layout.preferredWidth: openBtn.implicitWidth + 32
-                            radius: 8
-                            activeFocusOnTab: true
-                            onActiveFocusChanged: {
-                                if (activeFocus) {
-                                    Qt.callLater(function() {
-                                        var btnY = openBtnRect.mapToItem(detailScroll.contentItem, 0, 0).y
-                                        var maxY = detailScroll.contentItem.contentHeight - detailScroll.height
-                                        detailScroll.contentItem.contentY = Math.max(0, Math.min(btnY - 20, maxY))
-                                    })
-                                }
-                            }
-                            color: openBtn.pressed ? theme.blue + "cc"
-                                 : openBtn.containsMouse ? theme.blue
-                                 : theme.surface0
-                            border.color: (openBtn.containsMouse || openBtnRect.activeFocus) ? theme.amber : "transparent"
-                            border.width: 1
-
-                            Label {
-                                id: openBtn
-                                anchors.centerIn: parent
-                                text: "Open in Browser →"
-                                color: openBtn.containsMouse ? (theme.isDark ? "#1e1e2e" : "#ffffff")
-                                     : theme.text
-                                font.pixelSize: 13
-                                property bool pressed: false
-                                property bool containsMouse: false
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onEntered: openBtn.containsMouse = true
-                                onExited:  openBtn.containsMouse = false
-                                onPressed: openBtn.pressed = true
-                                onReleased: openBtn.pressed = false
-                                onClicked: Qt.openUrlExternally(detailUrl.text)
-                            }
-                            Keys.onReturnPressed: Qt.openUrlExternally(detailUrl.text)
-                            Keys.onPressed: function(event) {
-                                if (event.key === Qt.Key_Space) { Qt.openUrlExternally(detailUrl.text); event.accepted = true }
-                            }
-                            Keys.onBacktabPressed: { event.accepted = true; itemList.forceActiveFocus(Qt.BacktabFocusReason) }
-                            Keys.onLeftPressed:    { event.accepted = true; itemList.forceActiveFocus(Qt.BacktabFocusReason) }
-                            Keys.onTabPressed: {
-                                event.accepted = true
-                                var next = openBtnRect.nextItemInFocusChain(true)
-                                if (next && next !== openBtnRect) next.forceActiveFocus(Qt.TabFocusReason)
-                            }
-                            Keys.onRightPressed: {
-                                event.accepted = true
-                                var next = openBtnRect.nextItemInFocusChain(true)
-                                if (next && next !== openBtnRect) next.forceActiveFocus(Qt.TabFocusReason)
-                            }
-                        }
                     }
+                }
+            }
+
+            Rectangle {
+                id: openBtnRect
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.leftMargin: 24
+                anchors.bottomMargin: 12
+                width: openBtn.implicitWidth + 32
+                height: 36
+                radius: 8
+                activeFocusOnTab: true
+                visible: detailTitle.text !== ""
+                color: openBtn.pressed ? theme.blue + "cc"
+                     : openBtn.containsMouse ? theme.blue
+                     : theme.surface0
+                border.color: (openBtn.containsMouse || openBtnRect.activeFocus) ? theme.amber : "transparent"
+                border.width: 1
+
+                Label {
+                    id: openBtn
+                    anchors.centerIn: parent
+                    text: "Open in Browser →"
+                    color: openBtn.containsMouse ? (theme.isDark ? "#1e1e2e" : "#ffffff")
+                         : theme.text
+                    font.pixelSize: 13
+                    property bool pressed: false
+                    property bool containsMouse: false
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onEntered: openBtn.containsMouse = true
+                    onExited:  openBtn.containsMouse = false
+                    onPressed: openBtn.pressed = true
+                    onReleased: openBtn.pressed = false
+                    onClicked: Qt.openUrlExternally(detailUrl.text)
+                }
+                Keys.onReturnPressed: Qt.openUrlExternally(detailUrl.text)
+                Keys.onPressed: function(event) {
+                    if (event.key === Qt.Key_Space) { Qt.openUrlExternally(detailUrl.text); event.accepted = true }
+                }
+                Keys.onTabPressed: {
+                    event.accepted = true
+                    if (firstHeaderBtn)
+                        firstHeaderBtn.forceActiveFocus(Qt.TabFocusReason)
+                }
+                Keys.onRightPressed: {
+                    event.accepted = true
+                    if (firstHeaderBtn)
+                        firstHeaderBtn.forceActiveFocus(Qt.TabFocusReason)
+                }
+                Keys.onBacktabPressed: {
+                    event.accepted = true
+                    if (playerContainer.visible && !playerContainer.isYoutube)
+                        volumeSlider.forceActiveFocus(Qt.BacktabFocusReason)
+                    else
+                        itemList.forceActiveFocus(Qt.BacktabFocusReason)
+                }
+                Keys.onLeftPressed: {
+                    event.accepted = true
+                    if (playerContainer.visible && !playerContainer.isYoutube)
+                        volumeSlider.forceActiveFocus(Qt.BacktabFocusReason)
+                    else
+                        itemList.forceActiveFocus(Qt.BacktabFocusReason)
                 }
             }
         }
@@ -675,11 +776,21 @@ Item {
         detailDescription.text = _descHtml(item.itemDescription)
         detailUrl.text = item.itemUrl
         const isMedia = ["video", "audio", "short", "livestream"].includes(item.itemType)
-        playerContainer.visible = isMedia && item.itemMediaUrl !== ""
-        if (isMedia && item.itemMediaUrl !== "") {
-            mediaPlayer.source = item.itemMediaUrl
-        } else {
+        const embedUrl = _youtubeEmbedUrl(item.itemUrl)
+        const isYt = embedUrl !== ""
+        playerContainer.isYoutube = isYt
+        if (isYt) {
             mediaPlayer.source = ""
+            youtubeView.url = embedUrl
+            playerContainer.visible = true
+        } else if (isMedia && item.itemMediaUrl !== "") {
+            youtubeView.url = "about:blank"
+            mediaPlayer.source = item.itemMediaUrl
+            playerContainer.visible = true
+        } else {
+            youtubeView.url = "about:blank"
+            mediaPlayer.source = ""
+            playerContainer.visible = false
         }
         detailThumbnail.source = item.itemThumbnail || ""
     }
@@ -692,5 +803,14 @@ Item {
         if (h > 0)
             return h + ":" + String(m).padStart(2, "0") + ":" + String(sec).padStart(2, "0")
         return String(m).padStart(2, "0") + ":" + String(sec).padStart(2, "0")
+    }
+
+    function _youtubeEmbedUrl(url) {
+        if (!url) return ""
+        var watchMatch = url.match(/youtube\.com\/watch\?.*v=([A-Za-z0-9_-]{11})/)
+        if (watchMatch) return "https://www.youtube.com/embed/" + watchMatch[1]
+        var shortMatch = url.match(/youtu\.be\/([A-Za-z0-9_-]{11})/)
+        if (shortMatch) return "https://www.youtube.com/embed/" + shortMatch[1]
+        return ""
     }
 }

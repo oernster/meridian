@@ -7,6 +7,7 @@ Application must not import Infrastructure or UI.
 """
 
 import ast
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -51,19 +52,33 @@ def test_layer_boundary(layer: str, forbidden_layers: list[str]) -> None:
     assert not violations, "Layer boundary violations:\n" + "\n".join(violations)
 
 
-def test_domain_files_under_400_lines() -> None:
+def test_all_source_files_under_400_lines() -> None:
     oversized = []
-    for path in (_SRC / "domain").rglob("*.py"):
+    for path in _SRC.rglob("*.py"):
         lines = len(path.read_text(encoding="utf-8").splitlines())
         if lines > 400:
-            oversized.append(f"{path.name}: {lines} lines")
-    assert not oversized, "Domain modules over 400 lines:\n" + "\n".join(oversized)
+            oversized.append(f"{path.relative_to(_SRC.parent)}: {lines} lines")
+    assert not oversized, "Source modules over 400 lines:\n" + "\n".join(oversized)
 
 
-def test_application_files_under_400_lines() -> None:
-    oversized = []
-    for path in (_SRC / "application").rglob("*.py"):
-        lines = len(path.read_text(encoding="utf-8").splitlines())
-        if lines > 400:
-            oversized.append(f"{path.name}: {lines} lines")
-    assert not oversized, "Application modules over 400 lines:\n" + "\n".join(oversized)
+def test_black_compliance() -> None:
+    result = subprocess.run(
+        ["black", "--check", "--quiet", str(_SRC)],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_flake8_compliance() -> None:
+    result = subprocess.run(
+        [
+            "flake8",
+            "--max-line-length=88",
+            "--extend-ignore=E203,W503",
+            str(_SRC),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

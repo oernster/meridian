@@ -79,7 +79,27 @@ class TestFeedListModel:
         assert model.data(idx, Qt.UserRole + 4) == "mfeed"  # feedSourceType
         assert model.data(idx, Qt.UserRole + 5) == 3  # feedUnreadCount
         assert model.data(idx, Qt.UserRole + 6) == ""  # feedDescription (None -> "")
+        assert model.data(idx, Qt.UserRole + 7) == ""  # feedFilterExpr (None -> "")
         assert model.data(idx, 9999) is None  # unknown role
+
+    def test_data_feed_filter_expr_present(self, qapp):
+        from PySide6.QtCore import Qt
+
+        model = FeedListModel()
+        dto = FeedDTO(
+            id=1,
+            url="https://example.com/feed/1",
+            source_type="mfeed",
+            title="Feed 1",
+            description=None,
+            icon=None,
+            language=None,
+            filter_expr="type:video",
+            unread_count=0,
+        )
+        model.refresh([dto])
+        idx = model.index(0, 0)
+        assert model.data(idx, Qt.UserRole + 7) == "type:video"
 
     def test_data_feed_title_fallback_to_url(self, qapp):
         from PySide6.QtCore import Qt
@@ -986,3 +1006,24 @@ class TestAppController:
         ):
             time.sleep(0.01)
         assert controller._discovery_loop.is_closed()
+
+    def test_update_feed_url_success(self, qapp):
+        self.sub_svc.list_feeds.return_value = [_feed_dto(1)]
+        controller = _make_controller(
+            qapp, self.sub_svc, self.item_svc, self.discovery_svc
+        )
+        controller.updateFeedUrl(1, "https://new.example.com/feed")
+        self.sub_svc.update_url.assert_called_once_with(
+            1, "https://new.example.com/feed"
+        )
+
+    def test_update_feed_url_error_emits_signal(self, qapp):
+        self.sub_svc.update_url.side_effect = ValueError("invalid url")
+        controller = _make_controller(
+            qapp, self.sub_svc, self.item_svc, self.discovery_svc
+        )
+        errors = []
+        controller.errorOccurred.connect(errors.append)
+        controller.updateFeedUrl(1, "not-a-url")
+        assert len(errors) == 1
+        assert "invalid url" in errors[0]

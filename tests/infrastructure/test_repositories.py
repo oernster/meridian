@@ -113,6 +113,17 @@ class TestSqliteFeedRepository:
         repo = SqliteFeedRepository(session_factory)
         repo.update_filter(99999, "type:video")
 
+    def test_update_url(self, session_factory):
+        repo = SqliteFeedRepository(session_factory)
+        saved = repo.save(_feed(url="https://url-update.example.com/feed"))
+        repo.update_url(saved.id, "https://url-updated.example.com/feed")
+        fetched = repo.get_by_id(saved.id)
+        assert fetched.url == "https://url-updated.example.com/feed"
+
+    def test_update_url_nonexistent_noop(self, session_factory):
+        repo = SqliteFeedRepository(session_factory)
+        repo.update_url(99999, "https://url-updated.example.com/feed")
+
     def test_save_existing_raises_if_not_found(self, session_factory):
         repo = SqliteFeedRepository(session_factory)
         phantom = Feed(

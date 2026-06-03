@@ -8,6 +8,7 @@ Rectangle {
     signal close()
 
     color: theme.base
+    Keys.onEscapePressed: root.close()
 
     property var selectedUrls: ({})
     property int selectedCount: 0
@@ -222,6 +223,8 @@ Rectangle {
                                 autocompletePopup.close()
                             } else if (root._searchState === "searching") {
                                 controller.cancelSearch()
+                            } else {
+                                root.close()
                             }
                         }
                         onTextChanged: {

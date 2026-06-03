@@ -76,6 +76,12 @@ class TestSubscriptionService:
         self.svc.set_filter(1, None)
         self.feed_repo.update_filter.assert_called_once_with(1, None)
 
+    def test_update_url(self):
+        self.svc.update_url(1, "  https://new.example.com/feed  ")
+        self.feed_repo.update_url.assert_called_once_with(
+            1, "https://new.example.com/feed"
+        )
+
     def test_subscribe_auto_detects_rss_default(self):
         self.feed_repo.get_by_url.return_value = None
         saved = _make_feed(id=10, url="https://slashdot.org/rss/index.rss")

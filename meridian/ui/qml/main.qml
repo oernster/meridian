@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import Qt.labs.settings
 
 ApplicationWindow {
     id: root
@@ -12,10 +13,16 @@ ApplicationWindow {
     minimumHeight: 580
     visible: true
 
+    Settings {
+        id: appSettings
+        category: "Theme"
+        property bool isDark: true
+    }
+
     // ── Theme (Catppuccin Mocha / Latte) ──────────────────────────────
     QtObject {
         id: theme
-        property bool isDark: true
+        property bool isDark: appSettings.isDark
 
         // Catppuccin Mocha (dark)
         readonly property color _dCrust:    "#11111b"
@@ -80,106 +87,6 @@ ApplicationWindow {
     }
     function _clearFeedSelection() { _selectedFeedIds = {}; _selectedFeedCount = 0 }
 
-    menuBar: MenuBar {
-        id: appMenuBar
-        activeFocusOnTab: true
-
-        delegate: MenuBarItem {
-            id: menuBarDelegate
-
-            contentItem: Text {
-                text: menuBarDelegate.text.replace("&", "")
-                color: theme.text
-                font: menuBarDelegate.font
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                elide: Text.ElideRight
-            }
-
-            background: Rectangle {
-                color: menuBarDelegate.highlighted ? theme.surface0 : "transparent"
-                border.color: menuBarDelegate.activeFocus ? theme.amber : "transparent"
-                border.width: 1
-                radius: 4
-            }
-
-            function navigateNext() {
-                for (var i = 0; i < appMenuBar.count; i++) {
-                    if (appMenuBar.itemAt(i) === menuBarDelegate) {
-                        var next = i + 1
-                        if (next < appMenuBar.count)
-                            appMenuBar.itemAt(next).forceActiveFocus(Qt.TabFocusReason)
-                        else
-                            discoverBtn.forceActiveFocus(Qt.TabFocusReason)
-                        return
-                    }
-                }
-            }
-
-            function navigatePrev() {
-                for (var i = 0; i < appMenuBar.count; i++) {
-                    if (appMenuBar.itemAt(i) === menuBarDelegate) {
-                        var prev = i - 1
-                        if (prev >= 0)
-                            appMenuBar.itemAt(prev).forceActiveFocus(Qt.BacktabFocusReason)
-                        else
-                            initialFocusItem.forceActiveFocus(Qt.BacktabFocusReason)
-                        return
-                    }
-                }
-            }
-
-            Keys.onTabPressed:     { event.accepted = true; navigateNext() }
-            Keys.onBacktabPressed: { event.accepted = true; navigatePrev() }
-            Keys.onRightPressed:   { event.accepted = true; navigateNext() }
-            Keys.onLeftPressed:    { event.accepted = true; navigatePrev() }
-            Keys.onDownPressed:    { event.accepted = true; menuBarDelegate.menu.open(); Qt.callLater(function() { menuBarDelegate.menu.currentIndex = 0 }) }
-            Keys.onReturnPressed:  { event.accepted = true; menuBarDelegate.menu.open(); Qt.callLater(function() { menuBarDelegate.menu.currentIndex = 0 }) }
-            Keys.onSpacePressed:   { event.accepted = true; menuBarDelegate.menu.open(); Qt.callLater(function() { menuBarDelegate.menu.currentIndex = 0 }) }
-        }
-
-        Menu {
-            id: fileMenu
-            title: "&File"
-            MenuItem {
-                text: "Import Feeds..."
-                onTriggered: importDialog.open()
-                Keys.onTabPressed:     { event.accepted = true; fileMenu.close(); appMenuBar.itemAt(1).forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onRightPressed:   { event.accepted = true; fileMenu.close(); appMenuBar.itemAt(1).forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onBacktabPressed: { event.accepted = true; fileMenu.close(); initialFocusItem.forceActiveFocus(Qt.BacktabFocusReason) }
-                Keys.onLeftPressed:    { event.accepted = true; fileMenu.close(); initialFocusItem.forceActiveFocus(Qt.BacktabFocusReason) }
-            }
-            MenuItem {
-                text: "Export Feeds..."
-                onTriggered: exportDialog.open()
-                Keys.onTabPressed:     { event.accepted = true; fileMenu.close(); appMenuBar.itemAt(1).forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onRightPressed:   { event.accepted = true; fileMenu.close(); appMenuBar.itemAt(1).forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onBacktabPressed: { event.accepted = true; fileMenu.close(); initialFocusItem.forceActiveFocus(Qt.BacktabFocusReason) }
-                Keys.onLeftPressed:    { event.accepted = true; fileMenu.close(); initialFocusItem.forceActiveFocus(Qt.BacktabFocusReason) }
-            }
-        }
-        Menu {
-            id: helpMenu
-            title: "&Help"
-            MenuItem {
-                text: "About Meridian"
-                onTriggered: aboutDialog.open()
-                Keys.onTabPressed:     { event.accepted = true; helpMenu.close(); discoverBtn.forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onRightPressed:   { event.accepted = true; helpMenu.close(); discoverBtn.forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onBacktabPressed: { event.accepted = true; helpMenu.close(); appMenuBar.itemAt(0).forceActiveFocus(Qt.BacktabFocusReason) }
-                Keys.onLeftPressed:    { event.accepted = true; helpMenu.close(); appMenuBar.itemAt(0).forceActiveFocus(Qt.BacktabFocusReason) }
-            }
-            MenuItem {
-                text: "Licence"
-                onTriggered: licenceDialog.open()
-                Keys.onTabPressed:     { event.accepted = true; helpMenu.close(); discoverBtn.forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onRightPressed:   { event.accepted = true; helpMenu.close(); discoverBtn.forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onBacktabPressed: { event.accepted = true; helpMenu.close(); appMenuBar.itemAt(0).forceActiveFocus(Qt.BacktabFocusReason) }
-                Keys.onLeftPressed:    { event.accepted = true; helpMenu.close(); appMenuBar.itemAt(0).forceActiveFocus(Qt.BacktabFocusReason) }
-            }
-        }
-    }
-
     Component.onCompleted: controller.loadFeeds()
 
     Connections {
@@ -191,6 +98,7 @@ ApplicationWindow {
         function onNewItemsAvailable(feedId, count) { }
     }
 
+
     // Absorbs initial focus so no item shows an orange border on startup.
     // First Tab press explicitly navigates to the File menu.
     Item {
@@ -198,11 +106,7 @@ ApplicationWindow {
         focus: true
         activeFocusOnTab: false
         width: 0; height: 0
-        Keys.onTabPressed: {
-            event.accepted = true
-            if (appMenuBar.count > 0)
-                appMenuBar.itemAt(0).forceActiveFocus(Qt.TabFocusReason)
-        }
+        Keys.onTabPressed: { event.accepted = true; importBtn.forceActiveFocus(Qt.TabFocusReason) }
     }
 
     // ── Layout ────────────────────────────────────────────────────────
@@ -216,130 +120,147 @@ ApplicationWindow {
             height: 52
             color: theme.mantle
 
-            Image {
-                id: headerIcon
-                source: appIconUrl
-                width: 28; height: 28
-                fillMode: Image.PreserveAspectFit
-                visible: appIconUrl !== ""
+            // Left action row: Import | Export | separator | Search | Manage
+            Row {
+                id: leftActionRow
                 anchors.left: parent.left
-                anchors.leftMargin: 14
+                anchors.leftMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
+
+                Rectangle {
+                    id: importBtn
+                    width: importLbl.contentWidth + 20; height: 34; radius: 8
+                    activeFocusOnTab: true
+                    color: importMouse.containsMouse ? theme.surface0 : theme.surface1
+                    border.color: (importMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
+                    border.width: 1
+                    Label { id: importLbl; anchors.centerIn: parent; text: "⬆  Import"; font.pixelSize: 13; color: theme.text }
+                    MouseArea { id: importMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: importDialog.open() }
+                    Keys.onReturnPressed: importDialog.open()
+                    Keys.onPressed: function(event) { if (event.key === Qt.Key_Space) { importDialog.open(); event.accepted = true } }
+                    Keys.onTabPressed:     { event.accepted = true; exportBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onRightPressed:   { event.accepted = true; exportBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onBacktabPressed: { event.accepted = true; feedReader.lastFocusItem.forceActiveFocus(Qt.BacktabFocusReason) }
+                    Keys.onLeftPressed:    { event.accepted = true; feedReader.lastFocusItem.forceActiveFocus(Qt.BacktabFocusReason) }
+                }
+
+                Rectangle {
+                    id: exportBtn
+                    width: exportLbl.contentWidth + 20; height: 34; radius: 8
+                    activeFocusOnTab: true
+                    color: exportMouse.containsMouse ? theme.surface0 : theme.surface1
+                    border.color: (exportMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
+                    border.width: 1
+                    Label { id: exportLbl; anchors.centerIn: parent; text: "⬇  Export"; font.pixelSize: 13; color: theme.text }
+                    MouseArea { id: exportMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: exportDialog.open() }
+                    Keys.onReturnPressed: exportDialog.open()
+                    Keys.onPressed: function(event) { if (event.key === Qt.Key_Space) { exportDialog.open(); event.accepted = true } }
+                    Keys.onTabPressed:     { event.accepted = true; discoverBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onRightPressed:   { event.accepted = true; discoverBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onBacktabPressed: { event.accepted = true; importBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                    Keys.onLeftPressed:    { event.accepted = true; importBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                }
+
+                Rectangle {
+                    width: 1; height: 24
+                    color: theme.surface1
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Rectangle {
+                    id: discoverBtn
+                    width: discoverLbl.contentWidth + 20; height: 34; radius: 8
+                    activeFocusOnTab: true
+                    color: discoverHeaderMouse.containsMouse ? theme.surface0 : theme.surface1
+                    border.color: (discoverHeaderMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
+                    border.width: 1
+                    Label { id: discoverLbl; anchors.centerIn: parent; text: "🔍  Search"; font.pixelSize: 13; color: theme.text }
+                    MouseArea { id: discoverHeaderMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: feedDiscoveryDrawer.open() }
+                    Keys.onReturnPressed: feedDiscoveryDrawer.open()
+                    Keys.onPressed: function(event) { if (event.key === Qt.Key_Space) { feedDiscoveryDrawer.open(); event.accepted = true } }
+                    Keys.onTabPressed:     { event.accepted = true; manageBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onRightPressed:   { event.accepted = true; manageBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onBacktabPressed: { event.accepted = true; exportBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                    Keys.onLeftPressed:    { event.accepted = true; exportBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                }
+
+                Rectangle {
+                    id: manageBtn
+                    width: manageLbl.contentWidth + 20; height: 34; radius: 8
+                    activeFocusOnTab: true
+                    color: manageHeaderMouse.containsMouse ? theme.surface0 : theme.surface1
+                    border.color: (manageHeaderMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
+                    border.width: 1
+                    Label { id: manageLbl; anchors.centerIn: parent; text: "⚙  Manage"; font.pixelSize: 13; color: theme.text }
+                    MouseArea { id: manageHeaderMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: subManagerDrawer.open() }
+                    Keys.onReturnPressed: subManagerDrawer.open()
+                    Keys.onPressed: function(event) { if (event.key === Qt.Key_Space) { subManagerDrawer.open(); event.accepted = true } }
+                    Keys.onTabPressed:     { event.accepted = true; licenceBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onRightPressed:   { event.accepted = true; licenceBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onBacktabPressed: { event.accepted = true; discoverBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                    Keys.onLeftPressed:    { event.accepted = true; discoverBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                }
             }
 
-            Label {
-                text: "Meridian"
-                font.pixelSize: 18
-                font.bold: true
-                color: theme.text
-                font.letterSpacing: 0.4
-                anchors.left: headerIcon.visible ? headerIcon.right : parent.left
-                anchors.leftMargin: headerIcon.visible ? 8 : 14
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            // Discover Feeds
-            Rectangle {
-                id: discoverBtn
-                width: discoverLbl.contentWidth + 24; height: 34; radius: 8
-                anchors.right: manageBtn.left
-                anchors.rightMargin: 8
-                anchors.verticalCenter: parent.verticalCenter
-                activeFocusOnTab: true
-                color: discoverHeaderMouse.containsMouse ? theme.surface0 : theme.surface1
-                border.color: (discoverHeaderMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
-                border.width: 1
-                Label {
-                    id: discoverLbl
-                    anchors.centerIn: parent
-                    text: "🔍  Search"
-                    font.pixelSize: 13
-                    color: theme.text
-                }
-                MouseArea {
-                    id: discoverHeaderMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: feedDiscoveryDrawer.open()
-                }
-                Keys.onReturnPressed: feedDiscoveryDrawer.open()
-                Keys.onPressed: function(event) {
-                    if (event.key === Qt.Key_Space) { feedDiscoveryDrawer.open(); event.accepted = true }
-                }
-                Keys.onTabPressed:     { event.accepted = true; manageBtn.forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onBacktabPressed: { event.accepted = true; appMenuBar.itemAt(appMenuBar.count - 1).forceActiveFocus(Qt.BacktabFocusReason) }
-                Keys.onRightPressed:   { event.accepted = true; manageBtn.forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onLeftPressed:    { event.accepted = true; appMenuBar.itemAt(appMenuBar.count - 1).forceActiveFocus(Qt.BacktabFocusReason) }
-            }
-
-            // Manage Subscriptions
-            Rectangle {
-                id: manageBtn
-                width: manageLbl.contentWidth + 24; height: 34; radius: 8
-                anchors.right: themeToggleBtn.left
-                anchors.rightMargin: 8
-                anchors.verticalCenter: parent.verticalCenter
-                activeFocusOnTab: true
-                color: manageHeaderMouse.containsMouse ? theme.surface0 : theme.surface1
-                border.color: (manageHeaderMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
-                border.width: 1
-                Label {
-                    id: manageLbl
-                    anchors.centerIn: parent
-                    text: "⚙  Manage"
-                    font.pixelSize: 13
-                    color: theme.text
-                }
-                MouseArea {
-                    id: manageHeaderMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: subManagerDrawer.open()
-                }
-                Keys.onReturnPressed: subManagerDrawer.open()
-                Keys.onPressed: function(event) {
-                    if (event.key === Qt.Key_Space) { subManagerDrawer.open(); event.accepted = true }
-                }
-                Keys.onTabPressed:     { event.accepted = true; themeToggleBtn.forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onBacktabPressed: { event.accepted = true; discoverBtn.forceActiveFocus(Qt.BacktabFocusReason) }
-                Keys.onRightPressed:   { event.accepted = true; themeToggleBtn.forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onLeftPressed:    { event.accepted = true; discoverBtn.forceActiveFocus(Qt.BacktabFocusReason) }
-            }
-
-            // Theme toggle
-            Rectangle {
-                id: themeToggleBtn
-                width: 40; height: 34; radius: 6
+            // Right action row: Licence | About | Theme toggle
+            Row {
+                id: rightActionRow
                 anchors.right: parent.right
                 anchors.rightMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
-                activeFocusOnTab: true
-                color: themeToggleMouse.containsMouse ? theme.surface0 : "transparent"
-                border.color: (themeToggleMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
-                border.width: 1
-                Label {
-                    anchors.centerIn: parent
-                    text: theme.isDark ? "☀️" : "🌙"
-                    font.pixelSize: 16
-                    color: theme.text
+                spacing: 6
+
+                Rectangle {
+                    id: licenceBtn
+                    width: licenceLbl.contentWidth + 20; height: 34; radius: 8
+                    activeFocusOnTab: true
+                    color: licenceMouse.containsMouse ? theme.surface0 : theme.surface1
+                    border.color: (licenceMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
+                    border.width: 1
+                    Label { id: licenceLbl; anchors.centerIn: parent; text: "📜  Licence"; font.pixelSize: 13; color: theme.text }
+                    MouseArea { id: licenceMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: licenceDialog.open() }
+                    Keys.onReturnPressed: licenceDialog.open()
+                    Keys.onPressed: function(event) { if (event.key === Qt.Key_Space) { licenceDialog.open(); event.accepted = true } }
+                    Keys.onTabPressed:     { event.accepted = true; aboutBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onRightPressed:   { event.accepted = true; aboutBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onBacktabPressed: { event.accepted = true; manageBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                    Keys.onLeftPressed:    { event.accepted = true; manageBtn.forceActiveFocus(Qt.BacktabFocusReason) }
                 }
-                MouseArea {
-                    id: themeToggleMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: theme.isDark = !theme.isDark
+
+                Rectangle {
+                    id: aboutBtn
+                    width: aboutLbl.contentWidth + 20; height: 34; radius: 8
+                    activeFocusOnTab: true
+                    color: aboutMouse.containsMouse ? theme.surface0 : theme.surface1
+                    border.color: (aboutMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
+                    border.width: 1
+                    Label { id: aboutLbl; anchors.centerIn: parent; text: "ℹ️  About"; font.pixelSize: 13; color: theme.text }
+                    MouseArea { id: aboutMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: aboutDialog.open() }
+                    Keys.onReturnPressed: aboutDialog.open()
+                    Keys.onPressed: function(event) { if (event.key === Qt.Key_Space) { aboutDialog.open(); event.accepted = true } }
+                    Keys.onTabPressed:     { event.accepted = true; themeToggleBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onRightPressed:   { event.accepted = true; themeToggleBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onBacktabPressed: { event.accepted = true; licenceBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                    Keys.onLeftPressed:    { event.accepted = true; licenceBtn.forceActiveFocus(Qt.BacktabFocusReason) }
                 }
-                Keys.onReturnPressed: theme.isDark = !theme.isDark
-                Keys.onPressed: function(event) {
-                    if (event.key === Qt.Key_Space) { theme.isDark = !theme.isDark; event.accepted = true }
+
+                Rectangle {
+                    id: themeToggleBtn
+                    width: 40; height: 34; radius: 6
+                    activeFocusOnTab: true
+                    color: themeToggleMouse.containsMouse ? theme.surface0 : theme.surface1
+                    border.color: (themeToggleMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
+                    border.width: 1
+                    Label { anchors.centerIn: parent; text: theme.isDark ? "☀️" : "🌙"; font.pixelSize: 16; color: theme.text }
+                    MouseArea { id: themeToggleMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { theme.isDark = !theme.isDark; appSettings.isDark = theme.isDark } }
+                    Keys.onReturnPressed: { theme.isDark = !theme.isDark; appSettings.isDark = theme.isDark }
+                    Keys.onPressed: function(event) { if (event.key === Qt.Key_Space) { theme.isDark = !theme.isDark; appSettings.isDark = theme.isDark; event.accepted = true } }
+                    Keys.onTabPressed:     { event.accepted = true; feedCheckAll.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onRightPressed:   { event.accepted = true; feedCheckAll.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onBacktabPressed: { event.accepted = true; aboutBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                    Keys.onLeftPressed:    { event.accepted = true; aboutBtn.forceActiveFocus(Qt.BacktabFocusReason) }
                 }
-                Keys.onTabPressed:     { event.accepted = true; feedCheckAll.forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onBacktabPressed: { event.accepted = true; manageBtn.forceActiveFocus(Qt.BacktabFocusReason) }
-                Keys.onRightPressed:   { event.accepted = true; feedCheckAll.forceActiveFocus(Qt.TabFocusReason) }
-                Keys.onLeftPressed:    { event.accepted = true; manageBtn.forceActiveFocus(Qt.BacktabFocusReason) }
             }
 
             Rectangle {
@@ -656,9 +577,11 @@ ApplicationWindow {
             }
 
             FeedReader {
+                id: feedReader
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 theme: theme
+                firstHeaderBtn: importBtn
             }
         }
     }
@@ -696,6 +619,7 @@ ApplicationWindow {
                     if (mouse.button === Qt.LeftButton) {
                         feedList.currentIndex = index
                         controller.selectFeed(model.feedId)
+                        feedList.forceActiveFocus(Qt.MouseFocusReason)
                     }
                 }
             }

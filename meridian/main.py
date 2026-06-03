@@ -17,6 +17,7 @@ from PySide6.QtCore import QSize, QUrl  # noqa: E402
 from PySide6.QtGui import QIcon  # noqa: E402
 from PySide6.QtQml import QQmlApplicationEngine  # noqa: E402
 from PySide6.QtQuickControls2 import QQuickStyle  # noqa: E402
+from PySide6.QtWebEngineQuick import QtWebEngineQuick  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from meridian.application.services.discovery_service import (  # noqa: E402
@@ -102,8 +103,10 @@ def _read_licence() -> str:
 
 def main() -> None:
     _lock = _acquire_single_instance_lock()  # noqa: F841 — held for process lifetime
+    QtWebEngineQuick.initialize()
     QQuickStyle.setStyle("Fusion")
     app = QApplication(sys.argv)
+    app.setOrganizationName("Meridian")
     app.setApplicationName("Meridian")
     app.setApplicationVersion(__version__)
     app_icon = _build_app_icon()

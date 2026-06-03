@@ -35,14 +35,18 @@ meridian/
     dto/
       feed_dto.py           FeedDTO (cross-boundary carrier: id, url, title, source_type, unread_count, ...)
       item_dto.py           ItemDTO (cross-boundary carrier: all item fields as primitives)
+      feed_candidate_dto.py FeedCandidateDTO (discovery result: url, title, description, is_subscribed flag)
     interfaces/
       feed_repository.py    FeedRepository ABC (get_by_id, list, save, delete, update_filter, update_title)
       item_repository.py    ItemRepository ABC (list_by_feed, save, mark_read, mark_all_read, unread_count, exists)
       poll_state_repository.py  PollStateRepository ABC (get, save)
+      discovery_fetcher.py  DiscoveryFetcher ABC + DiscoveryError; DEFAULT_RESULT_CAP = 25
     services/
       subscription_service.py   subscribe, unsubscribe, list_feeds, set_filter, get_feed
       item_service.py           get_items (dedup + filter), mark_read, mark_all_read
       poll_orchestrator.py      poll_feed (HTTP fetch, parse, persist new items, auto-discover title)
+      discovery_service.py      search_feeds (delegates to DiscoveryFetcher, enriches with is_subscribed flag)
+      source_type_inference.py  infer SourceType from URL/content-type; extracted from SubscriptionService
 
   infrastructure/
     db/
@@ -54,6 +58,7 @@ meridian/
     fetching/
       http_fetcher.py       HttpFetcher: httpx async client, MMSP/1.0 UA, conditional GET (ETag/Last-Modified), HTTPS-only, 300s poll floor
       scheduler.py          PollScheduler: asyncio task per feed, 10s tick, per-feed backoff state
+      feedsearch_fetcher.py FeedsearchFetcher: implements DiscoveryFetcher via feedsearch.dev REST API (httpx async)
       parser/
         platform_parser.py  Dispatcher: registered adapters first, RSS fallback
         rss_parser.py       RSS 2.0 + RSS 1.0/RDF; content:encoded preferred over description
@@ -65,12 +70,12 @@ meridian/
     bridge.py
       FeedListModel         QAbstractListModel: feedId, feedUrl, feedTitle, feedIcon, feedSourceType, feedUnreadCount, feedDescription, feedFilter (UserRole+0..7); remove_rows_by_ids() for in-place removal
       ItemListModel         QAbstractListModel: all ItemDTO fields as QML roles
-      AppController         QObject: loadFeeds, selectFeed, subscribe, unsubscribe, bulkUnsubscribe, markRead, markAllRead, setFeedSort, setItemSort, setFilter (calls loadFeeds to refresh filter label), updateFeedUrl, importFeeds, exportFeeds, searchFeeds, cancelSearch, subscribeFromDiscovery, bulkSubscribeFromDiscovery
+      AppController         QObject: loadFeeds, selectFeed, subscribe, unsubscribe, bulkUnsubscribe, markRead, markAllRead, setFeedSort, setItemSort, setFilter (calls loadFeeds to refresh filter label), updateFeedUrl, importFeeds, exportFeeds, searchFeeds, cancelSearch, subscribeFromDiscovery, bulkSubscribeFromDiscovery, setResultCap
     qml/
-      main.qml              Application window: feed sidebar (checkboxes, sort, bulk remove, right-click context menu), header bar, theme toggle; full keyboard nav with Enter/Space/Left/Right on all interactive controls
-      FeedReader.qml        Two-panel reader: item list with sort + mark-all-read; detail pane with media player, full-text description (ScrollView), open-in-browser
+      main.qml              Application window: feed sidebar (checkboxes, sort, bulk remove, right-click context menu), header bar, theme toggle (persists via Qt.labs.settings); full keyboard nav with Enter/Space/Left/Right on all interactive controls; Tab wraps from last control back to Import via feedReader.lastFocusItem
+      FeedReader.qml        Two-panel reader: item list with sort + mark-all-read; detail pane with media player, full-text description (ScrollView), open-in-browser. Exposes firstHeaderBtn (set by parent to importBtn) and lastFocusItem (always openBtnRect) for cross-component Tab wrap. openBtnRect is a direct child of the detail pane Rectangle, NOT inside ScrollView (ScrollView's Flickable is a FocusScope that traps Tab).
       SubscriptionManager.qml  Drawer: add subscription URL field, subscribe button, bulk select/remove, per-feed filter/edit/remove buttons; full keyboard nav (Tab chain, Enter/Space/Left/Right); filter dialog shows existing terms as tabbable toggleable rows, new terms appended on accept
-      FeedDiscovery.qml     Feed discovery drawer: search, candidate list with bulk subscribe
+      FeedDiscovery.qml     Feed discovery drawer: topic search via feedsearch.dev, category autocomplete (~46 categories), result cap selector, candidate list with per-item and bulk subscribe. Escape closes panel (from queryField: closes autocomplete, then cancels search, then closes; from all other controls: closes immediately).
       AboutDialog.qml       About dialog (keyboard: Enter/Escape closes)
       LicenceDialog.qml     Licence dialog (keyboard: scroll text, Tab to Close, Enter/Escape closes)
 
@@ -145,6 +150,10 @@ FilterEvaluator (Domain)
 **HTTPS enforcement**: `Feed.__post_init__` rejects non-HTTPS URLs. Non-HTTPS media URLs are excluded in parsers. `HttpFetcher` rejects non-HTTPS redirect targets.
 
 **Keyboard navigation**: Qt Quick Controls `Button` handles Space natively but not Enter/Return. Every `StyledButton` instance and interactive `Rectangle` in the QML layer has an explicit `Keys.onReturnPressed` handler. Dialog footer buttons are given IDs and Left/Right key handlers to allow lateral navigation between Cancel and OK without leaving the keyboard. Qt6 TextField intercepts Tab internally; tab-chain control uses `activeFocusOnTab` on surrounding items rather than `KeyNavigation.tab` on the field itself.
+
+Tab wrap-around uses explicit `forceActiveFocus()` with `event.accepted = true` on every boundary. `KeyNavigation.tab` and `setFocus()` both fail across QML `FocusScope` boundaries; only `forceActiveFocus()` works. Critical invariant: `ScrollView`'s `contentItem` is a `Flickable`, which is a `FocusScope` — any focusable control inside a `ScrollView` is trapped and Tab can never escape it. Controls that must participate in the outer Tab chain must be placed outside the `ScrollView` in the component tree.
+
+**Theme persistence**: dark/light mode stored via `Qt.labs.settings` with `category: "Theme"`, property `isDark: true`. Reads on startup; written on toggle. Uses same `QSettings` backend as volume (category `"Player"`); no conflict since categories are separate.
 
 ## Quality Enforcement
 
