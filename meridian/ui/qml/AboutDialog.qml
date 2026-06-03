@@ -134,7 +134,7 @@ Dialog {
                         font.bold: true
                     }
                     Label {
-                        text: "MMSP Feed Reader"
+                        text: "MMSP / RSS / Atom / Podcast Feed Reader"
                         color: theme.subtext
                         font.pixelSize: 12
                     }
@@ -178,6 +178,12 @@ Dialog {
 
                 Label { text: "bleach"; color: theme.subtext; font.pixelSize: 12 }
                 Label { text: "Apache 2.0"; color: theme.subtext; font.pixelSize: 11 }
+
+                Label { text: "feedsearch.dev"; color: theme.subtext; font.pixelSize: 12 }
+                Label { text: "Feed discovery API"; color: theme.subtext; font.pixelSize: 11 }
+
+                Label { text: "Catppuccin"; color: theme.subtext; font.pixelSize: 12 }
+                Label { text: "MIT (colour palette)"; color: theme.subtext; font.pixelSize: 11 }
             }
 
             Item { Layout.fillHeight: true }
