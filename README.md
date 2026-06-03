@@ -32,6 +32,32 @@ pip install -e .
 meridian
 ```
 
+### Linux — Flatpak
+
+```bash
+# Build (requires flatpak and flatpak-builder)
+./build_flatpak.sh
+
+# Install the generated bundle
+flatpak install --user meridian.flatpak
+
+# Run
+flatpak run uk.codecrafter.Meridian
+
+# Uninstall and remove all build artefacts
+./cleanup_flatpak.sh
+```
+
+### macOS — DMG
+
+```bash
+# Build (requires macOS with Xcode command-line tools)
+python builddmg.py
+
+# The DMG will be written to dist/Meridian-<version>.dmg
+# Open it, drag Meridian.app to Applications, then launch from Spotlight or Launchpad.
+```
+
 See [DEVELOPMENT.md](DEVELOPMENT.md) for Python version requirements, dev tooling, and how to run the test suite.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full project structure and design.
