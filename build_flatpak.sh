@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # build_flatpak.sh — Build meridian.flatpak for Linux
 # Usage: ./build_flatpak.sh
-# Tested on Ubuntu/Debian with GNOME. Works on all distros with flatpak support.
 
 set -euo pipefail
 
@@ -12,10 +11,9 @@ BUILD_DIR=".flatpak-build"
 REPO_DIR=".flatpak-repo"
 MANIFEST="${APP_ID}.yml"
 
-RUNTIME="org.freedesktop.Platform"
-RUNTIME_VERSION="24.08"
-SDK="org.freedesktop.Sdk"
-PYTHON_RUNTIME="org.freedesktop.Sdk.Extension.python312"
+RUNTIME="org.kde.Platform"
+SDK="org.kde.Sdk"
+RUNTIME_VERSION="6.8"
 
 # ── Colour helpers ────────────────────────────────────────────────────────────
 bold=$(tput bold 2>/dev/null || true)
@@ -57,93 +55,41 @@ section "Installing runtime and SDK"
 flatpak install --user --noninteractive flathub \
     "${RUNTIME}//${RUNTIME_VERSION}" \
     "${SDK}//${RUNTIME_VERSION}" \
-    "${PYTHON_RUNTIME}//${RUNTIME_VERSION}" \
-    || true   # continue if already installed
-
-# ── Generate manifest ─────────────────────────────────────────────────────────
-section "Writing manifest ${MANIFEST}"
-
-cat > "${MANIFEST}" <<YAML
-app-id: ${APP_ID}
-runtime: ${RUNTIME}
-runtime-version: "${RUNTIME_VERSION}"
-sdk: ${SDK}
-sdk-extensions:
-  - ${PYTHON_RUNTIME}
-
-command: meridian
-
-build-options:
-  append-path: /usr/lib/sdk/python312/bin
-  env:
-    PYTHONPATH: /app/lib/python3.12/site-packages
-
-finish-args:
-  - --share=network
-  - --share=ipc
-  - --socket=fallback-x11
-  - --socket=wayland
-  - --socket=pulseaudio
-  - --device=dri
-  - --filesystem=home
-  - --env=QT_QPA_PLATFORM=xcb
-
-modules:
-
-  # ── Python dependencies ────────────────────────────────────────────────────
-  - name: python-deps
-    buildsystem: simple
-    build-commands:
-      - pip3 install --prefix=/app --no-index --find-links=wheels
-          SQLAlchemy
-          httpx
-          defusedxml
-          python-dateutil
-          bleach
-    sources:
-      - type: shell
-        commands:
-          - pip3 download --dest=wheels --no-deps
-              "SQLAlchemy>=2.0"
-              "httpx>=0.27"
-              "defusedxml>=0.7"
-              "python-dateutil>=2.9"
-              "bleach>=6.1"
-
-  # ── PySide6 (Qt for Python) ────────────────────────────────────────────────
-  - name: pyside6
-    buildsystem: simple
-    build-commands:
-      - pip3 install --prefix=/app --no-index --find-links=pyside6-wheels PySide6
-    sources:
-      - type: shell
-        commands:
-          - pip3 download --dest=pyside6-wheels --no-deps "PySide6>=6.7"
-
-  # ── Meridian application ───────────────────────────────────────────────────
-  - name: meridian
-    buildsystem: simple
-    build-commands:
-      - pip3 install --prefix=/app --no-deps .
-      - install -Dm755 packaging/meridian.sh /app/bin/meridian
-      - install -Dm644 packaging/${APP_ID}.desktop /app/share/applications/${APP_ID}.desktop
-      - install -Dm644 packaging/${APP_ID}.metainfo.xml /app/share/metainfo/${APP_ID}.metainfo.xml
-    sources:
-      - type: dir
-        path: .
-YAML
-
-echo "  Manifest written."
+    || true
 
 # ── packaging/ helpers ────────────────────────────────────────────────────────
 section "Writing packaging helpers"
 mkdir -p packaging
 
-cat > packaging/meridian.sh <<'LAUNCHER'
+if command -v convert &>/dev/null; then
+    convert meridian.png -resize 512x512 packaging/meridian-icon.png
+else
+    python3 -c "
+from PIL import Image
+img = Image.open('meridian.png')
+img = img.resize((512, 512), Image.LANCZOS)
+img.save('packaging/meridian-icon.png')
+"
+fi
+echo "  Icon resized to 512x512."
+
+cat > packaging/meridian-launcher.sh <<'LAUNCHER'
 #!/bin/sh
+export PYTHONPATH="/app/lib/python3.12/site-packages${PYTHONPATH:+:$PYTHONPATH}"
+export QT_PLUGIN_PATH="/app/lib/python3.12/site-packages/PySide6/Qt/plugins"
+export QT_QPA_PLATFORM_PLUGIN_PATH="/app/lib/python3.12/site-packages/PySide6/Qt/plugins/platforms"
+export QML2_IMPORT_PATH="/app/lib/python3.12/site-packages/PySide6/Qt/qml"
+export QTWEBENGINE_DISABLE_SANDBOX=1
+if [ -n "$WAYLAND_DISPLAY" ] && [ -z "$FORCE_X11" ]; then
+    export QT_QPA_PLATFORM=wayland
+elif [ -n "$DISPLAY" ]; then
+    export QT_QPA_PLATFORM=xcb
+else
+    export QT_QPA_PLATFORM=xcb
+fi
 exec python3 -m meridian.main "$@"
 LAUNCHER
-chmod +x packaging/meridian.sh
+chmod +x packaging/meridian-launcher.sh
 
 cat > "packaging/${APP_ID}.desktop" <<DESKTOP
 [Desktop Entry]
@@ -175,20 +121,85 @@ cat > "packaging/${APP_ID}.metainfo.xml" <<XML
 </component>
 XML
 
-# ── setup.py shim (needed by flatpak pip install .) ───────────────────────────
-if [ ! -f setup.py ] && [ ! -f pyproject.toml ]; then
-cat > setup.py <<SETUP
-from setuptools import setup, find_packages
-setup(
-    name="meridian",
-    version="${APP_VERSION}",
-    packages=find_packages(exclude=["tests*", "venv*", "installer*"]),
-    package_data={"meridian": ["ui/qml/*.qml"]},
-    install_requires=[],
-)
-SETUP
-echo "  Generated setup.py shim."
-fi
+# ── Generate manifest ─────────────────────────────────────────────────────────
+section "Writing manifest ${MANIFEST}"
+
+cat > "${MANIFEST}" <<YAML
+app-id: ${APP_ID}
+runtime: ${RUNTIME}
+runtime-version: "${RUNTIME_VERSION}"
+sdk: ${SDK}
+
+command: meridian
+
+build-options:
+  build-args:
+    - --share=network
+  env:
+    PIP_CACHE_DIR: /run/build/meridian/pip-cache
+
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=dri
+  - --filesystem=home
+  - --env=QTWEBENGINE_DISABLE_SANDBOX=1
+
+modules:
+
+  # ── MIT Kerberos 5 (provides libgssapi_krb5.so.2 needed by PySide6/Qt) ────
+  - name: krb5
+    subdir: src
+    config-opts:
+      - --prefix=/app
+      - --localstatedir=/var/lib
+      - --sbindir=/app/bin
+      - --disable-rpath
+      - --disable-static
+      - --without-ldap
+      - --without-keyutils
+    sources:
+      - type: archive
+        url: https://kerberos.org/dist/krb5/1.21/krb5-1.21.3.tar.gz
+        sha256: b7a4cd5ead67fb08b980b21abd150ff7217e85ea320c9ed0c6dadd304840ad35
+
+  # ── Ensure pip is available ────────────────────────────────────────────────
+  - name: python3-pip
+    buildsystem: simple
+    build-commands:
+      - python3 -m ensurepip --upgrade
+
+  # ── Python dependencies ────────────────────────────────────────────────────
+  - name: python-deps
+    buildsystem: simple
+    build-commands:
+      - pip3 install --no-cache-dir --prefix=/app "SQLAlchemy>=2.0" "httpx>=0.27" "defusedxml>=0.7" "python-dateutil>=2.9" "bleach>=6.1"
+
+  # ── PySide6 (Qt for Python) ────────────────────────────────────────────────
+  - name: pyside6
+    buildsystem: simple
+    build-commands:
+      - pip3 install --no-cache-dir --prefix=/app "PySide6>=6.7"
+
+  # ── Meridian application ───────────────────────────────────────────────────
+  - name: meridian
+    buildsystem: simple
+    build-commands:
+      - pip3 install --no-cache-dir --no-deps --prefix=/app .
+      - install -Dm644 LICENSE /app/lib/python3.12/site-packages/LICENSE
+      - install -Dm755 packaging/meridian-launcher.sh /app/bin/meridian
+      - install -Dm644 packaging/${APP_ID}.desktop /app/share/applications/${APP_ID}.desktop
+      - install -Dm644 packaging/${APP_ID}.metainfo.xml /app/share/metainfo/${APP_ID}.metainfo.xml
+      - install -Dm644 packaging/meridian-icon.png /app/share/icons/hicolor/512x512/apps/${APP_ID}.png
+    sources:
+      - type: dir
+        path: .
+YAML
+
+echo "  Manifest written."
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 section "Building Flatpak"

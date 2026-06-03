@@ -242,6 +242,14 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Flatpak build artefacts
+.flatpak-builder/
+.flatpak-build/
+.flatpak-repo/
+packaging/
+uk.codecrafter.Meridian.yml
+meridian.flatpak
+
 # Misc
 1
 NOTES.md
