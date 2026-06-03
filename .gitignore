@@ -250,6 +250,11 @@ packaging/
 uk.codecrafter.Meridian.yml
 meridian.flatpak
 
+# macOS
+.DS_Store
+*.dmg
+_dmg_staging/
+
 # Misc
 1
 NOTES.md

@@ -829,7 +829,8 @@ Rectangle {
         title: "Subscribe to Feeds"
         modal: true
         anchors.centerIn: Overlay.overlay
-        width: 400
+        width: 460
+        height: 360
         topPadding: 16; leftPadding: 16; rightPadding: 16; bottomPadding: 8
         background: Rectangle { color: theme.base; border.color: theme.surface0; radius: 8 }
         footer: Rectangle {
@@ -871,16 +872,16 @@ Rectangle {
             ListView {
                 id: confirmUrlList
                 Layout.fillWidth: true
-                Layout.preferredHeight: Math.min(contentHeight, 220)
+                Layout.fillHeight: true
                 clip: true
                 model: Object.keys(root.selectedUrls)
-                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOn }
                 delegate: Label {
                     text: "• " + modelData
                     color: theme.subtext
                     font.pixelSize: 11
                     elide: Text.ElideRight
-                    width: confirmUrlList.width - 12
+                    width: confirmUrlList.width - 16
                     height: 22
                 }
             }
@@ -901,7 +902,8 @@ Rectangle {
         title: "Subscribed"
         modal: true
         anchors.centerIn: Overlay.overlay
-        width: 400
+        width: 460
+        height: 360
         topPadding: 16; leftPadding: 16; rightPadding: 16; bottomPadding: 8
         background: Rectangle { color: theme.base; border.color: theme.surface0; radius: 8 }
         footer: Rectangle {
@@ -933,16 +935,16 @@ Rectangle {
             ListView {
                 id: resultUrlList
                 Layout.fillWidth: true
-                Layout.preferredHeight: Math.min(contentHeight, 220)
+                Layout.fillHeight: true
                 clip: true
                 model: bulkResultDialog.subscribedUrls
-                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOn }
                 delegate: Label {
                     text: "• " + modelData
                     color: theme.subtext
                     font.pixelSize: 11
                     elide: Text.ElideRight
-                    width: resultUrlList.width - 12
+                    width: resultUrlList.width - 16
                     height: 22
                 }
             }

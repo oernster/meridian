@@ -5,7 +5,17 @@ from __future__ import annotations
 import asyncio
 import logging
 import sys
+import traceback
 from pathlib import Path
+
+# When running as a frozen macOS .app, stderr is /dev/null (windowed mode).
+# Redirect it to ~/Library/Logs/Meridian/meridian.log so crashes are visible.
+if getattr(sys, "frozen", False):
+    _log_dir = Path.home() / "Library" / "Logs" / "Meridian"
+    _log_dir.mkdir(parents=True, exist_ok=True)
+    _log_file = open(_log_dir / "meridian.log", "a", buffering=1)
+    sys.stdout = _log_file
+    sys.stderr = _log_file
 
 logging.basicConfig(
     level=logging.INFO,
@@ -177,4 +187,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        traceback.print_exc()
+        sys.exit(1)
