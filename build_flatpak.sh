@@ -13,7 +13,7 @@ REPO_DIR=".flatpak-repo"
 MANIFEST="${APP_ID}.yml"
 
 RUNTIME="org.freedesktop.Platform"
-RUNTIME_VERSION="23.08"
+RUNTIME_VERSION="24.08"
 SDK="org.freedesktop.Sdk"
 PYTHON_RUNTIME="org.freedesktop.Sdk.Extension.python312"
 
