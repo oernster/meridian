@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meridian — Desktop Feed Reader</title>
-  <meta name="description" content="A desktop feed reader and subscription manager for RSS, Atom, podcast, and YouTube feeds. Built on the MMSP protocol with a native Qt Quick UI, Catppuccin themes, and full keyboard navigation.">
+  <title>Meridian — MMSP / MFEED Reader</title>
+  <meta name="description" content="The reference desktop client for the MMSP protocol and MFEED format. Also supports RSS, Atom, podcast, and YouTube feeds. Native Qt Quick UI, Catppuccin themes, full keyboard navigation.">
   <link rel="icon" type="image/png" href="https://github.com/user-attachments/assets/e2ef5ef9-1ed9-4faf-9a8f-4af483072e59">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -579,6 +579,84 @@
       .stats-inner { flex-direction: column; gap: 1.25rem; }
     }
 
+    /* ── MMSP callout band ───────────────────────────────────── */
+    .mmsp-band {
+      background: var(--mantle);
+      border-top: 1px solid var(--surface0);
+      border-bottom: 1px solid var(--surface0);
+    }
+
+    .mmsp-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+
+    .mmsp-pills {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .proto-pill {
+      border-radius: 12px;
+      padding: 0.9rem 1.1rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      grid-template-rows: auto auto;
+      column-gap: 0.85rem;
+      row-gap: 0.1rem;
+      align-items: center;
+    }
+
+    .proto-pill.primary {
+      background: rgba(203,166,247,0.1);
+      border: 1px solid rgba(203,166,247,0.3);
+    }
+
+    .proto-pill.secondary {
+      background: var(--surface0);
+      border: 1px solid var(--surface1);
+    }
+
+    .proto-pill-label {
+      grid-column: 1;
+      grid-row: 1;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--overlay1);
+      white-space: nowrap;
+    }
+
+    .proto-pill.primary .proto-pill-label { color: var(--mauve); opacity: 0.85; }
+
+    .proto-pill-name {
+      grid-column: 2;
+      grid-row: 1 / 3;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      align-self: center;
+    }
+
+    .proto-pill.primary .proto-pill-name { color: var(--mauve); }
+
+    .proto-pill-desc {
+      grid-column: 1;
+      grid-row: 2;
+      font-size: 0.75rem;
+      color: var(--subtext0);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+      .mmsp-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+    }
+
     /* ── Entrance animation ──────────────────────────────────── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(18px); }
@@ -600,6 +678,7 @@
     <span>Meridian</span>
   </a>
   <div class="nav-right">
+    <a class="nav-link" href="#mmsp">MMSP</a>
     <a class="nav-link" href="#features">Features</a>
     <a class="nav-link" href="#whats-new">What's New</a>
     <a class="nav-link" href="#install">Install</a>
@@ -614,15 +693,14 @@
 <section class="hero">
   <div class="badge fade">
     <span class="badge-dot"></span>
-    v2.3.0 — Windows · macOS · Linux
+    Windows · macOS · Linux
   </div>
 
-  <h1 class="fade d1">Your feeds,<br><span class="accent">beautifully read.</span></h1>
+  <h1 class="fade d1">The <span class="accent">MMSP</span> feed reader<br>for the desktop.</h1>
 
   <p class="hero-desc fade d2">
-    Meridian is a <strong>desktop feed reader</strong> and subscription manager built on the <strong>MMSP</strong> protocol.
-    Subscribe to RSS, Atom, podcast, and YouTube feeds with native Qt Quick UI,
-    Catppuccin Mocha and Latte themes, and <strong>full keyboard navigation</strong>.
+    Meridian is the reference desktop client for the <strong><a href="https://oernster.github.io/MMSP-Spec/" style="color:var(--mauve);text-decoration:none;">MMSP protocol</a></strong> and its <strong>MFEED</strong> JSON feed format — a modern, structured alternative to RSS.
+    Full support for RSS, Atom, podcast, and YouTube feeds included for backwards compatibility.
   </p>
 
   <div class="hero-cta fade d3">
@@ -630,15 +708,19 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Download for your platform
     </a>
+    <a class="btn-secondary" href="https://oernster.github.io/MMSP-Spec/">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      MMSP Specification
+    </a>
     <a class="btn-secondary" href="https://github.com/oernster/meridian">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-      View on GitHub
+      GitHub
     </a>
   </div>
 
   <div class="screenshot-wrap fade d4">
     <img
-      src="https://github.com/user-attachments/assets/54ff3fbc-745c-45bb-a2ee-808829ec214e"
+      src="https://github.com/user-attachments/assets/54ff3fbb-5abc-445b-a2ee-808829ec214e"
       alt="Meridian feed reader — main window showing feed list, item list, and article detail pane"
     >
   </div>
@@ -647,6 +729,10 @@
 <!-- ── Stats bar ─────────────────────────────────────────────── -->
 <div class="stats-bar">
   <div class="stats-inner">
+    <div class="stat">
+      <div class="stat-value" style="color:var(--mauve)">MFEED</div>
+      <div class="stat-label">Protocol native</div>
+    </div>
     <div class="stat">
       <div class="stat-value">5</div>
       <div class="stat-label">Feed formats</div>
@@ -663,18 +749,69 @@
       <div class="stat-value">3</div>
       <div class="stat-label">Platforms</div>
     </div>
-    <div class="stat">
-      <div class="stat-value">LGPL</div>
-      <div class="stat-label">Open source</div>
-    </div>
   </div>
+</div>
+
+<!-- ── MMSP callout ───────────────────────────────────────────── -->
+<div class="mmsp-band">
+  <section class="section" id="mmsp" style="padding-top:4rem;padding-bottom:4rem;">
+    <div class="mmsp-inner">
+      <div class="mmsp-text">
+        <div class="section-label">Why Meridian exists</div>
+        <h2 class="section-title" style="margin-bottom:1rem;">Built for <span style="color:var(--mauve)">MMSP</span> and <span style="color:var(--mauve)">MFEED</span></h2>
+        <p style="color:var(--subtext1);font-size:1rem;line-height:1.75;margin-bottom:1.5rem;">
+          <strong style="color:var(--text)">MMSP</strong> (Minimal Media Subscription Protocol) is a modern, open standard for feed subscription — structured, JSON-native, and designed for clarity where RSS/Atom have accumulated decades of cruft.
+          <strong style="color:var(--text)">MFEED</strong> is the JSON feed format that implements it.
+        </p>
+        <p style="color:var(--subtext1);font-size:1rem;line-height:1.75;margin-bottom:1.5rem;">
+          Meridian is the reference desktop client: it parses MFEED natively, enforces MMSP polling semantics (conditional GET, 300 s floor, MMSP/1.0 User-Agent), and applies MMSP Appendix A ABNF filter expressions per-feed. RSS, Atom, podcast, and YouTube support is included so you can subscribe to everything in one place while MFEED adoption grows.
+        </p>
+        <a class="btn-primary" href="https://oernster.github.io/MMSP-Spec/" style="display:inline-flex;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Read the MMSP Specification
+        </a>
+      </div>
+      <div class="mmsp-pills">
+        <div class="proto-pill primary">
+          <div class="proto-pill-label">Native</div>
+          <div class="proto-pill-name">MFEED</div>
+          <div class="proto-pill-desc">MMSP JSON feed format</div>
+        </div>
+        <div class="proto-pill primary">
+          <div class="proto-pill-label">Native</div>
+          <div class="proto-pill-name">MMSP</div>
+          <div class="proto-pill-desc">Polling · filters · UA · conditional GET</div>
+        </div>
+        <div class="proto-pill secondary">
+          <div class="proto-pill-label">Supported</div>
+          <div class="proto-pill-name">RSS 2.0 / 1.0</div>
+          <div class="proto-pill-desc">Including content:encoded</div>
+        </div>
+        <div class="proto-pill secondary">
+          <div class="proto-pill-label">Supported</div>
+          <div class="proto-pill-name">Atom 1.0</div>
+          <div class="proto-pill-desc">Including media:group (YouTube)</div>
+        </div>
+        <div class="proto-pill secondary">
+          <div class="proto-pill-label">Supported</div>
+          <div class="proto-pill-name">Podcast RSS</div>
+          <div class="proto-pill-desc">iTunes extensions · media player</div>
+        </div>
+        <div class="proto-pill secondary">
+          <div class="proto-pill-label">Supported</div>
+          <div class="proto-pill-name">YouTube</div>
+          <div class="proto-pill-desc">Channel feeds via Atom</div>
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <!-- ── Features ──────────────────────────────────────────────── -->
 <section class="section" id="features">
   <div class="section-label">Features</div>
   <h2 class="section-title">Everything you need,<br>nothing you don't.</h2>
-  <p class="section-sub">From discovery to playback, Meridian handles every format and workflow with precision — and gets out of your way.</p>
+  <p class="section-sub">MMSP-native from the ground up, with full compatibility for every major feed format you already use.</p>
 
   <div class="features-grid">
 
@@ -682,8 +819,8 @@
       <div class="feat-icon ic-mauve">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
       </div>
-      <h3>Multi-format subscriptions</h3>
-      <p>RSS, Atom, podcast, and YouTube channels — all handled natively. MMSP protocol built-in. Kindle formats convert via Calibre if installed.</p>
+      <h3>MFEED and MMSP native</h3>
+      <p>Parses MFEED (MMSP JSON format) natively. Enforces MMSP/1.0 User-Agent, conditional GET (ETag / Last-Modified), and the 300 s poll floor per the spec. <a href="https://oernster.github.io/MMSP-Spec/" style="color:var(--mauve);text-decoration:none;">Read the spec →</a></p>
     </div>
 
     <div class="feat">
@@ -898,9 +1035,9 @@
       <nav class="footer-links">
         <a href="https://github.com/oernster/meridian">GitHub</a>
         <a href="https://github.com/oernster/meridian/releases">Releases</a>
+        <a href="https://oernster.github.io/MMSP-Spec/">MMSP Specification</a>
         <a href="https://github.com/oernster/meridian/blob/main/ARCHITECTURE.md">Architecture</a>
         <a href="https://github.com/oernster/meridian/blob/main/DEVELOPMENT.md">Development</a>
-        <a href="https://github.com/MMSP-Spec">MMSP Protocol</a>
         <a href="https://github.com/oernster/meridian/blob/main/LICENSE">LGPL-3.0</a>
       </nav>
     </div>
