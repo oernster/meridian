@@ -190,6 +190,7 @@ modules:
     build-commands:
       - pip3 install --no-cache-dir --no-deps --prefix=/app .
       - install -Dm644 LICENSE /app/lib/python3.12/site-packages/LICENSE
+      - install -Dm644 meridian.png /app/lib/python3.12/site-packages/meridian.png
       - install -Dm755 packaging/meridian-launcher.sh /app/bin/meridian
       - install -Dm644 packaging/${APP_ID}.desktop /app/share/applications/${APP_ID}.desktop
       - install -Dm644 packaging/${APP_ID}.metainfo.xml /app/share/metainfo/${APP_ID}.metainfo.xml
