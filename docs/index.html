@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meridian — Desktop Feed Reader</title>
+  <meta name="description" content="A desktop feed reader and subscription manager for RSS, Atom, podcast, and YouTube feeds. Built on the MMSP protocol with a native Qt Quick UI, Catppuccin themes, and full keyboard navigation.">
+  <link rel="icon" type="image/png" href="https://github.com/user-attachments/assets/e2ef5ef9-1ed9-4faf-9a8f-4af483072e59">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* Catppuccin Mocha palette */
+    :root {
+      --base:     #1e1e2e;
+      --mantle:   #181825;
+      --crust:    #11111b;
+      --surface0: #313244;
+      --surface1: #45475a;
+      --surface2: #585b70;
+      --overlay0: #6c7086;
+      --overlay1: #7f849c;
+      --subtext0: #a6adc8;
+      --subtext1: #bac2de;
+      --text:     #cdd6f4;
+      --lavender: #b4befe;
+      --blue:     #89b4fa;
+      --sapphire: #74c7ec;
+      --teal:     #94e2d5;
+      --green:    #a6e3a1;
+      --yellow:   #f9e2af;
+      --peach:    #fab387;
+      --mauve:    #cba6f7;
+      --pink:     #f5c2e7;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--base);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Navigation ─────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(24, 24, 37, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--surface0);
+      padding: 0 2rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      text-decoration: none;
+    }
+
+    .nav-brand img {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+    }
+
+    .nav-brand span {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--lavender);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1.75rem;
+    }
+
+    .nav-right a.nav-link {
+      color: var(--subtext1);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.18s;
+    }
+
+    .nav-right a.nav-link:hover { color: var(--text); }
+
+    /* ── Buttons ─────────────────────────────────────────────── */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: var(--mauve);
+      color: var(--crust);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 8px;
+      transition: opacity 0.18s, transform 0.15s;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: var(--surface0);
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.875rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 8px;
+      border: 1px solid var(--surface1);
+      transition: background 0.18s, transform 0.15s;
+      white-space: nowrap;
+    }
+    .btn-secondary:hover { background: var(--surface1); transform: translateY(-1px); }
+
+    /* ── Hero ────────────────────────────────────────────────── */
+    .hero {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 5.5rem 2rem 3rem;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: rgba(203, 166, 247, 0.12);
+      border: 1px solid rgba(203, 166, 247, 0.3);
+      color: var(--mauve);
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 0.3rem 0.9rem;
+      border-radius: 99px;
+      margin-bottom: 2rem;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+    }
+
+    h1 {
+      font-size: clamp(2.6rem, 6vw, 4.2rem);
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.1;
+      margin-bottom: 1.4rem;
+    }
+
+    h1 .accent { color: var(--mauve); }
+
+    .hero-desc {
+      font-size: 1.1rem;
+      color: var(--subtext1);
+      max-width: 580px;
+      margin: 0 auto 2.75rem;
+      line-height: 1.75;
+    }
+
+    .hero-desc strong { color: var(--text); font-weight: 600; }
+
+    .hero-cta {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 4.5rem;
+    }
+
+    .hero-cta .btn-primary,
+    .hero-cta .btn-secondary {
+      font-size: 0.975rem;
+      padding: 0.7rem 1.75rem;
+    }
+
+    .screenshot-wrap {
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--surface1);
+      box-shadow:
+        0 0 0 1px rgba(203, 166, 247, 0.06),
+        0 40px 100px rgba(0, 0, 0, 0.7),
+        0 0 140px rgba(203, 166, 247, 0.06);
+    }
+
+    .screenshot-wrap img {
+      width: 100%;
+      display: block;
+    }
+
+    /* ── Stats bar ───────────────────────────────────────────── */
+    .stats-bar {
+      background: var(--mantle);
+      border-top: 1px solid var(--surface0);
+      border-bottom: 1px solid var(--surface0);
+    }
+
+    .stats-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 2rem;
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .stat {
+      text-align: center;
+      padding: 0 1rem;
+    }
+
+    .stat + .stat {
+      border-left: 1px solid var(--surface1);
+    }
+
+    .stat-value {
+      font-size: 2.1rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: var(--mauve);
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--subtext0);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    /* ── Generic section wrapper ─────────────────────────────── */
+    .section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 5.5rem 2rem;
+    }
+
+    .section-label {
+      display: inline-block;
+      color: var(--mauve);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+
+    .section-sub {
+      font-size: 1.025rem;
+      color: var(--subtext1);
+      max-width: 520px;
+      line-height: 1.75;
+      margin-bottom: 3.5rem;
+    }
+
+    /* ── Features grid ───────────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(305px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .feat {
+      background: var(--mantle);
+      border: 1px solid var(--surface0);
+      border-radius: 16px;
+      padding: 1.75rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feat:hover {
+      border-color: var(--surface2);
+      transform: translateY(-3px);
+    }
+
+    .feat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .ic-mauve   { background: rgba(203,166,247,0.15); color: var(--mauve); }
+    .ic-blue    { background: rgba(137,180,250,0.15); color: var(--blue); }
+    .ic-teal    { background: rgba(148,226,213,0.15); color: var(--teal); }
+    .ic-green   { background: rgba(166,227,161,0.15); color: var(--green); }
+    .ic-peach   { background: rgba(250,179,135,0.15); color: var(--peach); }
+    .ic-sapp    { background: rgba(116,199,236,0.15); color: var(--sapphire); }
+    .ic-lav     { background: rgba(180,190,254,0.15); color: var(--lavender); }
+    .ic-yellow  { background: rgba(249,226,175,0.15); color: var(--yellow); }
+    .ic-pink    { background: rgba(245,194,231,0.15); color: var(--pink); }
+
+    .feat h3 {
+      font-size: 0.975rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .feat p {
+      font-size: 0.875rem;
+      color: var(--subtext0);
+      line-height: 1.65;
+    }
+
+    /* ── Divider ─────────────────────────────────────────────── */
+    .divider {
+      max-width: 1100px;
+      margin: 0 auto;
+      height: 1px;
+      background: var(--surface0);
+    }
+
+    /* ── Changelog ───────────────────────────────────────────── */
+    .changelog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .cl-entry {
+      background: var(--mantle);
+      border: 1px solid var(--surface0);
+      border-radius: 16px;
+      padding: 1.75rem;
+    }
+
+    .ver-tag {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(203,166,247,0.12);
+      border: 1px solid rgba(203,166,247,0.25);
+      color: var(--mauve);
+      font-size: 0.775rem;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      letter-spacing: 0.03em;
+    }
+
+    .cl-entry h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.9rem;
+      line-height: 1.3;
+    }
+
+    .cl-entry ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .cl-entry li {
+      font-size: 0.875rem;
+      color: var(--subtext1);
+      line-height: 1.55;
+      padding-left: 1.2rem;
+      position: relative;
+    }
+
+    .cl-entry li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.55em;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--mauve);
+      opacity: 0.65;
+    }
+
+    /* ── Install ─────────────────────────────────────────────── */
+    .install-band {
+      background: var(--mantle);
+      border-top: 1px solid var(--surface0);
+      border-bottom: 1px solid var(--surface0);
+    }
+
+    .install-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+
+    .install-grid .install-text p {
+      color: var(--subtext1);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin-bottom: 1.75rem;
+    }
+
+    .install-grid .install-text .note {
+      margin-top: 1.25rem;
+      font-size: 0.8rem;
+      color: var(--overlay1);
+    }
+
+    .code-block {
+      background: var(--crust);
+      border: 1px solid var(--surface0);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .code-block-head {
+      background: var(--surface0);
+      padding: 0.55rem 1rem;
+      font-size: 0.775rem;
+      color: var(--subtext0);
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--surface1);
+    }
+
+    .code-block pre {
+      padding: 1.25rem 1.25rem 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.81rem;
+      line-height: 1.75;
+      color: var(--text);
+      overflow-x: auto;
+    }
+
+    .tc  { color: var(--overlay1); }
+    .tk  { color: var(--blue); }
+    .ta  { color: var(--green); }
+    .tf  { color: var(--peach); }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--surface0);
+      padding: 3rem 2rem;
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .footer-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+    }
+
+    .footer-brand img {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+    }
+
+    .footer-brand span {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--subtext1);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.75rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: var(--subtext0);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: color 0.18s;
+    }
+    .footer-links a:hover { color: var(--text); }
+
+    .footer-bottom {
+      border-top: 1px solid var(--surface0);
+      padding-top: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .footer-bottom p {
+      font-size: 0.8rem;
+      color: var(--overlay1);
+    }
+
+    .footer-bottom .chips {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      background: var(--surface0);
+      color: var(--subtext0);
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .install-grid {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+      }
+    }
+
+    @media (max-width: 640px) {
+      nav { padding: 0 1rem; }
+      .nav-right .nav-link { display: none; }
+      .hero { padding: 3rem 1.25rem 2rem; }
+      .section { padding: 3.5rem 1.25rem; }
+      .features-grid { grid-template-columns: 1fr; }
+      .changelog-grid { grid-template-columns: 1fr; }
+      .stat + .stat { border-left: none; border-top: 1px solid var(--surface1); }
+      .stats-inner { flex-direction: column; gap: 1.25rem; }
+    }
+
+    /* ── Entrance animation ──────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade { animation: fadeUp 0.52s ease both; }
+    .d1 { animation-delay: 0.08s; }
+    .d2 { animation-delay: 0.18s; }
+    .d3 { animation-delay: 0.28s; }
+    .d4 { animation-delay: 0.38s; }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────────── -->
+<nav>
+  <a class="nav-brand" href="#">
+    <img src="https://github.com/user-attachments/assets/e2ef5ef9-1ed9-4faf-9a8f-4af483072e59" alt="Meridian icon">
+    <span>Meridian</span>
+  </a>
+  <div class="nav-right">
+    <a class="nav-link" href="#features">Features</a>
+    <a class="nav-link" href="#whats-new">What's New</a>
+    <a class="nav-link" href="#install">Install</a>
+    <a class="btn-primary" href="https://github.com/oernster/meridian/releases">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </a>
+  </div>
+</nav>
+
+<!-- ── Hero ─────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="badge fade">
+    <span class="badge-dot"></span>
+    v2.3.0 — Windows · macOS · Linux
+  </div>
+
+  <h1 class="fade d1">Your feeds,<br><span class="accent">beautifully read.</span></h1>
+
+  <p class="hero-desc fade d2">
+    Meridian is a <strong>desktop feed reader</strong> and subscription manager built on the <strong>MMSP</strong> protocol.
+    Subscribe to RSS, Atom, podcast, and YouTube feeds with native Qt Quick UI,
+    Catppuccin Mocha and Latte themes, and <strong>full keyboard navigation</strong>.
+  </p>
+
+  <div class="hero-cta fade d3">
+    <a class="btn-primary" href="https://github.com/oernster/meridian/releases">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download for your platform
+    </a>
+    <a class="btn-secondary" href="https://github.com/oernster/meridian">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      View on GitHub
+    </a>
+  </div>
+
+  <div class="screenshot-wrap fade d4">
+    <img
+      src="https://github.com/user-attachments/assets/54ff3fbc-745c-45bb-a2ee-808829ec214e"
+      alt="Meridian feed reader — main window showing feed list, item list, and article detail pane"
+    >
+  </div>
+</section>
+
+<!-- ── Stats bar ─────────────────────────────────────────────── -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat">
+      <div class="stat-value">5</div>
+      <div class="stat-label">Feed formats</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">371</div>
+      <div class="stat-label">Tests passing</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">100%</div>
+      <div class="stat-label">Branch coverage</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">3</div>
+      <div class="stat-label">Platforms</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">LGPL</div>
+      <div class="stat-label">Open source</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Features ──────────────────────────────────────────────── -->
+<section class="section" id="features">
+  <div class="section-label">Features</div>
+  <h2 class="section-title">Everything you need,<br>nothing you don't.</h2>
+  <p class="section-sub">From discovery to playback, Meridian handles every format and workflow with precision — and gets out of your way.</p>
+
+  <div class="features-grid">
+
+    <div class="feat">
+      <div class="feat-icon ic-mauve">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+      </div>
+      <h3>Multi-format subscriptions</h3>
+      <p>RSS, Atom, podcast, and YouTube channels — all handled natively. MMSP protocol built-in. Kindle formats convert via Calibre if installed.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-blue">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </div>
+      <h3>Feed discovery</h3>
+      <p>Search new feeds by topic via feedsearch.dev. 46 category autocomplete, result cap selector (10–200), and bulk subscribe with a confirmation dialog.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-teal">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      </div>
+      <h3>Filter expressions</h3>
+      <p>Per-feed MMSP Appendix A ABNF filters. The filter dialog surfaces existing terms as toggleable rows — no syntax knowledge required for common cases.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-green">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <h3>Background polling</h3>
+      <p>Conditional GET with ETag and Last-Modified. Rate-limit backoff, 300 s poll floor. Async asyncio scheduler — zero CPU when no feeds are due.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-peach">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+      </div>
+      <h3>Catppuccin themes</h3>
+      <p>Mocha (dark) and Latte (light) with a single toggle. Theme preference persists across restarts. Amber focus ring on every focusable control.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-sapp">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <h3>Full-text rendering</h3>
+      <p>content:encoded preferred over description so full article HTML is shown where available. Media player for podcast and video items built in.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-lav">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      </div>
+      <h3>Full keyboard navigation</h3>
+      <p>Every control reachable without a mouse. Tab wraps cleanly end-to-end. Enter, Space, Left, Right all wired. Escape closes drawers and dialogs.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-yellow">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <h3>Import and export</h3>
+      <p>Full subscription round-trip via JSON. A curated feeds_export.json ships with the repo so you can bootstrap a reading list in seconds.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-pink">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg>
+      </div>
+      <h3>Bulk feed management</h3>
+      <p>Select-all checkboxes, bulk remove, per-feed filter, edit, and delete from the subscription manager. In-place list removal preserves scroll position.</p>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── What's New ────────────────────────────────────────────── -->
+<section class="section" id="whats-new">
+  <div class="section-label">Changelog</div>
+  <h2 class="section-title">What's new</h2>
+  <p class="section-sub">Recent releases have focused on keyboard navigation completeness, theme persistence, and feed discovery from the app itself.</p>
+
+  <div class="changelog-grid">
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.3.0 — 2026-06-03</div>
+      <h3>Cross-Platform Release + Diagnostics</h3>
+      <ul>
+        <li>macOS DMG build — tested on Tahoe</li>
+        <li>Linux Flatpak — tested on Ubuntu</li>
+        <li>Windows installer rebuilt and re-tested on Windows 11</li>
+        <li>Crash diagnostics: stdout/stderr redirected to ~/Library/Logs/Meridian/meridian.log in frozen mode</li>
+        <li>About dialog icon and Licence dialog text rendering fixed</li>
+        <li>Bulk subscribe confirmation dialog height corrected — previously showed only one URL</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.2.0 — 2026-06-03</div>
+      <h3>UI/UX Overhaul + Keyboard Navigation</h3>
+      <ul>
+        <li>Full UI/UX layout overhaul: buttons replace menus throughout</li>
+        <li>Complete Tab/Shift+Tab and arrow key navigation across all controls</li>
+        <li>Dark/light theme preference persists across restarts via Qt.labs.settings</li>
+        <li>Escape closes the Feed Discovery panel from any control</li>
+        <li>371 tests, 100% branch coverage</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.1.0 — 2026-06-02</div>
+      <h3>Full Keyboard Navigation</h3>
+      <ul>
+        <li>Every interactive element reachable and operable without a mouse</li>
+        <li>Tab chain: File menu → Search → Manage → Theme toggle → Feed list → Item list → Open in Browser → wraps</li>
+        <li>Amber focus ring on all focusable controls</li>
+        <li>Full keyboard nav inside Manage Subscriptions and all its dialogs</li>
+        <li>Filter dialog opens pre-populated with existing terms as tabbable toggleable rows</li>
+        <li>Left/Right cursor navigates between dialog footer buttons (Cancel / OK)</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.0.0 — 2026-06-02</div>
+      <h3>Feed Discovery</h3>
+      <ul>
+        <li>Search by topic or keyword — subscribe to one or many feeds without leaving the app</li>
+        <li>Discovery panel runs on an isolated async event loop in a daemon thread</li>
+        <li>DiscoveryFetcher ABC with FeedsearchFetcher implementation — same layered boundaries as the rest of the system</li>
+        <li>HTTP and HTTPS feed URLs accepted (HTTP feeds follow redirects transparently)</li>
+        <li>Splash screen with rounded corners; Win32 mutex prevents multiple instances</li>
+        <li>100% branch coverage maintained including the new discovery stack</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.0.1 — 2026-06-01</div>
+      <h3>Feed Reader UI + Sample Feeds</h3>
+      <ul>
+        <li>Reworked FeedReader layout: hero thumbnail, media player, sort controls, unread indicator dot</li>
+        <li>feeds_export.json ships with the repo — curated RSS, Atom, and MFEED subscriptions ready to import</li>
+        <li>LGPL-3.0 licence added to Help menu and corrected throughout documentation</li>
+        <li>black formatting and flake8 clean across all Python sources</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.3.0 — 2026-06-01</div>
+      <h3>Windows Installer + Splash Screen</h3>
+      <ul>
+        <li>MeridianSetup.exe: per-user installer with upgrade, repair, and uninstall workflows</li>
+        <li>Registers with Windows Settings > Apps; creates desktop and Start Menu shortcuts</li>
+        <li>No administrator privileges required; user data preserved across upgrades</li>
+        <li>Branded splash screen displayed on launch while the app initialises</li>
+        <li>Full multi-resolution icon set (16 px through 512 px) for sharp rendering everywhere</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div style="text-align:center; margin-top:2.5rem;">
+    <a class="btn-secondary" href="https://github.com/oernster/meridian/releases" style="font-size:0.9rem; padding:0.6rem 1.5rem;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      View all releases on GitHub
+    </a>
+  </div>
+</section>
+
+<!-- ── Install ────────────────────────────────────────────────── -->
+<div class="install-band">
+  <section class="section" id="install">
+    <div class="section-label">Get started</div>
+    <h2 class="section-title">Install Meridian</h2>
+    <p class="section-sub">Pre-built installers for Windows, macOS, and Linux on the Releases page. Or run from source in three commands.</p>
+
+    <div class="install-grid">
+      <div class="install-text">
+        <p>Download the latest installer for your platform from the GitHub Releases page — no Python required. Windows ships as <code style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;color:var(--peach)">MeridianSetup.exe</code>, macOS as a DMG, Linux as a Flatpak. All built with PyInstaller and ship everything bundled.</p>
+        <a class="btn-primary" href="https://github.com/oernster/meridian/releases" style="font-size:0.975rem; padding:0.7rem 1.75rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Latest release
+        </a>
+        <p class="note">LGPL-3.0 licence. Built with Python, PySide6, Qt Quick, SQLAlchemy, and httpx.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-block-head">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          Run from source
+        </div>
+        <pre><span class="tc"># Clone and set up</span>
+<span class="tk">git</span> clone https://github.com/oernster/meridian
+<span class="tk">cd</span> meridian
+<span class="tk">python</span> <span class="tf">-m</span> venv venv
+
+<span class="tc"># Activate (Windows)</span>
+<span class="tk">venv\Scripts\activate</span>
+<span class="tc"># Activate (macOS / Linux)</span>
+<span class="tk">source</span> venv/bin/activate
+
+<span class="tc"># Install and run</span>
+<span class="tk">pip</span> <span class="ta">install</span> <span class="tf">-r</span> requirements.txt
+<span class="tk">python</span> <span class="tf">-m</span> meridian.main</pre>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <a class="footer-brand" href="#">
+        <img src="https://github.com/user-attachments/assets/e2ef5ef9-1ed9-4faf-9a8f-4af483072e59" alt="Meridian">
+        <span>Meridian</span>
+      </a>
+      <nav class="footer-links">
+        <a href="https://github.com/oernster/meridian">GitHub</a>
+        <a href="https://github.com/oernster/meridian/releases">Releases</a>
+        <a href="https://github.com/oernster/meridian/blob/main/ARCHITECTURE.md">Architecture</a>
+        <a href="https://github.com/oernster/meridian/blob/main/DEVELOPMENT.md">Development</a>
+        <a href="https://github.com/MMSP-Spec">MMSP Protocol</a>
+        <a href="https://github.com/oernster/meridian/blob/main/LICENSE">LGPL-3.0</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>A desktop feed reader built on the MMSP protocol. Open source, always.</p>
+      <div class="chips">
+        <span class="chip">Python</span>
+        <span class="chip">PySide6</span>
+        <span class="chip">Qt Quick</span>
+        <span class="chip">SQLAlchemy</span>
+        <span class="chip">httpx</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
