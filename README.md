@@ -2,7 +2,7 @@
 
 A desktop feed reader and subscription manager built on the [MMSP](https://github.com/MMSP-Spec) protocol. Supports RSS, Atom, podcast feeds, and YouTube channels with a native Qt Quick UI.
 
-# <img width="273" height="136" alt="contrib" src="https://github.com/user-attachments/assets/8a1c1862-b9a3-4e07-a9cc-b15d9d29e2d7" /> This is NOT cool.  shubh2294 has made ZERO contributions to the large amount of effort made by myself to create this project.  GitHub should be ASHAMED of themselves.  Credit where CREDIT IT NOT DUE!!!
+# <img width="273" height="136" alt="contrib" src="https://github.com/user-attachments/assets/8a1c1862-b9a3-4e07-a9cc-b15d9d29e2d7" /> This is NOT cool.  shubh2294 has made ZERO contributions to the large amount of effort made by myself to create this project.  GitHub should be ASHAMED of themselves.  Credit where CREDIT is NOT DUE!!!
 
 <img width="1265" height="827" alt="meridian" src="https://github.com/user-attachments/assets/54ff3fbb-5abc-445b-a2ee-808829ec214e" />
 
