@@ -680,6 +680,7 @@
   <div class="nav-right">
     <a class="nav-link" href="#mmsp">MMSP</a>
     <a class="nav-link" href="#features">Features</a>
+    <a class="nav-link" href="#architecture">Architecture</a>
     <a class="nav-link" href="#whats-new">What's New</a>
     <a class="nav-link" href="#install">Install</a>
     <a class="btn-primary" href="https://github.com/oernster/meridian/releases">
@@ -760,7 +761,7 @@
         <div class="section-label">Why Meridian exists</div>
         <h2 class="section-title" style="margin-bottom:1rem;">Built for <span style="color:var(--mauve)">MMSP</span> and <span style="color:var(--mauve)">MFEED</span></h2>
         <p style="color:var(--subtext1);font-size:1rem;line-height:1.75;margin-bottom:1.5rem;">
-          <strong style="color:var(--text)">MMSP</strong> (Minimal Media Subscription Protocol) is a modern, open standard for feed subscription - structured, JSON-native, and designed for clarity where RSS/Atom have accumulated decades of cruft.
+          <strong style="color:var(--text)">MMSP</strong> (MultiMedia Subscription Protocol) is a modern, open standard for feed subscription - structured, JSON-native, and designed for clarity where RSS/Atom have accumulated decades of cruft.
           <strong style="color:var(--text)">MFEED</strong> is the JSON feed format that implements it.
         </p>
         <p style="color:var(--subtext1);font-size:1rem;line-height:1.75;margin-bottom:1.5rem;">
@@ -887,7 +888,25 @@
       <p>Select-all checkboxes, bulk remove, per-feed filter, edit, and delete from the subscription manager. In-place list removal preserves scroll position.</p>
     </div>
 
+    <div class="feat">
+      <div class="feat-icon ic-blue">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </div>
+      <h3>Single-device by design</h3>
+      <p>No account, no cloud, no server. Your subscriptions and read state stay on your machine. JSON export/import moves them between machines - the migration path, not live sync.</p>
+    </div>
+
   </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── Architecture ──────────────────────────────────────────── -->
+<section class="section" id="architecture">
+  <div class="section-label">Architecture</div>
+  <h2 class="section-title">Clean layers, enforced.</h2>
+  <p class="section-sub">UI to Application to Domain, with Infrastructure implementing inward. Layer boundaries are checked by AST tests at every run, alongside 100% branch coverage.</p>
+  <img src="architecture.svg" alt="Meridian clean architecture: UI, Application, Domain, Infrastructure, with dependencies pointing inward to a pure Domain" style="display:block; width:100%; max-width:920px; margin:1.75rem auto 0; border-radius:14px;">
 </section>
 
 <div class="divider"></div>

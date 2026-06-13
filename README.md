@@ -64,6 +64,10 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for Python version requirements, dev toolin
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full project structure and design.
 
+<p align="center">
+  <img src="docs/architecture.svg" alt="Meridian clean architecture: UI, Application, Domain, Infrastructure, with dependencies pointing inward to a pure Domain" width="860">
+</p>
+
 ## Sample Feeds
 
 A `feeds_export.json` file is included in the repository with a curated set of RSS, Atom, and MFEED subscriptions ready to import.
@@ -87,6 +91,12 @@ All feeds will be added and begin polling immediately.
 - Catppuccin Mocha / Latte theme toggle; preference persists across restarts
 - Full-text `content:encoded` rendering for article feeds
 - Full keyboard navigation throughout: every control reachable and operable without a mouse; Enter and Space activate focused items; Left/Right navigate between buttons and dialog footer actions; amber focus ring on all focusable controls; Escape closes open drawers and dialogs
+
+## Single-device by design
+
+Meridian is deliberately a single-device application. It does not sync your subscriptions or read state to a cloud account or between machines, and it has no server component. This is a design choice, not a missing feature: the MMSP protocol it is built on is pull-only and treats read state as a client concern, so Meridian keeps all of that state local to the machine it runs on.
+
+To move your subscriptions to another machine, use the File menu to export your subscriptions to a `feeds_export.json` file, then **File > Import Feeds...** on the other machine. JSON export/import is the migration path; it is not live sync, and read state does not transfer.
 
 ## License
 
