@@ -87,6 +87,26 @@ def require(tool: str, brew_pkg: str | None = None) -> None:
         sys.exit(f"ERROR: {tool} still not found after brew install. Aborting.")
 
 
+def require_importable(module: str) -> None:
+    """Ensure a Python module is importable in the interpreter running this build.
+
+    PyInstaller analyses the app with whichever interpreter invokes it. To bundle
+    a dependency (e.g. PySide6) it must be importable in THAT interpreter. The
+    build therefore drives PyInstaller through sys.executable -m PyInstaller, and
+    every runtime dependency must live in the same environment. A bare on-PATH
+    `pyinstaller` (e.g. Homebrew's, in its own isolated venv) would silently build
+    an app missing these modules, which then crashes at launch.
+    """
+    if importlib.util.find_spec(module) is not None:
+        return
+    sys.exit(
+        f"ERROR: '{module}' is not importable in {sys.executable}.\n"
+        f"       Install the build dependencies into this interpreter, e.g.:\n"
+        f"         {sys.executable} -m pip install -r requirements.txt pyinstaller\n"
+        f"       then re-run:  {sys.executable} {Path(__file__).name}"
+    )
+
+
 def section(title: str) -> None:
     print(f"\n{'=' * 60}")
     print(f"  {title}")
@@ -101,7 +121,8 @@ def check_platform() -> None:
         sys.exit("ERROR: This script must run on macOS.")
     result = subprocess.run(["sw_vers", "-productVersion"], capture_output=True, text=True)
     print(f"  macOS {result.stdout.strip()}")
-    require("pyinstaller", "pyinstaller")
+    require_importable("PySide6")
+    require_importable("PyInstaller")
     require("create-dmg", "create-dmg")
     require("codesign")
     print("  All tools present.")
@@ -128,7 +149,7 @@ def build_app_bundle(entitlements_path: Path, icns_path: Path | None = None) -> 
     icon_args = ["--icon", str(icns_path)] if icns_path else []
 
     cmd = [
-        "pyinstaller",
+        sys.executable, "-m", "PyInstaller",
         "--noconfirm",
         "--windowed",
         "--name", APP_NAME,
