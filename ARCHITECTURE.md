@@ -163,8 +163,16 @@ Tab wrap-around uses explicit `forceActiveFocus()` with `event.accepted = true` 
 
 ## Licence
 
-Apache-2.0 (matches MMSP specification ecosystem).
+Meridian is dual-licensed, split by component (see `LICENSE` for the map):
+
+- Model (`domain`, `application`, `infrastructure`, `main.py`, `version.py`, build scripts, tests): Apache-2.0 (matches the MMSP specification ecosystem).
+- User interface (`ui`) only: LGPL-3.0-or-later, to align with Qt's licensing.
+
+Third-party runtime dependencies:
+
 PySide6: LGPL-3.0 (dynamically linked; compliant by default install).
 bleach: Apache-2.0.
 SQLAlchemy: MIT.
 httpx: BSD-3-Clause.
+defusedxml: PSF.
+python-dateutil: Apache-2.0 / BSD-3-Clause.

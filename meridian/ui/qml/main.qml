@@ -196,14 +196,14 @@ ApplicationWindow {
                     MouseArea { id: manageHeaderMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: subManagerDrawer.open() }
                     Keys.onReturnPressed: subManagerDrawer.open()
                     Keys.onPressed: function(event) { if (event.key === Qt.Key_Space) { subManagerDrawer.open(); event.accepted = true } }
-                    Keys.onTabPressed:     { event.accepted = true; licenceBtn.forceActiveFocus(Qt.TabFocusReason) }
-                    Keys.onRightPressed:   { event.accepted = true; licenceBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onTabPressed:     { event.accepted = true; uiLicenceBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onRightPressed:   { event.accepted = true; uiLicenceBtn.forceActiveFocus(Qt.TabFocusReason) }
                     Keys.onBacktabPressed: { event.accepted = true; discoverBtn.forceActiveFocus(Qt.BacktabFocusReason) }
                     Keys.onLeftPressed:    { event.accepted = true; discoverBtn.forceActiveFocus(Qt.BacktabFocusReason) }
                 }
             }
 
-            // Right action row: Licence | About | Theme toggle
+            // Right action row: UI Licence | Model Licence | About | Theme toggle
             Row {
                 id: rightActionRow
                 anchors.right: parent.right
@@ -212,20 +212,37 @@ ApplicationWindow {
                 spacing: 6
 
                 Rectangle {
-                    id: licenceBtn
-                    width: licenceLbl.contentWidth + 20; height: 34; radius: 8
+                    id: uiLicenceBtn
+                    width: uiLicenceLbl.contentWidth + 20; height: 34; radius: 8
                     activeFocusOnTab: true
-                    color: licenceMouse.containsMouse ? theme.surface0 : theme.surface1
-                    border.color: (licenceMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
+                    color: uiLicenceMouse.containsMouse ? theme.surface0 : theme.surface1
+                    border.color: (uiLicenceMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
                     border.width: 1
-                    Label { id: licenceLbl; anchors.centerIn: parent; text: "📜  Licence"; font.pixelSize: 13; color: theme.text }
-                    MouseArea { id: licenceMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: licenceDialog.open() }
-                    Keys.onReturnPressed: licenceDialog.open()
-                    Keys.onPressed: function(event) { if (event.key === Qt.Key_Space) { licenceDialog.open(); event.accepted = true } }
-                    Keys.onTabPressed:     { event.accepted = true; aboutBtn.forceActiveFocus(Qt.TabFocusReason) }
-                    Keys.onRightPressed:   { event.accepted = true; aboutBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Label { id: uiLicenceLbl; anchors.centerIn: parent; text: "📜  UI Licence"; font.pixelSize: 13; color: theme.text }
+                    MouseArea { id: uiLicenceMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: uiLicenceDialog.open() }
+                    Keys.onReturnPressed: uiLicenceDialog.open()
+                    Keys.onPressed: function(event) { if (event.key === Qt.Key_Space) { uiLicenceDialog.open(); event.accepted = true } }
+                    Keys.onTabPressed:     { event.accepted = true; modelLicenceBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onRightPressed:   { event.accepted = true; modelLicenceBtn.forceActiveFocus(Qt.TabFocusReason) }
                     Keys.onBacktabPressed: { event.accepted = true; manageBtn.forceActiveFocus(Qt.BacktabFocusReason) }
                     Keys.onLeftPressed:    { event.accepted = true; manageBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                }
+
+                Rectangle {
+                    id: modelLicenceBtn
+                    width: modelLicenceLbl.contentWidth + 20; height: 34; radius: 8
+                    activeFocusOnTab: true
+                    color: modelLicenceMouse.containsMouse ? theme.surface0 : theme.surface1
+                    border.color: (modelLicenceMouse.containsMouse || activeFocus) ? theme.amber : "transparent"
+                    border.width: 1
+                    Label { id: modelLicenceLbl; anchors.centerIn: parent; text: "⚖️  Model Licence"; font.pixelSize: 13; color: theme.text }
+                    MouseArea { id: modelLicenceMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: modelLicenceDialog.open() }
+                    Keys.onReturnPressed: modelLicenceDialog.open()
+                    Keys.onPressed: function(event) { if (event.key === Qt.Key_Space) { modelLicenceDialog.open(); event.accepted = true } }
+                    Keys.onTabPressed:     { event.accepted = true; aboutBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onRightPressed:   { event.accepted = true; aboutBtn.forceActiveFocus(Qt.TabFocusReason) }
+                    Keys.onBacktabPressed: { event.accepted = true; uiLicenceBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                    Keys.onLeftPressed:    { event.accepted = true; uiLicenceBtn.forceActiveFocus(Qt.BacktabFocusReason) }
                 }
 
                 Rectangle {
@@ -241,8 +258,8 @@ ApplicationWindow {
                     Keys.onPressed: function(event) { if (event.key === Qt.Key_Space) { aboutDialog.open(); event.accepted = true } }
                     Keys.onTabPressed:     { event.accepted = true; themeToggleBtn.forceActiveFocus(Qt.TabFocusReason) }
                     Keys.onRightPressed:   { event.accepted = true; themeToggleBtn.forceActiveFocus(Qt.TabFocusReason) }
-                    Keys.onBacktabPressed: { event.accepted = true; licenceBtn.forceActiveFocus(Qt.BacktabFocusReason) }
-                    Keys.onLeftPressed:    { event.accepted = true; licenceBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                    Keys.onBacktabPressed: { event.accepted = true; modelLicenceBtn.forceActiveFocus(Qt.BacktabFocusReason) }
+                    Keys.onLeftPressed:    { event.accepted = true; modelLicenceBtn.forceActiveFocus(Qt.BacktabFocusReason) }
                 }
 
                 Rectangle {
@@ -906,8 +923,17 @@ ApplicationWindow {
     }
 
     LicenceDialog {
-        id: licenceDialog
+        id: uiLicenceDialog
         theme: theme
+        licenceTitle: "UI Licence - GNU Lesser General Public Licence v3.0"
+        licenceBody: uiLicenceText
+    }
+
+    LicenceDialog {
+        id: modelLicenceDialog
+        theme: theme
+        licenceTitle: "Model Licence - Apache License 2.0"
+        licenceBody: modelLicenceText
     }
 
     Dialog {

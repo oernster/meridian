@@ -98,4 +98,9 @@ To move your subscriptions to another machine, use the File menu to export your 
 
 ## License
 
-LGPL-3.0. See [ARCHITECTURE.md](ARCHITECTURE.md) for third-party licence notes.
+Meridian is dual-licensed, split by component:
+
+- **Model** (`meridian/domain`, `meridian/application`, `meridian/infrastructure`, `main.py`, `version.py`, build scripts and tests): Apache-2.0, aligning with the MMSP specification ecosystem. See [LICENSE-APACHE-2.0.txt](LICENSE-APACHE-2.0.txt).
+- **User interface** (`meridian/ui`) only: LGPL-3.0-or-later, to align with Qt's licensing. See [LICENSE-LGPL-3.0.txt](LICENSE-LGPL-3.0.txt).
+
+See [LICENSE](LICENSE) for the component map and [ARCHITECTURE.md](ARCHITECTURE.md) for third-party licence notes.

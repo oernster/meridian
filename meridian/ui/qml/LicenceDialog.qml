@@ -11,6 +11,8 @@ Dialog {
     anchors.centerIn: Overlay.overlay
 
     required property var theme
+    property string licenceTitle: ""
+    property string licenceBody: ""
 
     onOpened: licenceText.forceActiveFocus(Qt.OtherFocusReason)
 
@@ -40,7 +42,7 @@ Dialog {
         }
         Label {
             anchors.centerIn: parent
-            text: "Licence - GNU Lesser General Public Licence v3.0"
+            text: root.licenceTitle
             font.pixelSize: 14
             font.bold: true
             color: theme.text
@@ -89,7 +91,7 @@ Dialog {
             id: licenceText
             readOnly: true
             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-            text: appLicenceText
+            text: root.licenceBody
             color: root.theme.text
             background: null
             font.family: "Courier New"

@@ -83,12 +83,17 @@ if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     _QML_MAIN = _BASE / "meridian" / "ui" / "qml" / "main.qml"
     _ICON_DIR = _BASE
     _ICON_PATH = _BASE / "meridian.png"
-    _LICENCE_PATH = _BASE / "LICENSE"
 else:
     _QML_MAIN = Path(__file__).parent / "ui" / "qml" / "main.qml"
     _ICON_DIR = Path(__file__).parent.parent
     _ICON_PATH = _ICON_DIR / "meridian.png"
-    _LICENCE_PATH = _ICON_DIR / "LICENSE"
+
+# Licence texts live at the repo root (dev) and are bundled alongside the app
+# (frozen); _ICON_DIR resolves to the correct base in both cases.
+_UI_LICENCE_FILE = "LICENSE-LGPL-3.0.txt"
+_MODEL_LICENCE_FILE = "LICENSE-APACHE-2.0.txt"
+_UI_LICENCE_PATH = _ICON_DIR / _UI_LICENCE_FILE
+_MODEL_LICENCE_PATH = _ICON_DIR / _MODEL_LICENCE_FILE
 
 _ICON_SIZES = (16, 20, 24, 28, 32, 40, 48, 56, 64, 72, 96, 128, 256, 512)
 
@@ -104,9 +109,9 @@ def _build_app_icon() -> QIcon:
     return icon
 
 
-def _read_licence() -> str:
+def _read_text(path: Path) -> str:
     try:
-        return _LICENCE_PATH.read_text(encoding="utf-8")
+        return path.read_text(encoding="utf-8")
     except OSError:
         return "Licence text unavailable."
 
@@ -156,7 +161,12 @@ def main() -> None:
     engine.rootContext().setContextProperty("controller", controller)
     engine.rootContext().setContextProperty("appVersion", __version__)
     engine.rootContext().setContextProperty("appIconUrl", icon_url)
-    engine.rootContext().setContextProperty("appLicenceText", _read_licence())
+    engine.rootContext().setContextProperty(
+        "uiLicenceText", _read_text(_UI_LICENCE_PATH)
+    )
+    engine.rootContext().setContextProperty(
+        "modelLicenceText", _read_text(_MODEL_LICENCE_PATH)
+    )
     engine.load(QUrl.fromLocalFile(str(_QML_MAIN)))
 
     if not engine.rootObjects():
