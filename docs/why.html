@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Why Meridian exists: a reader and a protocol for modern publication</title>
+  <meta name="description" content="Why Meridian was built: modern publishing outgrew the question feed readers answer, so Meridian pairs a local-first desktop reader with MMSP, an open publication and discovery protocol, as its reference implementation.">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="meridian-512.png">
+  <link rel="canonical" href="https://ernster.dev/meridian/why.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Meridian">
+  <meta property="og:url" content="https://ernster.dev/meridian/why.html">
+  <meta property="og:title" content="Why Meridian exists: a reader and a protocol for modern publication">
+  <meta property="og:description" content="Modern publishing outgrew the question feed readers answer. Meridian pairs a local-first desktop reader with MMSP, an open publication and discovery protocol.">
+  <meta property="og:image" content="https://ernster.dev/meridian/meridian-512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Meridian app icon">
+  <meta property="og:locale" content="en_GB">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Why Meridian exists: a reader and a protocol for modern publication">
+  <meta name="twitter:description" content="Modern publishing outgrew the question feed readers answer. Meridian pairs a local-first desktop reader with MMSP, an open publication and discovery protocol.">
+  <meta name="twitter:image" content="https://ernster.dev/meridian/meridian-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">
+    <img src="meridian-512.png" alt="Meridian icon">
+    <span>Meridian</span>
+  </a>
+  <div class="nav-right">
+    <a class="nav-link" href="features.html">Features</a>
+    <a class="nav-link" href="why.html">Why</a>
+    <a class="nav-link" href="whats-new.html">What's New</a>
+    <a class="nav-link" href="download.html">Download</a>
+    <a class="btn-primary" href="download.html">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </a>
+  </div>
+</nav>
+
+<section class="section prose" id="exists">
+  <div class="section-label">The reasoning</div>
+  <h2 class="section-title">Why this exists</h2>
+  <p style="margin-top:1.5rem;">Most feed readers answer a narrow question: what has been published?
+    Modern publishing no longer fits it. A single publisher may put out articles, podcasts, video,
+    software releases and machine-generated reports through entirely different mechanisms. RSS and
+    Atom cover part of that well; everything else is bolted on through namespace extensions or
+    missing altogether and most modern readers optimise for engagement rather than calm reading.</p>
+  <p>Meridian pairs a local-first desktop reader with an open protocol. MMSP defines a
+    machine-readable publication and discovery contract: a publisher describes what it publishes at
+    a well-known endpoint and any client can discover and consume it predictably. Meridian is the
+    reference implementation. It consumes RSS, Atom, podcast, YouTube and native MFEED feeds
+    through one model, so subscription feels consistent even when publication formats differ.</p>
+  <p>A reference client has to be exemplary or the spec it implements loses authority. The polling
+    semantics the spec mandates (conditional GET, the 300 second floor, the honest MMSP/1.0
+    User-Agent) sit behind a pure domain inside a four-layer architecture whose boundaries are
+    enforced by structural tests, with 100% branch coverage on every build. Subscriptions and read
+    state live in local SQLite; there is no account, no cloud and no server.</p>
+  <p>What works now is a calm three-pane reader for Windows, macOS and Linux: topic-based feed
+    discovery, per-feed filter expressions, bulk management, a built-in media player, Catppuccin
+    themes and every control reachable by keyboard. The protocol remains the heart of the project:
+    once publication becomes explicit, interoperability becomes possible.</p>
+  <p>Full reasoning at <a href="https://www.crankthecode.com/posts/meridian">crankthecode.com</a>.</p>
+  <div class="hero-cta" style="justify-content:flex-start;margin-top:2rem;margin-bottom:0;">
+    <a class="btn-primary" href="download.html">Download Meridian</a>
+    <a class="btn-secondary" href="https://ernster.dev/MMSP-Spec/">MMSP Specification</a>
+  </div>
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <a class="footer-brand" href="index.html">
+        <img src="meridian-512.png" alt="Meridian">
+        <span>Meridian</span>
+      </a>
+      <nav class="footer-links">
+        <a href="https://github.com/oernster/meridian">GitHub</a>
+        <a href="https://github.com/oernster/meridian/releases">Releases</a>
+        <a href="https://ernster.dev/MMSP-Spec/">MMSP Specification</a>
+        <a href="https://github.com/oernster/meridian/blob/main/ARCHITECTURE.md">Architecture</a>
+        <a href="https://github.com/oernster/meridian/blob/main/DEVELOPMENT.md">Development</a>
+        <a href="https://github.com/oernster/meridian/blob/main/LICENSE">Licence</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>A desktop feed reader built on the MMSP protocol. Open source, always.</p>
+      <div class="chips">
+        <span class="chip">Python</span>
+        <span class="chip">PySide6</span>
+        <span class="chip">Qt Quick</span>
+        <span class="chip">SQLAlchemy</span>
+        <span class="chip">httpx</span>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What's new in Meridian: release history</title>
+  <meta name="description" content="Meridian's release history: component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="meridian-512.png">
+  <link rel="canonical" href="https://ernster.dev/meridian/whats-new.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Meridian">
+  <meta property="og:url" content="https://ernster.dev/meridian/whats-new.html">
+  <meta property="og:title" content="What's new in Meridian: release history">
+  <meta property="og:description" content="Component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta property="og:image" content="https://ernster.dev/meridian/meridian-512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Meridian app icon">
+  <meta property="og:locale" content="en_GB">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="What's new in Meridian: release history">
+  <meta name="twitter:description" content="Component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta name="twitter:image" content="https://ernster.dev/meridian/meridian-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">
+    <img src="meridian-512.png" alt="Meridian icon">
+    <span>Meridian</span>
+  </a>
+  <div class="nav-right">
+    <a class="nav-link" href="features.html">Features</a>
+    <a class="nav-link" href="why.html">Why</a>
+    <a class="nav-link" href="whats-new.html">What's New</a>
+    <a class="nav-link" href="download.html">Download</a>
+    <a class="btn-primary" href="download.html">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </a>
+  </div>
+</nav>
+
+<!-- ── What's New ────────────────────────────────────────────── -->
+<section class="section" id="whats-new">
+  <div class="section-label">Changelog</div>
+  <h2 class="section-title">What's new</h2>
+  <p class="section-sub">Recent releases have focused on keyboard navigation completeness, theme persistence and feed discovery from the app itself.</p>
+
+  <div class="changelog-grid">
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.4.0 - 2026-06-27</div>
+      <h3>Component-split licensing</h3>
+      <ul>
+        <li>Licensing split by component: user interface under LGPL-3.0, model under Apache-2.0</li>
+        <li>Header now shows two licence buttons: "UI Licence" (LGPL-3.0) and "Model Licence" (Apache-2.0), each with its own dialog</li>
+        <li>CONTRIBUTING.md added with contribution guidelines and the layer invariant</li>
+        <li>Licence texts split into LICENSE-LGPL-3.0.txt and LICENSE-APACHE-2.0.txt, mapped from the root LICENSE</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.3.0 - 2026-06-03</div>
+      <h3>Cross-Platform Release + Diagnostics</h3>
+      <ul>
+        <li>macOS DMG build - tested on Tahoe</li>
+        <li>Linux Flatpak - tested on Ubuntu</li>
+        <li>Windows installer rebuilt and re-tested on Windows 11</li>
+        <li>Crash diagnostics: stdout/stderr redirected to ~/Library/Logs/Meridian/meridian.log in frozen mode</li>
+        <li>About dialog icon and Licence dialog text rendering fixed</li>
+        <li>Bulk subscribe confirmation dialog height corrected - previously showed only one URL</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.2.0 - 2026-06-03</div>
+      <h3>UI/UX Overhaul + Keyboard Navigation</h3>
+      <ul>
+        <li>Full UI/UX layout overhaul: buttons replace menus throughout</li>
+        <li>Complete Tab/Shift+Tab and arrow key navigation across all controls</li>
+        <li>Dark/light theme preference persists across restarts via Qt.labs.settings</li>
+        <li>Escape closes the Feed Discovery panel from any control</li>
+        <li>371 tests, 100% branch coverage</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.1.0 - 2026-06-02</div>
+      <h3>Full Keyboard Navigation</h3>
+      <ul>
+        <li>Every interactive element reachable and operable without a mouse</li>
+        <li>Tab chain: File menu → Search → Manage → Theme toggle → Feed list → Item list → Open in Browser → wraps</li>
+        <li>Amber focus ring on all focusable controls</li>
+        <li>Full keyboard nav inside Manage Subscriptions and all its dialogs</li>
+        <li>Filter dialog opens pre-populated with existing terms as tabbable toggleable rows</li>
+        <li>Left/Right cursor navigates between dialog footer buttons (Cancel / OK)</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.0.0 - 2026-06-02</div>
+      <h3>Feed Discovery</h3>
+      <ul>
+        <li>Search by topic or keyword - subscribe to one or many feeds without leaving the app</li>
+        <li>Discovery panel runs on an isolated async event loop in a daemon thread</li>
+        <li>DiscoveryFetcher ABC with FeedsearchFetcher implementation - same layered boundaries as the rest of the system</li>
+        <li>HTTP and HTTPS feed URLs accepted (HTTP feeds follow redirects transparently)</li>
+        <li>Splash screen with rounded corners; Win32 mutex prevents multiple instances</li>
+        <li>100% branch coverage maintained including the new discovery stack</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v1.0.1 - 2026-06-01</div>
+      <h3>Feed Reader UI + Sample Feeds</h3>
+      <ul>
+        <li>Reworked FeedReader layout: hero thumbnail, media player, sort controls, unread indicator dot</li>
+        <li>feeds_export.json ships with the repo - curated RSS, Atom and MFEED subscriptions ready to import</li>
+        <li>LGPL-3.0 licence added to Help menu and corrected throughout documentation</li>
+        <li>black formatting and flake8 clean across all Python sources</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v0.3.0 - 2026-06-01</div>
+      <h3>Windows Installer + Splash Screen</h3>
+      <ul>
+        <li>MeridianSetup.exe: per-user installer with upgrade, repair and uninstall workflows</li>
+        <li>Registers with Windows Settings > Apps; creates desktop and Start Menu shortcuts</li>
+        <li>No administrator privileges required; user data preserved across upgrades</li>
+        <li>Branded splash screen displayed on launch while the app initialises</li>
+        <li>Full multi-resolution icon set (16 px through 512 px) for sharp rendering everywhere</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div style="text-align:center; margin-top:2.5rem;">
+    <a class="btn-secondary" href="https://github.com/oernster/meridian/releases" style="font-size:0.9rem; padding:0.6rem 1.5rem;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      View all releases on GitHub
+    </a>
+  </div>
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <a class="footer-brand" href="index.html">
+        <img src="meridian-512.png" alt="Meridian">
+        <span>Meridian</span>
+      </a>
+      <nav class="footer-links">
+        <a href="https://github.com/oernster/meridian">GitHub</a>
+        <a href="https://github.com/oernster/meridian/releases">Releases</a>
+        <a href="https://ernster.dev/MMSP-Spec/">MMSP Specification</a>
+        <a href="https://github.com/oernster/meridian/blob/main/ARCHITECTURE.md">Architecture</a>
+        <a href="https://github.com/oernster/meridian/blob/main/DEVELOPMENT.md">Development</a>
+        <a href="https://github.com/oernster/meridian/blob/main/LICENSE">Licence</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>A desktop feed reader built on the MMSP protocol. Open source, always.</p>
+      <div class="chips">
+        <span class="chip">Python</span>
+        <span class="chip">PySide6</span>
+        <span class="chip">Qt Quick</span>
+        <span class="chip">SQLAlchemy</span>
+        <span class="chip">httpx</span>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

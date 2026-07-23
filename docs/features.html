@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meridian features: MMSP-native reading with full RSS and Atom support</title>
+  <meta name="description" content="Everything Meridian includes: MFEED and MMSP native parsing, feed discovery, ABNF filter expressions, background polling, Catppuccin themes, full keyboard navigation and the clean architecture a reference client demands.">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="meridian-512.png">
+  <link rel="canonical" href="https://ernster.dev/meridian/features.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Meridian">
+  <meta property="og:url" content="https://ernster.dev/meridian/features.html">
+  <meta property="og:title" content="Meridian features: MMSP-native reading with full RSS and Atom support">
+  <meta property="og:description" content="MFEED and MMSP native parsing, feed discovery, filter expressions, background polling, Catppuccin themes and full keyboard navigation.">
+  <meta property="og:image" content="https://ernster.dev/meridian/meridian-512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Meridian app icon">
+  <meta property="og:locale" content="en_GB">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Meridian features: MMSP-native reading with full RSS and Atom support">
+  <meta name="twitter:description" content="MFEED and MMSP native parsing, feed discovery, filter expressions, background polling, Catppuccin themes and full keyboard navigation.">
+  <meta name="twitter:image" content="https://ernster.dev/meridian/meridian-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">
+    <img src="meridian-512.png" alt="Meridian icon">
+    <span>Meridian</span>
+  </a>
+  <div class="nav-right">
+    <a class="nav-link" href="features.html">Features</a>
+    <a class="nav-link" href="why.html">Why</a>
+    <a class="nav-link" href="whats-new.html">What's New</a>
+    <a class="nav-link" href="download.html">Download</a>
+    <a class="btn-primary" href="download.html">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </a>
+  </div>
+</nav>
+
+<!-- ── Features ──────────────────────────────────────────────── -->
+<section class="section" id="features">
+  <div class="section-label">Features</div>
+  <h2 class="section-title">Everything you need,<br>nothing you don't.</h2>
+  <p class="section-sub">MMSP-native from the ground up, with full compatibility for every major feed format you already use.</p>
+
+  <div class="features-grid">
+
+    <div class="feat">
+      <div class="feat-icon ic-mauve">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+      </div>
+      <h3>MFEED and MMSP native</h3>
+      <p>Parses MFEED (MMSP JSON format) natively. Enforces MMSP/1.0 User-Agent, conditional GET (ETag / Last-Modified) and the 300 s poll floor per the spec. <a href="https://ernster.dev/MMSP-Spec/" style="color:var(--mauve);text-decoration:none;">Read the spec →</a></p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-blue">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </div>
+      <h3>Feed discovery</h3>
+      <p>Search new feeds by topic via feedsearch.dev. 46 category autocomplete, result cap selector (10 to 200) and bulk subscribe with a confirmation dialog.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-teal">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      </div>
+      <h3>Filter expressions</h3>
+      <p>Per-feed MMSP Appendix A ABNF filters. The filter dialog surfaces existing terms as toggleable rows - no syntax knowledge required for common cases.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-green">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <h3>Background polling</h3>
+      <p>Conditional GET with ETag and Last-Modified. Rate-limit backoff, 300 s poll floor. Async asyncio scheduler - zero CPU when no feeds are due.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-peach">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+      </div>
+      <h3>Catppuccin themes</h3>
+      <p>Mocha (dark) and Latte (light) with a single toggle. Theme preference persists across restarts. Amber focus ring on every focusable control.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-sapp">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <h3>Full-text rendering</h3>
+      <p>content:encoded preferred over description so full article HTML is shown where available. Media player for podcast and video items built in.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-lav">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      </div>
+      <h3>Full keyboard navigation</h3>
+      <p>Every control reachable without a mouse. Tab wraps cleanly end-to-end. Enter, Space, Left, Right all wired. Escape closes drawers and dialogs.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-yellow">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <h3>Import and export</h3>
+      <p>Full subscription round-trip via JSON. A curated feeds_export.json ships with the repo so you can bootstrap a reading list in seconds.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-pink">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg>
+      </div>
+      <h3>Bulk feed management</h3>
+      <p>Select-all checkboxes, bulk remove, per-feed filter, edit and delete from the subscription manager. In-place list removal preserves scroll position.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-blue">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </div>
+      <h3>Single-device by design</h3>
+      <p>No account, no cloud, no server. Your subscriptions and read state stay on your machine. JSON export/import moves them between machines - the migration path, not live sync.</p>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── Architecture ──────────────────────────────────────────── -->
+<section class="section" id="architecture">
+  <div class="section-label">Architecture</div>
+  <h2 class="section-title">A reference client, built like one</h2>
+  <p class="section-sub">A reference client has to be exemplary or the spec it implements loses authority. So MMSP polling semantics sit behind a pure domain, inside a four-layer architecture, UI to Application to Domain with Infrastructure implementing inward. AST tests and 100% branch coverage run on every build, so the behaviour the spec mandates is behaviour the code cannot structurally violate.</p>
+  <img src="architecture.svg" alt="Meridian clean architecture: UI, Application, Domain, Infrastructure, with dependencies pointing inward to a pure Domain" style="display:block; width:100%; max-width:920px; margin:1.75rem auto 0; border-radius:14px;">
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <a class="footer-brand" href="index.html">
+        <img src="meridian-512.png" alt="Meridian">
+        <span>Meridian</span>
+      </a>
+      <nav class="footer-links">
+        <a href="https://github.com/oernster/meridian">GitHub</a>
+        <a href="https://github.com/oernster/meridian/releases">Releases</a>
+        <a href="https://ernster.dev/MMSP-Spec/">MMSP Specification</a>
+        <a href="https://github.com/oernster/meridian/blob/main/ARCHITECTURE.md">Architecture</a>
+        <a href="https://github.com/oernster/meridian/blob/main/DEVELOPMENT.md">Development</a>
+        <a href="https://github.com/oernster/meridian/blob/main/LICENSE">Licence</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>A desktop feed reader built on the MMSP protocol. Open source, always.</p>
+      <div class="chips">
+        <span class="chip">Python</span>
+        <span class="chip">PySide6</span>
+        <span class="chip">Qt Quick</span>
+        <span class="chip">SQLAlchemy</span>
+        <span class="chip">httpx</span>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
