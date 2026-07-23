@@ -675,6 +675,6 @@ footer {
   margin-bottom: 1.5rem;
 }
 .prose p:last-child { margin-bottom: 0; }
-.prose a { color: var(--mauve); text-decoration: none; }
-.prose a:hover { text-decoration: underline; }
+.prose p a { color: var(--mauve); text-decoration: none; }
+.prose p a:hover { text-decoration: underline; }
 .prose strong { color: var(--text); font-weight: 600; }
