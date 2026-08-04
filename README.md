@@ -32,7 +32,7 @@ pip install -e .
 meridian
 ```
 
-### Linux — Flatpak
+### Linux: Flatpak
 
 ```bash
 # Build (requires flatpak and flatpak-builder)
@@ -48,7 +48,7 @@ flatpak run uk.codecrafter.Meridian
 ./cleanup_flatpak.sh
 ```
 
-### macOS — DMG
+### macOS: DMG
 
 ```bash
 # Build (requires macOS with Xcode command-line tools)
@@ -61,6 +61,9 @@ python builddmg.py
 See [DEVELOPMENT.md](DEVELOPMENT.md) for Python version requirements, dev tooling, and how to run the test suite.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full project structure and design.
+
+See [TECH_DEBT.md](TECH_DEBT.md) for the standing reference to what is still open, what is
+deliberately left and what only looks like debt.
 
 <p align="center">
   <img src="docs/architecture.svg" alt="Meridian clean architecture: UI, Application, Domain, Infrastructure, with dependencies pointing inward to a pure Domain" width="860">
