@@ -70,7 +70,9 @@ Meridian is publicly billed as the reference implementation of MMSP. It implemen
 
 So the normative rules are expressed twice, and nothing checks that the two agree. Meridian's parser could drift from the specification it is the reference for, and both repositories would stay green. `http_fetcher.py` also hardcodes `_USER_AGENT = "MMSP/1.0"`, a copy of the protocol version that lives nowhere near the specification that defines it.
 
-This is ranked below the QML item only because closing it depends on work in the other repository: MMSP-Spec has to publish its validators as an importable package first (recorded as item 2 there). Once it does, `tests/infrastructure/parser/test_mfeed_parser.py` should assert its output against the published validators rather than against locally-written expectations, and the protocol version should come from that package rather than from a literal here.
+This is ranked below the QML item because closing it depends on the specification repository, and that repository is deliberately not a package: MMSP-Spec publishes the spec text, the JSON Schemas and a conformance suite, and declares no build system or distribution metadata by design. So the validators cannot simply be imported from PyPI.
+
+The realistic route is therefore to consume the specification's artefacts rather than its code: point `tests/infrastructure/parser/test_mfeed_parser.py` at the published JSON Schemas and validate this parser's output against them, and take the protocol version from the same place rather than from the `_USER_AGENT` literal here. That keeps the dependency one-directional (implementation depends on spec, never the reverse), which is the correct shape for a reference implementation.
 
 Until then this is a known, deliberate gap, not an oversight. It is recorded so the phrase "reference implementation" is never read as "verified against the spec".
 
