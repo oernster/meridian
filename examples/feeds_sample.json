@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "feeds": [
+    {
+      "url": "https://www.crankthecode.com/.well-known/mmsp.json",
+      "source_type": "mfeed",
+      "title": "Crank The Code"
+    },
+    {
+      "url": "https://martinfowler.com/feed.atom",
+      "source_type": "atom",
+      "title": "Martin Fowler"
+    },
+    {
+      "url": "https://www.schneier.com/blog/atom.xml",
+      "source_type": "atom",
+      "title": "Schneier on Security"
+    },
+    {
+      "url": "https://feeds.arstechnica.com/arstechnica/index",
+      "source_type": "rss",
+      "title": "Ars Technica"
+    },
+    {
+      "url": "https://hnrss.org/frontpage",
+      "source_type": "rss",
+      "title": "Hacker News Front Page"
+    },
+    {
+      "url": "https://kubernetes.io/feed.xml",
+      "source_type": "rss",
+      "title": "Kubernetes Blog"
+    },
+    {
+      "url": "https://www.infoq.com/feed/",
+      "source_type": "rss",
+      "title": "InfoQ"
+    },
+    {
+      "url": "https://blog.cloudflare.com/rss/",
+      "source_type": "rss",
+      "title": "Cloudflare Blog"
+    },
+    {
+      "url": "https://krebsonsecurity.com/feed/",
+      "source_type": "rss",
+      "title": "Krebs on Security"
+    }
+  ]
+}

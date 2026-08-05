@@ -52,19 +52,13 @@ The structural test scopes itself to `meridian/`, so the test tree is unmeasured
 
 The bridge test is doing valuable work (it is why the QML bridge is covered at all), so this is not a suggestion to shrink it by deleting assertions. It wants splitting by the bridge surface it exercises: subscription operations, item operations, discovery and settings. The rule in this portfolio applies to test files exactly as to source, and the cap should be extended over `tests/` at the same time as item 1 extends it over `.qml`.
 
-## 5. `feeds_export.json` is a personal subscription list committed at repository root
-
-The file is a real export of the author's own feeds, including named YouTube channel subscriptions. It is tracked, at root, in a public repository.
-
-It is presumably there as a worked example of the export format, which is a legitimate need. The debt is that a personal reading list is doing the job: it discloses something with no benefit, it goes stale, and root is the wrong place for it. Replace it with a small neutral sample under an `examples/` directory and reference it from the docs.
-
-## 6. There is no `.coveragerc`, so the coverage configuration lives in two idioms
+## 5. There is no `.coveragerc`, so the coverage configuration lives in two idioms
 
 Coverage is configured entirely inside `pyproject.toml` (`[tool.coverage.run]`, `[tool.coverage.report]`) while the rest of the portfolio uses a `.coveragerc` beside it. Both work and `pyproject` is arguably the better home.
 
 This is recorded only because it makes cross-project comparison harder than it needs to be, and because item 3's fix requires editing the `source` list: whoever does that should know there is no `.coveragerc` to look for. Not worth changing on its own.
 
-## 7. The reference implementation never runs the specification's conformance suite
+## 6. The reference implementation never runs the specification's conformance suite
 
 Meridian is publicly billed as the reference implementation of MMSP. It implements the protocol independently in `meridian/infrastructure/fetching/parser/mfeed_parser.py`, depends on nothing from the MMSP-Spec repository and shares no test with it.
 

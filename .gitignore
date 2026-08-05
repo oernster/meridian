@@ -258,3 +258,7 @@ _dmg_staging/
 # Misc
 1
 NOTES.md
+
+# A personal subscription export at the root, which is what the app writes by
+# default. The shipped sample lives in examples/ and is committed deliberately.
+/feeds_export.json

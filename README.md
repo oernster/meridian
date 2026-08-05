@@ -71,13 +71,13 @@ deliberately left and what only looks like debt.
 
 ## Sample Feeds
 
-A `feeds_export.json` file is included in the repository with a curated set of RSS, Atom, and MFEED subscriptions ready to import.
+An `examples/feeds_sample.json` file is included in the repository with a small neutral set of RSS, Atom and MFEED subscriptions ready to import.
 
 To load them:
 
 1. Launch Meridian
 2. Open **File > Import Feeds...**
-3. Select `feeds_export.json` from the repository root
+3. Select `feeds_sample.json` from the `examples/` directory
 
 All feeds will be added and begin polling immediately.
 
@@ -97,7 +97,7 @@ All feeds will be added and begin polling immediately.
 
 Meridian is deliberately a single-device application. It does not sync your subscriptions or read state to a cloud account or between machines, and it has no server component. This is a design choice, not a missing feature: the MMSP protocol it is built on is pull-only and treats read state as a client concern, so Meridian keeps all of that state local to the machine it runs on.
 
-To move your subscriptions to another machine, use the File menu to export your subscriptions to a `feeds_export.json` file, then **File > Import Feeds...** on the other machine. JSON export/import is the migration path; it is not live sync, and read state does not transfer.
+To move your subscriptions to another machine, use the File menu to export your subscriptions to a JSON file, then **File > Import Feeds...** on the other machine. JSON export/import is the migration path; it is not live sync, and read state does not transfer.
 
 ## License
 
