@@ -688,7 +688,7 @@ Rectangle {
                     }
                 }
 
-                // Favicon or fallback initial — fixed-size Item isolates image implicitSize from RowLayout
+                // Favicon or fallback initial: fixed-size Item isolates image implicitSize from RowLayout
                 Item {
                     Layout.preferredWidth: 32
                     Layout.preferredHeight: 32

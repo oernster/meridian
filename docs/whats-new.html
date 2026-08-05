@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>What's new in Meridian: release history</title>
-  <meta name="description" content="Meridian's release history: component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta name="description" content="Meridian's release history: neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="apple-touch-icon" href="meridian-512.png">
@@ -13,7 +13,7 @@
   <meta property="og:site_name" content="Meridian">
   <meta property="og:url" content="https://ernster.dev/meridian/whats-new.html">
   <meta property="og:title" content="What's new in Meridian: release history">
-  <meta property="og:description" content="Component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta property="og:description" content="Neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <meta property="og:image" content="https://ernster.dev/meridian/meridian-512.png">
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
@@ -21,7 +21,7 @@
   <meta property="og:locale" content="en_GB">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="What's new in Meridian: release history">
-  <meta name="twitter:description" content="Component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta name="twitter:description" content="Neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <meta name="twitter:image" content="https://ernster.dev/meridian/meridian-512.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -51,9 +51,22 @@
 <section class="section" id="whats-new">
   <div class="section-label">Changelog</div>
   <h2 class="section-title">What's new</h2>
-  <p class="section-sub">Recent releases have focused on keyboard navigation completeness, theme persistence and feed discovery from the app itself.</p>
+  <p class="section-sub">Recent releases have focused on what ships with the repository, a single source of truth for the version, keyboard navigation completeness and feed discovery from the app itself.</p>
 
   <div class="changelog-grid">
+
+    <div class="cl-entry">
+      <div class="ver-tag">v<!--VERSION-->2.5.0<!--/VERSION--></div>
+      <h3>Neutral sample feeds, one version file, a rebuilt site</h3>
+      <ul>
+        <li>The bundled sample subscriptions are now a neutral set in examples/feeds_sample.json, still covering RSS, Atom and MFEED</li>
+        <li>The version lives in a single VERSION file at the repository root that the application, the packaging metadata and every build script read</li>
+        <li>The site is five focused pages instead of one long scroll, with live download metadata, social previews and structured data</li>
+        <li>The architecture document opens with the invariants the codebase cannot break, each naming the test that enforces it</li>
+        <li>Documentation corrected on transport: an imported or discovered plain-HTTP feed loads, while the subscription field, redirects and media stay HTTPS</li>
+        <li>A standing technical-debt reference ships with the repository, recording what is open and what is deliberately left alone</li>
+      </ul>
+    </div>
 
     <div class="cl-entry">
       <div class="ver-tag">v2.4.0</div>

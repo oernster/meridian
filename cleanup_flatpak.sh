@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# cleanup_flatpak.sh — Uninstall and purge meridian Flatpak
+# cleanup_flatpak.sh: uninstall and purge the meridian Flatpak
 set -euo pipefail
 
 APP_ID="uk.codecrafter.Meridian"

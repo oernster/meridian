@@ -117,7 +117,7 @@ def _read_text(path: Path) -> str:
 
 
 def main() -> None:
-    _lock = _acquire_single_instance_lock()  # noqa: F841 — held for process lifetime
+    _lock = _acquire_single_instance_lock()  # noqa: F841 (held for process lifetime)
     QtWebEngineQuick.initialize()
     QQuickStyle.setStyle("Fusion")
     app = QApplication(sys.argv)

@@ -50,6 +50,7 @@ def build_exe() -> int:
         "--windowed",
         "--paths=.",
         "--add-data=meridian/ui/qml:meridian/ui/qml",
+        "--add-data=VERSION:.",
         "--add-data=meridian.png:.",
         "--add-data=meridian_16.png:.",
         "--add-data=meridian_20.png:.",

@@ -81,6 +81,11 @@ not a style note.
   containers. Constructors take their dependencies as arguments.
 - **Module size.** Source modules stay at or under 400 lines. If a module grows
   past that, decompose it. This too is checked by a structural test.
+- **One version string.** The root `VERSION` file is the single source of truth.
+  `meridian/version.py` reads it and everything else imports `__version__` from
+  there. Do not write a version number into source, into a build script or into
+  any markdown file; the `docs/` site carries stamped tokens that
+  `stamp_version.py` refreshes.
 - **Formatting and linting.** `black` (line length 88) and `flake8` are run as
   part of the test suite, so unformatted or lint-failing code fails the build.
   Run both before you push:
@@ -143,8 +148,12 @@ these will be declined regardless of code quality, so check here first:
 - **MMSP semantics.** Meridian is a pull-only reference client. There are no
   subscriber push notifications on new items; the scheduler is silent and items
   appear on the next poll tick or user view.
-- **HTTPS only.** Feed URLs, redirect targets and media URLs are HTTPS only.
-  `Feed.__post_init__` rejects non-HTTPS URLs and parsers drop non-HTTPS media.
+- **Transport policy.** `Feed.__post_init__` accepts `http://` and `https://`
+  and rejects every other scheme, so an imported or discovered plain-HTTP feed
+  still loads. Everything downstream is stricter and stays that way: the Add
+  Subscription field only enables Subscribe for an `https://` URL, `HttpFetcher`
+  discards a non-HTTPS redirect target and the parsers drop non-HTTPS media,
+  enclosure and transcript URLs.
 - **No new heavy dependencies** without discussion. The runtime dependency set
   is intentionally small. Propose additions in an issue first.
 
@@ -160,7 +169,7 @@ delete path without a confirmation.
 - Write commit subjects in the imperative mood and keep them short. Add a body
   only when the "why" is not obvious from the subject.
 - Rebase or update your branch on the latest default branch before opening the
-  PR, and make sure `pytest` is green locally first.
+  PR. Make sure `pytest` is green locally first.
 - In the PR description, say what changed and why, link the issue it closes and
   note anything a reviewer should look at closely.
 - Expect review feedback on layer placement, test coverage and the design

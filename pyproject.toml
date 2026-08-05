@@ -21,7 +21,7 @@ dependencies = [
 meridian = "meridian.main:main"
 
 [tool.setuptools.dynamic]
-version = {attr = "meridian.version.__version__"}
+version = {file = "VERSION"}
 
 [tool.setuptools.packages.find]
 where = ["."]

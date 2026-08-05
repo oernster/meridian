@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# build_flatpak.sh — Build meridian.flatpak for Linux
+# build_flatpak.sh: build meridian.flatpak for Linux
 # Usage: ./build_flatpak.sh
 
 set -euo pipefail
 
 APP_ID="uk.codecrafter.Meridian"
-APP_VERSION=$(python3 -c "import sys; sys.path.insert(0,'.'); exec(open('meridian/version.py').read()); print(__version__)")
+# VERSION at the repository root is the single source of truth for the version.
+APP_VERSION=$(tr -d '[:space:]' < VERSION)
+# AppStream requires a date on each release entry; take it from the build clock
+# rather than pinning a literal that goes stale the moment it is written.
+BUILD_DATE=$(date -u +%Y-%m-%d)
 BUNDLE="meridian.flatpak"
 BUILD_DIR=".flatpak-build"
 REPO_DIR=".flatpak-repo"
@@ -26,7 +30,7 @@ section "Checking dependencies"
 install_if_missing() {
     local pkg="$1"
     if ! command -v "$pkg" &>/dev/null; then
-        echo "  $pkg not found — installing..."
+        echo "  $pkg not found, installing..."
         if command -v apt-get &>/dev/null; then
             sudo apt-get update -qq && sudo apt-get install -y "$pkg"
         elif command -v dnf &>/dev/null; then
@@ -34,7 +38,7 @@ install_if_missing() {
         elif command -v pacman &>/dev/null; then
             sudo pacman -Sy --noconfirm "$pkg"
         else
-            echo "ERROR: Cannot install $pkg — unsupported package manager." >&2
+            echo "ERROR: Cannot install $pkg: unsupported package manager." >&2
             exit 1
         fi
     else
@@ -109,13 +113,13 @@ cat > "packaging/${APP_ID}.metainfo.xml" <<XML
   <name>Meridian</name>
   <summary>MMSP / RSS / Atom / Podcast Feed Reader</summary>
   <metadata_license>MIT</metadata_license>
-  <project_license>LGPL-3.0</project_license>
+  <project_license>Apache-2.0 AND LGPL-3.0-or-later</project_license>
   <description>
     <p>Meridian is a multimedia feed reader supporting RSS, Atom, podcast,
-    YouTube, and MFEED/MMSP feeds with a native Qt Quick UI.</p>
+    YouTube and MFEED/MMSP feeds with a native Qt Quick UI.</p>
   </description>
   <releases>
-    <release version="${APP_VERSION}" date="2026-06-03"/>
+    <release version="${APP_VERSION}" date="${BUILD_DATE}"/>
   </releases>
   <url type="homepage">https://github.com/oernster/meridian</url>
 </component>
@@ -189,6 +193,7 @@ modules:
     buildsystem: simple
     build-commands:
       - pip3 install --no-cache-dir --no-deps --prefix=/app .
+      - install -Dm644 VERSION /app/lib/python3.12/site-packages/VERSION
       - install -Dm644 LICENSE /app/lib/python3.12/site-packages/LICENSE
       - install -Dm644 LICENSE-LGPL-3.0.txt /app/lib/python3.12/site-packages/LICENSE-LGPL-3.0.txt
       - install -Dm644 LICENSE-APACHE-2.0.txt /app/lib/python3.12/site-packages/LICENSE-APACHE-2.0.txt

@@ -324,7 +324,7 @@ Item {
                     width: parent.width
                     spacing: 0
 
-                    // Hero thumbnail — full width, fixed height, crop-fill
+                    // Hero thumbnail: full width, fixed height, crop-fill
                     Image {
                         id: detailThumbnail
                         visible: source.toString() !== "" && !playerContainer.visible

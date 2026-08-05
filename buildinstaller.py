@@ -77,6 +77,7 @@ def main() -> int:
         f"{payload_zip};installer/payload",
         f"{manifest_json};installer/payload",
         f"{PROJECT_ROOT / 'LICENSE'};.",
+        f"{PROJECT_ROOT / 'VERSION'};.",
     ]
 
     for asset in [
