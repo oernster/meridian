@@ -4,11 +4,11 @@ A standing reference to the project's outstanding technical debt. It records wha
 
 ---
 
-## 1. Roughly 4100 lines of QML sit outside every gate in the project
+## 1. Four QML files carry roughly 4100 lines between them
 
 The Python side of this repository is held to an unusually strong standard: a 100% branch-coverage gate over the whole `meridian` package with only `main.py` omitted, plus AST layer-boundary tests, a 400-line cap and an in-suite `black` and `flake8` run. That is stricter than most of the portfolio.
 
-None of it reaches the QML.
+The size cap now reads `.qml`, so these four are carried explicitly in `_LEGACY_OVER_LIMIT` in `tests/structural/test_boundaries.py` and no fifth can join them. Coverage still measures Python only, so the QML remains unmeasured.
 
 | File | Lines |
 |---|---|
@@ -17,11 +17,11 @@ None of it reaches the QML.
 | `meridian/ui/qml/SubscriptionManager.qml` | 857 |
 | `meridian/ui/qml/FeedReader.qml` | 816 |
 
-`test_all_source_files_under_400_lines()` walks `_SRC.rglob("*.py")`, so `.qml` is invisible to it; coverage measures Python, so the QML is invisible there too. Four files, each two to two and a half times the module cap, carrying the keyboard focus wiring, the discovery flow, the delete confirmations and the reader state machine. This is where the application's user-facing behaviour actually lives; it is the least constrained code in the repository.
+Four files, each two to two and a half times the module cap, carrying the keyboard focus wiring, the discovery flow, the delete confirmations and the reader state machine. This is where the application's user-facing behaviour actually lives; it is the least constrained code in the repository.
 
 Two things close this. They are independent:
 
-- Extend the size test to `.qml` and split the four files along the seams QML already gives (component extraction into sibling `.qml` files, which is the idiomatic decomposition and needs no new concepts).
+- Split the four along the seams QML already gives (component extraction into sibling `.qml` files, which is the idiomatic decomposition and needs no new concepts). Each one that lands under the cap leaves the allowlist, and the staleness test fails if it is left behind.
 - Push the decision-shaped parts of those files down through the bridge into `meridian/application`, where the coverage gate can see them. `test_bridge.py` shows the bridge is already testable; the QML above it is doing more than presentation.
 
 This is the single largest item in the file and everything else here is smaller.
@@ -36,11 +36,11 @@ The exposure is concrete: `install_ops.py` writes the HKCU uninstall key, `short
 
 The broad handlers should each get one line saying what is being degraded and why, exactly as `installer/app.py` and the build scripts do elsewhere in the portfolio.
 
-## 3. Test modules are outside the size cap and one is 1029 lines
+## 3. `tests/ui/test_bridge.py` is 1029 lines
 
-The structural test scopes itself to `meridian/`, so the test tree is unmeasured. `tests/ui/test_bridge.py` is 1029 lines and `tests/infrastructure/parser/test_atom_parser.py` is exactly 400.
+The size cap now reads the test tree as well as the package, so this file is carried in `_LEGACY_OVER_LIMIT` alongside the four QML files. `tests/infrastructure/parser/test_atom_parser.py` sits at exactly 400, within the cap but with no room left: whoever edits it next should take it to 350 or below rather than shave a line off.
 
-The bridge test is doing valuable work (it is why the QML bridge is covered at all), so this is not a suggestion to shrink it by deleting assertions. It wants splitting by the bridge surface it exercises: subscription operations, item operations, discovery and settings. The rule in this portfolio applies to test files exactly as to source; the cap should be extended over `tests/` at the same time as item 1 extends it over `.qml`.
+The bridge test is doing valuable work (it is why the QML bridge is covered at all), so this is not a suggestion to shrink it by deleting assertions. It wants splitting by the bridge surface it exercises: subscription operations, item operations, discovery and settings.
 
 ## 4. There is no `.coveragerc`, so the coverage configuration lives in two idioms
 

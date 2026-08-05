@@ -4,6 +4,14 @@ AST-based structural tests enforcing layer boundary invariant:
 
 Domain must not import Application, Infrastructure, or UI.
 Application must not import Infrastructure or UI.
+
+The size rule covers QML and the test tree as well as the Python package. It
+walked ``*.py`` under ``meridian/`` only, which reported a clean repository
+while four QML files carried roughly 4100 lines between them and one test
+module ran to 1029. A rule that cannot see most of the UI is not a rule.
+``_LEGACY_OVER_LIMIT`` carries those five as tracked debt: the set may only
+shrink, and ``test_legacy_allowlist_has_no_stale_entries`` fails if an entry is
+no longer over the limit or no longer exists.
 """
 
 import ast
@@ -12,7 +20,31 @@ from pathlib import Path
 
 import pytest
 
-_SRC = Path(__file__).parent.parent.parent / "meridian"
+_ROOT = Path(__file__).parent.parent.parent
+_SRC = _ROOT / "meridian"
+
+_MAX_LINES = 400
+
+# Trees the size rule reads, with the suffixes it measures in each. Delivery
+# scripts sit at the repository root and are deliberately absent: they are
+# linear recipes read top to bottom, where splitting a sequence of flags and
+# steps across modules costs more than it buys.
+_SIZE_SCAN: dict[str, tuple[str, ...]] = {
+    "meridian": (".py", ".qml"),
+    "tests": (".py",),
+}
+
+# Files already over the limit when the scan widened to QML and to the tests.
+# Tracked debt: this set may only shrink. Do not add to it; decompose instead.
+_LEGACY_OVER_LIMIT = frozenset(
+    {
+        "meridian/ui/qml/FeedDiscovery.qml",
+        "meridian/ui/qml/main.qml",
+        "meridian/ui/qml/SubscriptionManager.qml",
+        "meridian/ui/qml/FeedReader.qml",
+        "tests/ui/test_bridge.py",
+    }
+)
 
 FORBIDDEN: dict[str, list[str]] = {
     "domain": ["application", "infrastructure", "ui"],
@@ -26,9 +58,8 @@ def _get_imports(path: Path) -> list[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             imports.extend(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom):
-            if node.module:
-                imports.append(node.module)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imports.append(node.module)
     return imports
 
 
@@ -52,13 +83,46 @@ def test_layer_boundary(layer: str, forbidden_layers: list[str]) -> None:
     assert not violations, "Layer boundary violations:\n" + "\n".join(violations)
 
 
-def test_all_source_files_under_400_lines() -> None:
+def _rel(path: Path) -> str:
+    return path.relative_to(_ROOT).as_posix()
+
+
+def _line_count(path: Path) -> int:
+    return len(path.read_text(encoding="utf-8").splitlines())
+
+
+def _scanned_files() -> list[Path]:
+    files: list[Path] = []
+    for tree, suffixes in _SIZE_SCAN.items():
+        for path in sorted((_ROOT / tree).rglob("*")):
+            if path.suffix in suffixes and "__pycache__" not in path.parts:
+                files.append(path)
+    return files
+
+
+def test_all_source_files_within_line_limit() -> None:
     oversized = []
-    for path in _SRC.rglob("*.py"):
-        lines = len(path.read_text(encoding="utf-8").splitlines())
-        if lines > 400:
-            oversized.append(f"{path.relative_to(_SRC.parent)}: {lines} lines")
-    assert not oversized, "Source modules over 400 lines:\n" + "\n".join(oversized)
+    for path in _scanned_files():
+        rel = _rel(path)
+        if rel in _LEGACY_OVER_LIMIT:
+            continue
+        lines = _line_count(path)
+        if lines > _MAX_LINES:
+            oversized.append(f"{rel}: {lines} lines (limit {_MAX_LINES})")
+    assert not oversized, "Files over the line limit (decompose them):\n" + "\n".join(
+        sorted(oversized)
+    )
+
+
+def test_legacy_allowlist_has_no_stale_entries() -> None:
+    stale = []
+    for rel in sorted(_LEGACY_OVER_LIMIT):
+        path = _ROOT / rel
+        if not path.exists():
+            stale.append(f"{rel}: missing (remove from allowlist)")
+        elif _line_count(path) <= _MAX_LINES:
+            stale.append(f"{rel}: now within limit (remove from allowlist)")
+    assert not stale, "Stale legacy allowlist entries:\n" + "\n".join(stale)
 
 
 def test_black_compliance() -> None:
@@ -66,6 +130,7 @@ def test_black_compliance() -> None:
         ["black", "--check", "--quiet", str(_SRC)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -80,5 +145,6 @@ def test_flake8_compliance() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr

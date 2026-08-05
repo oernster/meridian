@@ -7,7 +7,7 @@ These are the rules the codebase is not allowed to break. Each one names the tes
 | Invariant | Enforced by |
 |---|---|
 | Domain imports neither Application, Infrastructure nor UI; Application imports neither Infrastructure nor UI. Dependency direction is `UI -> Application -> Domain <- Infrastructure`, checked by AST scanning every module. | `tests/structural/test_boundaries.py::test_layer_boundary` |
-| No module under `meridian/` exceeds 400 lines. | `tests/structural/test_boundaries.py::test_all_source_files_under_400_lines` |
+| No Python module or QML component under `meridian/`, and no module under `tests/`, exceeds 400 lines. Four QML files and one test module were already over it and are carried in `_LEGACY_OVER_LIMIT` as tracked debt; that set may only shrink, and an entry that no longer needs the allowance fails the suite. | `tests/structural/test_boundaries.py::test_all_source_files_within_line_limit` and `::test_legacy_allowlist_has_no_stale_entries` |
 | Every source file is `black`-formatted at line length 88. | `tests/structural/test_boundaries.py::test_black_compliance` |
 | Every source file is `flake8`-clean. | `tests/structural/test_boundaries.py::test_flake8_compliance` |
 | Branch coverage of the `meridian` package is 100%, with `main.py` the only omission. | `--cov-fail-under=100` in `pyproject.toml`, over the whole suite |
@@ -185,7 +185,7 @@ Tab wrap-around uses explicit `forceActiveFocus()` with `event.accepted = true` 
 ## Quality Enforcement
 
 - `--cov-fail-under=100`: 100% branch coverage required
-- Structural AST tests enforce layer boundaries and the 400-line module size limit
+- Structural AST tests enforce layer boundaries; the 400-line size limit is enforced over QML and the test tree as well as the Python package, with an explicit allowlist that can only shrink
 - `black` and `flake8` run as in-suite assertions, so unformatted or lint-failing code is a test failure
 - `POLL_FLOOR_SECONDS = 300` is the single source of truth for the polling floor; no magic numbers in logic
 
