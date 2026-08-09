@@ -185,7 +185,9 @@ Dialog {
             Rectangle { Layout.fillWidth: true; height: 1; color: theme.surface0 }
 
             Label {
-                text: "Licensed under the GNU Lesser General Public License v3.0 (LGPL-3.0)"
+                text: "Dual-licensed: the model under Apache-2.0 and the user "
+                      + "interface under LGPL-3.0. Both texts open from the header, "
+                      + "under Model Licence and UI Licence."
                 color: theme.subtext
                 font.pixelSize: 11
                 Layout.fillWidth: true
