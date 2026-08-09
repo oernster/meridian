@@ -10,10 +10,19 @@ from pathlib import Path
 
 from installer.ops.errors import AppRunningError, InstallerOperationError
 from installer.ops.payload import iter_manifest_entries, load_manifest, payload_zip_path
+from installer.ops.progress import report, step_pct
 from installer.ops.running_app import is_app_running
 from installer.ops.shortcuts import create_shortcut, get_shortcut_paths
 from installer.state.registry import read_uninstall_entry, write_uninstall_entry
 from meridian.version import APP_AUTHOR, APP_NAME, __version__
+
+# The file sweep is the long part of a repair, so it owns most of the bar. The
+# steps after it are quick and fixed in number, hence fixed percentages.
+_SWEEP_FIRST_PCT = 5
+_SWEEP_LAST_PCT = 85
+_SHORTCUTS_PCT = 92
+_REGISTRY_PCT = 97
+_COMPLETE_PCT = 100
 
 
 def _sha256_file(path: Path) -> str:
@@ -50,15 +59,17 @@ def repair(
         raise AppRunningError("Meridian is currently running")
 
     manifest = load_manifest()
+    entries = tuple(iter_manifest_entries(manifest))
+    total = len(entries)
     with zipfile.ZipFile(payload_zip_path(), "r") as zf:
-        for e in iter_manifest_entries(manifest):
+        for index, e in enumerate(entries):
             if (
                 cancel_event is not None
                 and getattr(cancel_event, "is_set", lambda: False)()
             ):
                 raise InstallerOperationError("Cancelled")
-            if progress:
-                progress(f"Verifying {e.path}...")
+            pct = step_pct(index, total, first=_SWEEP_FIRST_PCT, last=_SWEEP_LAST_PCT)
+            report(progress, pct=pct, message=f"Verifying {e.path}...")
             dst = install_dir / e.path
             needs = True
             if dst.exists():
@@ -74,15 +85,13 @@ def repair(
                 except Exception:
                     needs = True
             if needs:
-                if progress:
-                    progress(f"Restoring {e.path}...")
+                report(progress, pct=pct, message=f"Restoring {e.path}...")
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 with zf.open(e.path) as src, dst.open("wb") as out:
                     out.write(src.read())
 
     sp = get_shortcut_paths(identity)
-    if progress:
-        progress("Restoring shortcuts...")
+    report(progress, pct=_SHORTCUTS_PCT, message="Restoring shortcuts...")
     if opts.restore_desktop_shortcut:
         if not sp.desktop_lnk.exists():
             create_shortcut(exe, sp.desktop_lnk, working_dir=install_dir)
@@ -91,8 +100,7 @@ def repair(
             create_shortcut(exe, sp.start_menu_lnk, working_dir=install_dir)
 
     uninstall_cmd = entry.uninstall_string
-    if progress:
-        progress("Restoring registry metadata...")
+    report(progress, pct=_REGISTRY_PCT, message="Restoring registry metadata...")
     write_uninstall_entry(
         identity.uninstall_key,
         display_name=APP_NAME,
@@ -105,3 +113,4 @@ def repair(
         shortcut_start_menu=opts.restore_start_menu_shortcut,
         installer_path=entry.installer_path or "",
     )
+    report(progress, pct=_COMPLETE_PCT, message="Completed")

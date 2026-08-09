@@ -1,7 +1,7 @@
 """The uninstall operation.
 
 This is the operation that removes files from a user's machine, so the cases
-that matter are the refusals: uninstalling something that is not installed,
+that matter are the refusals: uninstalling something that is not installed
 and uninstalling while the application is still running. Both were previously
 unasserted anywhere.
 
@@ -228,6 +228,9 @@ def test_feedback_wrapper_reports_either_side_of_the_work(
 
     assert len(seen) == 2
     assert rig.scheduled == [install_dir.resolve()]
+    # Percentages rather than bare strings, so the bar fills. An uninstall
+    # reported text only and showed an empty groove throughout.
+    assert [p["pct"] for p in seen] == [10, 100]
 
 
 def test_feedback_wrapper_stops_before_touching_anything_when_cancelled(

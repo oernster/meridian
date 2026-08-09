@@ -6,7 +6,7 @@ moves a live installation aside and puts a new one in its place, so a failure
 partway leaves a user with no application at all unless the rollback works.
 
 Windows side effects are replaced by hand-written fakes rather than a mock
-library: a recorder in place of the registry writer, and a rename that fails
+library: a recorder in place of the registry writer and a rename that fails
 only for the path under test. Everything else runs for real against `tmp_path`.
 """
 
@@ -25,7 +25,6 @@ from installer.ops.install_ops import (
     _apply_shortcuts,
     _check_cancel,
     _extract_payload_to,
-    _progress,
     _register_uninstall,
     _swap_in_bundle,
 )
@@ -64,23 +63,9 @@ def _fail_rename_for(monkeypatch: pytest.MonkeyPatch, doomed: Path) -> None:
     monkeypatch.setattr(Path, "rename", fake)
 
 
-# ── _progress and _check_cancel ────────────────────────────────────────────
-
-
-def test_progress_is_silent_without_a_callback() -> None:
-    _progress(None, pct=10, message="ignored")
-
-
-def test_progress_sends_a_percentage_payload_when_given_one() -> None:
-    seen: list[object] = []
-    _progress(seen.append, pct=42, message="Extracting")
-    assert seen == [{"pct": 42, "message": "Extracting"}]
-
-
-def test_progress_sends_a_bare_message_when_there_is_no_percentage() -> None:
-    seen: list[object] = []
-    _progress(seen.append, pct=None, message="Working")
-    assert seen == ["Working"]
+# ── _check_cancel ──────────────────────────────────────────────────────────
+# The progress reporter moved to installer/ops/progress.py, shared with repair
+# and uninstall; its tests moved with it to tests/test_installer_progress.py.
 
 
 def test_check_cancel_passes_when_there_is_no_event() -> None:

@@ -238,7 +238,6 @@ def request_operation(window: InstallerMainWindow, op: Operation) -> None:
 
     window._set_ui_busy(True)
     window._progress.setText("Working...")
-    window._progress_bar.setValue(0)
 
     fn, kwargs = operation_callable(window, op, selections)
     window._debug_last_op = op
@@ -257,7 +256,7 @@ def on_progress(window: InstallerMainWindow, payload) -> None:  # noqa: ANN001
         pct = payload.get("pct")
         msg = payload.get("message", "")
         if isinstance(pct, int):
-            window._progress_bar.setValue(max(0, min(100, pct)))
+            _show_pct(window, pct)
         if msg:
             window._progress.setText(str(msg))
         return
@@ -266,7 +265,21 @@ def on_progress(window: InstallerMainWindow, payload) -> None:  # noqa: ANN001
         window._progress.setText(payload)
 
 
+def _show_pct(window: InstallerMainWindow, pct: int) -> None:
+    """Show a definite percentage, leaving indeterminate mode if it is in one."""
+    bar = window._progress_bar
+    if bar.maximum() == 0:
+        bar.setRange(0, 100)
+    bar.setValue(max(0, min(100, pct)))
+
+
 def set_ui_busy(window: InstallerMainWindow, busy: bool) -> None:
+    if busy:
+        # Indeterminate until the operation reports its first percentage, so a
+        # stage that can only report text shows movement rather than an empty
+        # groove. A repair reported nothing but text and looked, for its whole
+        # duration, like a progress bar that had failed to appear.
+        window._progress_bar.setRange(0, 0)
     window._progress_bar.setVisible(busy)
     for w in [
         window._btn_primary_left,
@@ -305,7 +318,7 @@ def on_operation_finished(
 ) -> None:  # noqa: ANN001
     window._set_ui_busy(False)
     if result.ok:
-        window._progress_bar.setValue(100)
+        _show_pct(window, 100)
         if op == Operation.UNINSTALL:
             window._progress.setText("Uninstalled")
         else:

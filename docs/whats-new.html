@@ -64,6 +64,7 @@
         <li>Long content reads itself: the licence dialogs and the URL list shown before a bulk subscribe hold still, take themselves down the page, hold at the end and go round again. Touch the surface and it stops where it is, then carries on from there rather than the top</li>
         <li>The size rule reads the QML, the tests and the installer as well as the package; nothing is left over the limit</li>
         <li>The part of the installer that touches your machine is inside the same complete coverage requirement as the application; an upgrade whose swap and rollback both fail now leaves the previous installation in place</li>
+        <li>The progress bar fills during a repair and an uninstall. Both reported their work as text rather than as a percentage, so the bar stood empty from start to finish and read as missing; both now report percentages, with the bar itself moving until the first one arrives</li>
         <li>The installer offers to launch Meridian when it has finished, ticked by default, after a repair and a reinstall as much as after a first install. It waits for the window, brings it to the front and then closes itself; untick the box and nothing starts</li>
         <li>The bundled sample subscriptions are now a neutral set in examples/feeds_sample.json, still covering RSS, Atom and MFEED</li>
         <li>The version lives in a single VERSION file at the repository root that the application, the packaging metadata and every build script read</li>

@@ -1,7 +1,7 @@
 """The repair operation.
 
 Repair walks the payload manifest, compares each file on disk against its
-recorded size and hash, and rewrites only what differs. The interesting cases
+recorded size and hash then rewrites only what differs. The interesting cases
 are the ones that decide whether a file is rewritten at all: an intact file
 must be left alone, so a repair of a healthy installation is close to a no-op
 rather than a silent reinstall.
@@ -268,10 +268,32 @@ def test_repair_rewrites_the_key_keeping_what_the_install_recorded(rig) -> None:
 
 def test_repair_reports_progress_for_each_file(rig) -> None:
     _intact(rig.install_dir)
-    seen: list[str] = []
+    seen: list[object] = []
 
     repair(InstallerIdentity(), _BOTH, progress=seen.append)
 
-    assert any("Verifying" in line for line in seen)
-    assert any("Restoring shortcuts" in line for line in seen)
-    assert any("Restoring registry metadata" in line for line in seen)
+    messages = [p["message"] for p in seen]
+    assert any("Verifying" in m for m in messages)
+    assert any("Restoring shortcuts" in m for m in messages)
+    assert any("Restoring registry metadata" in m for m in messages)
+
+
+def test_repair_moves_the_progress_bar_rather_than_only_the_status_line(rig) -> None:
+    """Every payload carries a percentage, which is what fills the bar.
+
+    A repair used to report its work in bare strings. The window writes those
+    to the status line and leaves the bar alone, so the whole operation ran
+    behind an empty groove that read as a progress bar failing to appear.
+    """
+    _intact(rig.install_dir)
+    seen: list[object] = []
+
+    repair(InstallerIdentity(), _BOTH, progress=seen.append)
+
+    assert seen, "a repair that reports nothing cannot show progress at all"
+    assert all(isinstance(p, dict) and isinstance(p["pct"], int) for p in seen)
+
+    percentages = [p["pct"] for p in seen]
+    assert percentages == sorted(percentages), "the bar must never run backwards"
+    assert percentages[-1] == 100
+    assert min(percentages) > 0

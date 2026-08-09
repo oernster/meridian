@@ -14,6 +14,7 @@ from typing import Callable
 from installer.constants import InstallerIdentity
 from installer.ops.errors import AppRunningError, InstallerOperationError
 from installer.ops.payload import payload_zip_path
+from installer.ops.progress import report
 from installer.ops.running_app import is_app_running
 from installer.ops.shortcuts import create_shortcut, get_shortcut_paths
 from installer.state.registry import write_uninstall_entry
@@ -22,15 +23,6 @@ from meridian.version import APP_AUTHOR, APP_NAME, __version__
 logger = logging.getLogger("installer.install")
 
 ProgressCb = Callable[[str], None]
-
-
-def _progress(progress, *, pct: int | None, message: str) -> None:  # noqa: ANN001
-    if not progress:
-        return
-    if pct is None:
-        progress(message)
-    else:
-        progress({"pct": int(pct), "message": message})
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +37,7 @@ def _extract_payload_to(
 ) -> None:  # noqa: ANN001
     staging_dir.mkdir(parents=True, exist_ok=True)
     _check_cancel(cancel_event)
-    _progress(progress, pct=10, message="Extracting payload...")
+    report(progress, pct=10, message="Extracting payload...")
     logger.info("Extracting payload to %s", staging_dir)
     with zipfile.ZipFile(payload_zip_path(), "r") as zf:
         zf.extractall(staging_dir)
@@ -112,7 +104,7 @@ def _swap_in_bundle(staging_dir: Path, target_dir: Path) -> None:
     finally:
         # Discard the backup only once the new installation is actually in
         # place. Testing that the backup still exists is not enough: that is
-        # exactly the state a failed rollback leaves, and deleting it there
+        # exactly the state a failed rollback leaves; deleting it there
         # takes away the only surviving copy of the user's application, which
         # is the outcome this whole dance exists to prevent.
         if swapped and backup_dir and backup_dir.exists():
@@ -222,14 +214,14 @@ def install_new(
 
     try:
         _extract_payload_to(staging_dir, progress=progress, cancel_event=cancel_event)
-        _progress(progress, pct=45, message="Installing...")
+        report(progress, pct=45, message="Installing...")
 
         _check_cancel(cancel_event)
         _swap_in_bundle(staging_dir, target_dir)
 
         _deploy_runtime_icon_assets(install_dir=target_dir)
 
-        _progress(progress, pct=75, message="Registering uninstall entry...")
+        report(progress, pct=75, message="Registering uninstall entry...")
         _check_cancel(cancel_event)
         logger.info("Registering uninstall entry for %s", target_dir)
         installer_copy = _copy_self_to_install(identity, target_dir)
@@ -241,11 +233,11 @@ def install_new(
             shortcut_start_menu=opts.create_start_menu_shortcut,
         )
 
-        _progress(progress, pct=90, message="Creating shortcuts...")
+        report(progress, pct=90, message="Creating shortcuts...")
         _check_cancel(cancel_event)
         logger.info("Applying shortcuts")
         _apply_shortcuts(identity, target_dir, opts)
-        _progress(progress, pct=100, message="Completed")
+        report(progress, pct=100, message="Completed")
     finally:
         if staging_dir.exists():
             shutil.rmtree(staging_dir, ignore_errors=True)
@@ -277,7 +269,7 @@ def upgrade_or_reinstall(
     try:
         _extract_payload_to(staging_dir, progress=progress, cancel_event=cancel_event)
 
-        _progress(progress, pct=45, message="Replacing application files...")
+        report(progress, pct=45, message="Replacing application files...")
         _check_cancel(cancel_event)
 
         if target_dir == current_install_dir:
@@ -286,7 +278,7 @@ def upgrade_or_reinstall(
             _swap_in_bundle(staging_dir, target_dir)
             # The new installation is already in place and registered, so the
             # upgrade has succeeded. A previous directory that will not delete
-            # is stale files on disk, not a failed upgrade, and reporting it as
+            # is stale files on disk, not a failed upgrade; reporting it as
             # one would send the user chasing a problem they no longer have.
             try:
                 shutil.rmtree(current_install_dir, ignore_errors=True)
@@ -295,7 +287,7 @@ def upgrade_or_reinstall(
 
         _deploy_runtime_icon_assets(install_dir=target_dir)
 
-        _progress(progress, pct=75, message="Registering uninstall entry...")
+        report(progress, pct=75, message="Registering uninstall entry...")
         _check_cancel(cancel_event)
         logger.info("Registering uninstall entry for %s", target_dir)
         installer_copy = _copy_self_to_install(identity, target_dir)
@@ -307,11 +299,11 @@ def upgrade_or_reinstall(
             shortcut_start_menu=opts.create_start_menu_shortcut,
         )
 
-        _progress(progress, pct=90, message="Updating shortcuts...")
+        report(progress, pct=90, message="Updating shortcuts...")
         _check_cancel(cancel_event)
         logger.info("Applying shortcuts")
         _apply_shortcuts(identity, target_dir, opts)
-        _progress(progress, pct=100, message="Completed")
+        report(progress, pct=100, message="Completed")
     finally:
         if staging_dir.exists():
             shutil.rmtree(staging_dir, ignore_errors=True)
@@ -325,7 +317,7 @@ def _apply_shortcuts(
 
     # Creating a shortcut the user asked for is allowed to fail the install:
     # `create_shortcut` raises. Clearing one they declined is not, since a
-    # leftover shortcut is untidy rather than broken, and the application
+    # leftover shortcut is untidy rather than broken; the application
     # underneath it works either way.
     if opts.create_desktop_shortcut:
         create_shortcut(exe, sp.desktop_lnk, working_dir=install_dir)

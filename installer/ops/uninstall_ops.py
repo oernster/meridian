@@ -11,6 +11,7 @@ from pathlib import Path
 from platformdirs import user_cache_dir, user_data_dir
 
 from installer.ops.errors import AppRunningError, InstallerOperationError
+from installer.ops.progress import report
 from installer.ops.running_app import is_app_running
 from installer.ops.shortcuts import get_shortcut_paths, remove_shortcut
 from installer.state.registry import (
@@ -19,6 +20,11 @@ from installer.state.registry import (
     try_read_install_location,
 )
 from meridian.version import APP_AUTHOR, APP_NAME
+
+# An uninstall has two reportable moments and no measurable middle: the work
+# itself is one call that either completes or raises.
+_METADATA_PCT = 10
+_SCHEDULED_PCT = 100
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,21 +86,19 @@ def uninstall_with_feedback(
 ) -> None:  # noqa: ANN001
     if cancel_event is not None and getattr(cancel_event, "is_set", lambda: False)():
         raise InstallerOperationError("Cancelled")
-    if progress:
-        progress("Reading installation metadata...")
+    report(progress, pct=_METADATA_PCT, message="Reading installation metadata...")
     uninstall(identity, opts)
-    if progress:
-        progress("Uninstall scheduled. Closing...")
+    report(progress, pct=_SCHEDULED_PCT, message="Uninstall scheduled. Closing...")
 
 
 def _schedule_delete_after_exit(install_dir: Path) -> None:  # pragma: no cover
     """Hand the install directory to a detached shell that outlives this one.
 
-    Excluded from coverage deliberately, and recorded in TESTING.md. The
+    Excluded from coverage deliberately and recorded in TESTING.md. The
     installer cannot delete the directory it is running from, so this spawns a
     detached PowerShell that waits and then removes it. Running it under test
     would start a real background process holding a real deletion command.
-    `uninstall` is covered, and is asserted to hand this the resolved install
+    `uninstall` is covered and is asserted to hand this the resolved install
     directory and nothing else.
     """
     install_dir = install_dir.resolve()
