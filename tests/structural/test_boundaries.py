@@ -53,7 +53,6 @@ _SIZE_SCAN: dict[str, tuple[str, ...]] = {
 # Tracked debt: this set may only shrink. Do not add to it; decompose instead.
 _LEGACY_OVER_LIMIT = frozenset(
     {
-        "meridian/ui/qml/SubscriptionManager.qml",
         "meridian/ui/qml/FeedReader.qml",
     }
 )

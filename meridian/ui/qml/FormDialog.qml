@@ -1,35 +1,31 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 
-// A modal message with a Cancel and an OK; or with OK alone.
+// A modal dialog with a Cancel and an OK, taking arbitrary content.
 //
-// Extracted from main.qml, which carried this chrome three times: the single
-// feed removal, the bulk removal and the error report. All three had the same
-// background, the same mantle-and-hairline footer and the same right-aligned
-// button row; they differed only in their title, their message and what OK
-// meant. The caller supplies those and handles `accepted`.
+// Extracted from SubscriptionManager.qml, where the edit-URL and filter
+// dialogs wrote out the same background, the same mantle-and-hairline footer,
+// the same button pair with the same Left and Right wiring between them, plus
+// the same padding. What differs between the two is entirely their content, so
+// that is all a caller declares.
 //
-// Removal is destructive, so the confirmation is not optional: both removal
-// paths name what is going and what goes with it.
+// `ConfirmDialog` is the message-only sibling of this. The two are kept apart
+// because a message dialog sizes to its text while a form sizes to its fields.
 Dialog {
     id: control
 
     required property var theme
-    property string message: ""
 
-    // The error report has nothing to cancel, so it shows OK alone.
-    property bool okOnly: false
-
-    // The removal messages are two lines and read better opened up; the error
-    // report is a single line and does not want the extra leading.
-    property real bodyLineHeight: 1.4
-
-    // The message wraps to this. It is a property because the manager's
-    // removal sits in a narrower drawer than the window's.
-    property int bodyWidth: 320
+    default property alias content: contentColumn.data
 
     modal: true
     anchors.centerIn: Overlay.overlay
+
+    topPadding: 16
+    leftPadding: 16
+    rightPadding: 16
+    bottomPadding: 16
 
     background: Rectangle {
         color: theme.base
@@ -53,7 +49,6 @@ Dialog {
             StyledButton {
                 id: cancelBtn
                 objectName: "cancelBtn"
-                visible: !control.okOnly
                 text: "Cancel"
                 theme: control.theme
                 onClicked: control.reject()
@@ -67,20 +62,13 @@ Dialog {
                 theme: control.theme
                 onClicked: control.accept()
                 Keys.onReturnPressed: { control.accept(); event.accepted = true }
-                Keys.onLeftPressed: {
-                    if (cancelBtn.visible) cancelBtn.forceActiveFocus()
-                    event.accepted = true
-                }
+                Keys.onLeftPressed: { cancelBtn.forceActiveFocus(); event.accepted = true }
             }
         }
     }
 
-    Label {
-        objectName: "messageLabel"
-        text: control.message
-        color: theme.text
-        wrapMode: Text.WordWrap
-        width: control.bodyWidth
-        lineHeight: control.bodyLineHeight
+    contentItem: ColumnLayout {
+        id: contentColumn
+        spacing: 12
     }
 }

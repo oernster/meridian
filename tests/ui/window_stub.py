@@ -22,16 +22,22 @@ from meridian.ui.models import FeedCandidateModel, FeedListModel, ItemListModel
 QML_DIR = Path(__file__).resolve().parents[2] / "meridian" / "ui" / "qml"
 
 
-def feed_dto(feed_id: int, title: str, unread: int = 0) -> FeedDTO:
+def feed_dto(
+    feed_id: int,
+    title: str,
+    unread: int = 0,
+    description: str | None = None,
+    filter_expr: str | None = None,
+) -> FeedDTO:
     return FeedDTO(
         id=feed_id,
         url=f"https://example.com/feed/{feed_id}",
         source_type="mfeed",
         title=title,
-        description=None,
+        description=description,
         icon=None,
         language=None,
-        filter_expr=None,
+        filter_expr=filter_expr,
         unread_count=unread,
     )
 
