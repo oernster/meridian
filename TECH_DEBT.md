@@ -29,15 +29,9 @@ Three files, the smallest 816 lines and the largest 991, carrying the keyboard f
 Two things close this. They are independent:
 
 - Split the three along the seams QML already gives (component extraction into sibling `.qml` files, which is the idiomatic decomposition and needs no new concepts). Each one that lands under the cap leaves the allowlist; the staleness test fails if it is left behind. The discovery panel is the pattern to copy: state and wiring in the composing file, each half naming nothing outside itself.
-- Push the decision-shaped parts of those files down through the bridge into `meridian/application`, where the coverage gate can see them. `test_bridge.py` shows the bridge is already testable; the QML above it is doing more than presentation.
+- Push the decision-shaped parts of those files down through the bridge into `meridian/application`, where the coverage gate can see them. The `test_bridge_*` modules show the bridge is already testable; the QML above it is doing more than presentation.
 
-This is the single largest item in the file and everything else here is smaller.
-
-## 2. `tests/ui/test_bridge.py` is 1029 lines
-
-The size cap now reads the test tree as well as the package, so this file is carried in `_LEGACY_OVER_LIMIT` alongside the four QML files. `tests/infrastructure/parser/test_atom_parser.py` sits at exactly 400, within the cap but with no room left: whoever edits it next should take it to 350 or below rather than shave a line off.
-
-The bridge test is doing valuable work (it is why the QML bridge is covered at all), so this is not a suggestion to shrink it by deleting assertions. It wants splitting by the bridge surface it exercises: subscription operations, item operations, discovery and settings.
+This is the only item in the file. `tests/infrastructure/parser/test_atom_parser.py` sits at exactly 400, within the cap but with no room left: whoever edits it next should take it to 350 or below rather than shave a line off.
 
 ---
 
@@ -54,7 +48,7 @@ The bridge test is doing valuable work (it is why the QML bridge is covered at a
 These look like candidates but are correct as they stand; changing them would regress or add cost for nothing.
 
 - **Coverage configured in `pyproject.toml` rather than a `.coveragerc`.** Both work and `pyproject` is arguably the better home. This was carried as an item only because it made cross-project comparison harder and because the installer coverage work needed the `source` list edited; that work is done, so nothing practical turned on it. Ruled not debt on 2026-08-09. Do not reopen it as a consistency point.
-- **The 100% gate covering the UI bridge.** Most projects here omit the UI layer wholesale. Meridian covers its bridge and that is why `test_bridge.py` is large. This is the strength of the repository, not an excess.
+- **The 100% gate covering the UI bridge.** Most projects here omit the UI layer wholesale. Meridian covers its bridge, which is why the `test_bridge_*` modules add up to as much as they do. This is the strength of the repository, not an excess.
 - **`black --check` and `flake8` run as in-suite assertions** in `tests/structural/test_boundaries.py`, over the whole Python surface: `meridian/`, `installer/`, `tests/` and every root delivery script. It looks like the test suite doing a linter's job. It is what makes formatting non-optional without depending on a hook or a CI step; the narrower `meridian/`-only version is precisely how one delivery script drifted for long enough to become a tracked item.
 - **`Feed.__post_init__` accepting `http://` as well as `https://`.** It looks like a hole in the transport policy. It is not: an imported or discovered feed can legitimately be plain HTTP; every layer that matters is already strict. The Add Subscription field only enables Subscribe for `https://`, redirects are followed to HTTPS targets only and the parsers drop non-HTTPS media. Tightening the entity would break import of existing reading lists for no security gain.
 - **The Apache-2.0 model and LGPL-3.0 UI split**, with four licence files at root. `LICENSE` is the map, `LICENSE-APACHE-2.0.txt` covers domain, application, infrastructure and the scripts, `LICENSE-LGPL-3.0.txt` covers the Qt front end and `LICENSE-GPL-3.0.txt` is present because the LGPL text incorporates it by reference. All four are load-bearing. The Apache choice on the model side is deliberate, aligning with the MMSP ecosystem this application is the reference implementation for.

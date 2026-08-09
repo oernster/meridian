@@ -107,7 +107,7 @@ new code without tests will not reach 100% and so will not merge.
 
 ```bash
 pytest                               # full suite with the coverage gate
-pytest tests/ui/test_bridge.py -v    # a single file
+pytest tests/ui/test_bridge_items.py -v   # a single file
 pytest --cov-report=html             # an HTML coverage report
 ```
 

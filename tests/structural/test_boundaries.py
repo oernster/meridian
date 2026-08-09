@@ -11,8 +11,9 @@ while four QML files carried 3736 lines between them and one test module ran
 to 1029. A rule that cannot see most of the UI is not a rule.
 ``_LEGACY_OVER_LIMIT`` carries what is left of those as tracked debt: the set
 may only shrink, so ``test_legacy_allowlist_has_no_stale_entries`` fails if an
-entry is no longer over the limit or no longer exists. `FeedDiscovery.qml` left
-it on 2026-08-09 by that route.
+entry is no longer over the limit or no longer exists. `FeedDiscovery.qml` and
+`test_bridge.py` both left it on 2026-08-09 by that route, so what remains is
+QML alone.
 """
 
 import ast
@@ -55,7 +56,6 @@ _LEGACY_OVER_LIMIT = frozenset(
         "meridian/ui/qml/main.qml",
         "meridian/ui/qml/SubscriptionManager.qml",
         "meridian/ui/qml/FeedReader.qml",
-        "tests/ui/test_bridge.py",
     }
 )
 

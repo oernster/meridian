@@ -64,7 +64,7 @@ The gated run prints the coverage table last and emits no "N passed" line, so re
 
 ```bash
 # Run a specific test file
-pytest tests/ui/test_bridge.py -v
+pytest tests/ui/test_bridge_items.py -v
 
 # Run with coverage report
 pytest --cov-report=html
