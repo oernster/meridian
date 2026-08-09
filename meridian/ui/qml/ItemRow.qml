@@ -9,12 +9,18 @@ import QtQuick.Layouts
 // `model.*` and reaching out to the reader for the list, the detail pane and
 // the controller.
 //
-// The seven `item*` properties are `required`, which is what makes the view
-// bind them from ItemListModel's roles of the same name.
+// The `item*` properties are `required`, which is what makes the view bind
+// them from ItemListModel's roles of the same name.
+//
+// `index` has to be declared alongside them: declaring any required property
+// stops the view injecting the model's context properties, so an undeclared
+// `index` does not exist rather than merely going stale. Reading it throws and
+// takes the rest of the handler with it.
 Rectangle {
     id: row
 
-    // Bound by the view from ItemListModel's roles.
+    // Bound by the view: its own position, then ItemListModel's roles.
+    required property int index
     required property int itemId
     required property string itemTitle
     required property string itemType

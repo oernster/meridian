@@ -12,11 +12,17 @@ import QtQuick.Layouts
 // The six `feed*` properties are `required`, which is what makes the view bind
 // them from FeedListModel's roles of the same name. Current-row styling comes
 // from the attached ListView property rather than a comparison against the
-// view's currentIndex, so the row does not need to know its own index.
+// view's currentIndex.
+//
+// `index` has to be declared for the same reason: declaring any required
+// property stops the view injecting the model's context properties, so an
+// undeclared `index` is not merely stale, it does not exist. Reading it throws
+// and takes the rest of the handler with it.
 Rectangle {
     id: row
 
-    // Bound by the view from FeedListModel's roles.
+    // Bound by the view: its own position, then FeedListModel's roles.
+    required property int index
     required property int feedId
     required property string feedUrl
     required property string feedTitle
