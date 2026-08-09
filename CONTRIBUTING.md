@@ -184,6 +184,15 @@ is removed and the consequence, both for single and for bulk deletion. The
 existing feed-delete and bulk-delete dialogs are the reference. Do not add a
 delete path without a confirmation.
 
+A confirmation is only a safeguard while its count is right; a count read
+from state that can quietly change is not. The subscription manager's selection
+was once tied to the lifetime of the row on screen, so scrolling a long list
+deselected rows as they were destroyed; the dialog then truthfully reported the
+shrunken number and deleted exactly that. The dialog was correct and the
+safeguard still failed. Whatever a destructive confirmation counts has to be
+state the user changed deliberately, never state a view can alter as a side
+effect of being scrolled.
+
 ## Commit messages and pull requests
 
 - Write commit subjects in the imperative mood and keep them short. Add a body

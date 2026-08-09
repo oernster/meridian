@@ -16,17 +16,18 @@ Rectangle {
 
     color: theme.base
 
+    // The selection is keyed by feedId and nothing else. Deliberately NOT tied
+    // to delegate lifetime: a ListView destroys delegates as they leave the
+    // viewport, so a Component.onDestruction hook that touched the selection
+    // would deselect every row the user scrolled past. It did. Selecting all of
+    // a long list, scrolling it and confirming the removal deleted only the
+    // rows still realised; the confirmation dialog counted those instead of
+    // what had been selected. Do not reintroduce a per-delegate register or
+    // unregister here; the binding below reads selectedIds by id, which is
+    // correct whether or not a row is currently realised.
     property var selectedIds: ({})
     property int selectedCount: 0
-    property var _allIds: []
 
-    function _registerId(feedId) {
-        var a = _allIds.slice(); a.push(feedId); _allIds = a
-    }
-    function _unregisterId(feedId) {
-        _allIds = _allIds.filter(function(x) { return x !== feedId })
-        toggleSelected(feedId, false)
-    }
     function toggleSelected(feedId, forceState) {
         var s = Object.assign({}, selectedIds)
         var on = (forceState !== undefined) ? forceState : !s[feedId]
@@ -223,9 +224,6 @@ Rectangle {
                 width: subList.width - subVScroll.width
                 theme: root.theme
                 selected: !!root.selectedIds[feedId]
-
-                Component.onCompleted: root._registerId(feedId)
-                Component.onDestruction: root._unregisterId(feedId)
 
                 onToggleRequested: root.toggleSelected(feedId)
                 onFilterRequested: {

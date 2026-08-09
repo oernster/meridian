@@ -56,7 +56,16 @@
   <div class="changelog-grid">
 
     <div class="cl-entry">
-      <div class="ver-tag">v<!--VERSION-->2.5.0<!--/VERSION--></div>
+      <div class="ver-tag">v<!--VERSION-->2.5.1<!--/VERSION--></div>
+      <h3>A selection that survives scrolling</h3>
+      <ul>
+        <li>Selecting feeds in the subscription manager and then scrolling the list quietly dropped every row that scrolled out of view. The selection was tied to the lifetime of the row on screen rather than to the feed; a list only keeps the rows you can see. Select a long list, scroll it to check what you had chosen, only for the confirmation to offer a fraction of it while reporting that smaller number as though it were your selection</li>
+        <li>The selection is now held by feed, so scrolling cannot touch it. Confirming a bulk removal deletes exactly what was selected and the dialog counts exactly that. Short lists were never affected, which is why this went unnoticed: nothing is dropped until a list is long enough to scroll</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.5.0</div>
       <h3>A hardening release: the front end split, the keyboard proven, the installer tested</h3>
       <ul>
         <li>The QML front end is four composition files with their panels, rows and dialogs beside them, where it was four files of more than three and a half thousand lines between them. Nothing about using the application changes</li>
