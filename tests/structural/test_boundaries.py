@@ -9,9 +9,10 @@ The size rule covers QML and the test tree as well as the Python package. It
 walked ``*.py`` under ``meridian/`` only, which reported a clean repository
 while four QML files carried 3736 lines between them and one test module ran
 to 1029. A rule that cannot see most of the UI is not a rule.
-``_LEGACY_OVER_LIMIT`` carries those five as tracked debt: the set may only
-shrink, and ``test_legacy_allowlist_has_no_stale_entries`` fails if an entry is
-no longer over the limit or no longer exists.
+``_LEGACY_OVER_LIMIT`` carries what is left of those as tracked debt: the set
+may only shrink, so ``test_legacy_allowlist_has_no_stale_entries`` fails if an
+entry is no longer over the limit or no longer exists. `FeedDiscovery.qml` left
+it on 2026-08-09 by that route.
 """
 
 import ast
@@ -51,7 +52,6 @@ _SIZE_SCAN: dict[str, tuple[str, ...]] = {
 # Tracked debt: this set may only shrink. Do not add to it; decompose instead.
 _LEGACY_OVER_LIMIT = frozenset(
     {
-        "meridian/ui/qml/FeedDiscovery.qml",
         "meridian/ui/qml/main.qml",
         "meridian/ui/qml/SubscriptionManager.qml",
         "meridian/ui/qml/FeedReader.qml",

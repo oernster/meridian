@@ -1,20 +1,21 @@
 """Every QML file compiles.
 
 The QML carries the application's user-facing behaviour and is measured by
-nothing: the coverage gate reads Python only, and `qmllint` reports 198
-unqualified-access warnings on one file alone because the whole front end is
+nothing: the coverage gate reads Python only, while `qmllint` reports
+unqualified-access warnings by the hundred because the whole front end is
 driven by context properties, so it cannot be turned into a gate without
 annotating the lot.
 
 Compiling is the check that can be made to hold. It catches what a careless
 edit actually breaks: a syntax error, a property assigned on a type that has
 no such property, an unresolvable component. That is precisely the class of
-mistake extracting components out of the four oversized files can introduce,
-and none of it is visible until the application is launched otherwise.
+mistake extracting components out of the oversized files can introduce; none of
+it is visible until the application is launched otherwise.
 
 It stops short of instantiating anything. Bindings against context properties
-resolve at run time, and the context belongs to `main.py`, so building the
-object graph here would test the fixture rather than the QML.
+resolve at run time and the context belongs to `main.py`, so building the
+object graph here would test the fixture rather than the QML. Where a component
+is worth more than that, it gets its own test alongside this one.
 """
 
 from __future__ import annotations
