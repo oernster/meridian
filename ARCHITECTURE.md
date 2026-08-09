@@ -104,6 +104,8 @@ meridian/
       SubscriptionManager.qml  Drawer: add subscription URL field (enabled only for an https:// URL), subscribe button, bulk select/remove, per-feed filter/edit/remove buttons; full keyboard nav (Tab chain, Enter/Space/Left/Right); filter dialog shows existing terms as tabbable toggleable rows, new terms appended on accept
       FeedDiscovery.qml     Feed discovery drawer: topic search via feedsearch.dev, category autocomplete (~46 categories), result cap selector, candidate list with per-item and bulk subscribe. Escape closes panel (from queryField: closes autocomplete, then cancels search, then closes; from all other controls: closes immediately).
       ToastBar.qml          Transient confirmation strip: fades in, holds, fades out. One `show(message)` call; anchors nothing itself, so the caller places it
+      UrlListDialog.qml     Modal dialog: heading over a scrollable list of feed URLs, with the caller's buttons reparented into the footer row. Carries the chrome the two bulk dialogs in FeedDiscovery.qml duplicated
+      StyledButton.qml      Shared Button: required `theme` property, transparent fill, amber border on hover and a 2px amber border on activeFocus, focusPolicy Qt.TabFocus
       AboutDialog.qml       About dialog (keyboard: Enter/Escape closes)
       LicenceDialog.qml     Licence dialog (keyboard: scroll text, Tab to Close, Enter/Escape closes)
 

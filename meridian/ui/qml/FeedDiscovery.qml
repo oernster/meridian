@@ -824,130 +824,45 @@ Rectangle {
     }
 
     // Bulk subscribe confirmation dialog
-    Dialog {
+    UrlListDialog {
         id: bulkConfirmDialog
         title: "Subscribe to Feeds"
-        modal: true
-        anchors.centerIn: Overlay.overlay
-        width: 460
-        height: 360
-        topPadding: 16; leftPadding: 16; rightPadding: 16; bottomPadding: 8
-        background: Rectangle { color: theme.base; border.color: theme.surface0; radius: 8 }
-        footer: Rectangle {
-            color: theme.mantle
-            height: 52
-            radius: 8
-            Rectangle { anchors.top: parent.top; width: parent.width; height: 8; color: theme.mantle }
-            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: theme.surface0 }
-            Row {
-                anchors.right: parent.right
-                anchors.rightMargin: 12
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 8
-                StyledButton {
-                    id: discoveryCancelBtn
-                    text: "Cancel"; theme: root.theme; onClicked: bulkConfirmDialog.reject()
-                    Keys.onReturnPressed: { bulkConfirmDialog.reject(); event.accepted = true }
-                    Keys.onRightPressed: { discoverySubscribeBtn.forceActiveFocus(); event.accepted = true }
-                }
-                StyledButton {
-                    id: discoverySubscribeBtn
-                    text: "Subscribe"; theme: root.theme; onClicked: bulkConfirmDialog.accept()
-                    Keys.onReturnPressed: { bulkConfirmDialog.accept(); event.accepted = true }
-                    Keys.onLeftPressed: { discoveryCancelBtn.forceActiveFocus(); event.accepted = true }
-                }
-            }
-        }
-        contentItem: ColumnLayout {
-            spacing: 12
+        heading: "Subscribe to " + root.selectedCount + " feed(s)?"
+        urls: Object.keys(root.selectedUrls)
 
-            Label {
-                text: "Subscribe to " + root.selectedCount + " feed(s)?"
-                color: theme.text
-                font.bold: true
-                wrapMode: Text.WordWrap
-                Layout.fillWidth: true
-            }
-
-            ListView {
-                id: confirmUrlList
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
-                model: Object.keys(root.selectedUrls)
-                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOn }
-                delegate: Label {
-                    text: "• " + modelData
-                    color: theme.subtext
-                    font.pixelSize: 11
-                    elide: Text.ElideRight
-                    width: confirmUrlList.width - 16
-                    height: 22
-                }
-            }
+        StyledButton {
+            id: discoveryCancelBtn
+            text: "Cancel"; theme: root.theme; onClicked: bulkConfirmDialog.reject()
+            Keys.onReturnPressed: { bulkConfirmDialog.reject(); event.accepted = true }
+            Keys.onRightPressed: { discoverySubscribeBtn.forceActiveFocus(); event.accepted = true }
         }
+        StyledButton {
+            id: discoverySubscribeBtn
+            text: "Subscribe"; theme: root.theme; onClicked: bulkConfirmDialog.accept()
+            Keys.onReturnPressed: { bulkConfirmDialog.accept(); event.accepted = true }
+            Keys.onLeftPressed: { discoveryCancelBtn.forceActiveFocus(); event.accepted = true }
+        }
+
         onAccepted: {
             var urls = Object.keys(root.selectedUrls)
             controller.bulkSubscribeFromDiscovery(urls)
             root._clearSelection()
-            bulkResultDialog.subscribedUrls = urls
+            bulkResultDialog.urls = urls
             bulkResultDialog.open()
         }
     }
 
     // Bulk subscribe result dialog
-    Dialog {
+    UrlListDialog {
         id: bulkResultDialog
-        property var subscribedUrls: []
         title: "Subscribed"
-        modal: true
-        anchors.centerIn: Overlay.overlay
-        width: 460
-        height: 360
-        topPadding: 16; leftPadding: 16; rightPadding: 16; bottomPadding: 8
-        background: Rectangle { color: theme.base; border.color: theme.surface0; radius: 8 }
-        footer: Rectangle {
-            color: theme.mantle
-            height: 52
-            radius: 8
-            Rectangle { anchors.top: parent.top; width: parent.width; height: 8; color: theme.mantle }
-            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: theme.surface0 }
-            StyledButton {
-                anchors.right: parent.right
-                anchors.rightMargin: 12
-                anchors.verticalCenter: parent.verticalCenter
-                text: "OK"
-                theme: root.theme
-                onClicked: bulkResultDialog.accept()
-                Keys.onReturnPressed: { bulkResultDialog.accept(); event.accepted = true }
-            }
-        }
-        contentItem: ColumnLayout {
-            spacing: 12
+        heading: "Subscribed to " + bulkResultDialog.urls.length + " feed(s):"
 
-            Label {
-                text: "Subscribed to " + bulkResultDialog.subscribedUrls.length + " feed(s):"
-                color: theme.text
-                font.bold: true
-                Layout.fillWidth: true
-            }
-
-            ListView {
-                id: resultUrlList
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
-                model: bulkResultDialog.subscribedUrls
-                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOn }
-                delegate: Label {
-                    text: "• " + modelData
-                    color: theme.subtext
-                    font.pixelSize: 11
-                    elide: Text.ElideRight
-                    width: resultUrlList.width - 16
-                    height: 22
-                }
-            }
+        StyledButton {
+            text: "OK"
+            theme: root.theme
+            onClicked: bulkResultDialog.accept()
+            Keys.onReturnPressed: { bulkResultDialog.accept(); event.accepted = true }
         }
     }
 
