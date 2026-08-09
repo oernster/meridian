@@ -155,9 +155,23 @@ def test_legacy_allowlist_has_no_stale_entries() -> None:
     assert not stale, "Stale legacy allowlist entries:\n" + "\n".join(stale)
 
 
+def _format_targets() -> list[str]:
+    """Every Python file the formatters hold, which is all of them.
+
+    This read `meridian/` alone until 2026-08-09, which is how `builddmg.py`
+    drifted into failing `black --check` while every other delivery script
+    stayed clean and nothing said so. The delivery scripts are exempt from the
+    module-size cap because they are linear recipes read top to bottom; that
+    exemption is about length and says nothing about formatting.
+    """
+    targets = [str(_ROOT / tree) for tree in ("meridian", "installer", "tests")]
+    targets += [str(path) for path in sorted(_ROOT.glob("*.py"))]
+    return targets
+
+
 def test_black_compliance() -> None:
     result = subprocess.run(
-        ["black", "--check", "--quiet", str(_SRC)],
+        ["black", "--check", "--quiet", *_format_targets()],
         capture_output=True,
         text=True,
         check=False,
@@ -171,7 +185,7 @@ def test_flake8_compliance() -> None:
             "flake8",
             "--max-line-length=88",
             "--extend-ignore=E203,W503",
-            str(_SRC),
+            *_format_targets(),
         ],
         capture_output=True,
         text=True,

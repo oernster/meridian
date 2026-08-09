@@ -40,21 +40,11 @@ It had a second reason: the installer coverage work needed the `source` list edi
 
 **Recommendation: move this to "Not debt".** With its practical driver spent, what is left is a preference for one working idiom over another working idiom. Awaiting a decision rather than being deleted, since an item that vanishes without a ruling is a discrepancy.
 
-## 4. `builddmg.py` fails `black --check`
-
-`python -m black --check builddmg.py` exits 1 with "would reformat builddmg.py". The script also carries twelve `flake8` violations: four `E221` multiple-spaces-before-operator, which black fixes, and four `E501` long lines, which it does not.
-
-This is drift rather than a deliberate exemption, which was settled by measurement on 2026-08-09: `buildexe.py`, `buildinstaller.py`, `create_icons.py`, `create_splash.py`, the whole of `installer/` and the whole of `tests/` all pass black cleanly. `builddmg.py` is the only file in the repository outside `meridian/` that does not, and it already failed before the licence work touched it.
-
-The "Looks like debt" note below covers `builddmg.py` for its 530 lines, which is the module-cap exemption. That exemption is about length and says nothing about formatting; a delivery script being exempt from being split is not a reason for it to be unformatted.
-
-Closing it is a black run plus a manual pass over the four long lines. The durable half is extending `test_black_compliance`, which currently checks `meridian/` only, to the delivery scripts as well, so the same drift cannot recur silently.
-
 ---
 
 ## Looks like debt, not worth touching
 
-- `builddmg.py` at 530 lines and the other delivery scripts (`buildexe.py`, `buildinstaller.py`, `build_flatpak.sh`, `cleanup_flatpak.sh`, `create_icons.py`, `create_splash.py`). These are linear recipes and are exempt from the module cap by design. Do not raise length against them.
+- `builddmg.py` at 530 lines and the other delivery scripts (`buildexe.py`, `buildinstaller.py`, `build_flatpak.sh`, `cleanup_flatpak.sh`, `create_icons.py`, `create_splash.py`). These are linear recipes and are exempt from the module cap by design. Do not raise length against them. **The exemption is about length only:** every root script is now held to `black` and `flake8` by the in-suite assertions, which is what stopped `builddmg.py` drifting unnoticed.
 - The three root `.spec` files (`Meridian.spec`, `MeridianDebug.spec`, `MeridianSetup.spec`) are PyInstaller artefacts and are untracked. Nothing to do.
 - The fifteen tracked PNG sizes plus the `.ico`. Each is emitted by `create_icons.py` from a single master and consumed by a named packaging path. The single-master rule working, not asset sprawl.
 - `installer/ui/_header_fit.py` and `_main_window_actions.py` carrying leading underscores at module level. Unconventional for a package, clear in intent (private to the installer UI) and harmless.
@@ -65,7 +55,7 @@ Closing it is a black run plus a manual pass over the four long lines. The durab
 These look like candidates but are correct as they stand; changing them would regress or add cost for nothing.
 
 - **The 100% gate covering the UI bridge.** Most projects here omit the UI layer wholesale. Meridian covers its bridge and that is why `test_bridge.py` is large. This is the strength of the repository, not an excess.
-- **`black --check` and `flake8` run as in-suite assertions** in `tests/structural/test_boundaries.py`. It looks like the test suite doing a linter's job. It is what makes formatting non-optional without depending on a hook or a CI step.
+- **`black --check` and `flake8` run as in-suite assertions** in `tests/structural/test_boundaries.py`, over the whole Python surface: `meridian/`, `installer/`, `tests/` and every root delivery script. It looks like the test suite doing a linter's job. It is what makes formatting non-optional without depending on a hook or a CI step, and the narrower `meridian/`-only version is precisely how one delivery script drifted for long enough to become a tracked item.
 - **`Feed.__post_init__` accepting `http://` as well as `https://`.** It looks like a hole in the transport policy. It is not: an imported or discovered feed can legitimately be plain HTTP; every layer that matters is already strict. The Add Subscription field only enables Subscribe for `https://`, redirects are followed to HTTPS targets only and the parsers drop non-HTTPS media. Tightening the entity would break import of existing reading lists for no security gain.
 - **The Apache-2.0 model and LGPL-3.0 UI split**, with four licence files at root. `LICENSE` is the map, `LICENSE-APACHE-2.0.txt` covers domain, application, infrastructure and the scripts, `LICENSE-LGPL-3.0.txt` covers the Qt front end and `LICENSE-GPL-3.0.txt` is present because the LGPL text incorporates it by reference. All four are load-bearing. The Apache choice on the model side is deliberate, aligning with the MMSP ecosystem this application is the reference implementation for.
 - **The five separate parser modules** (`rss`, `atom`, `mfeed`, `podcast`, `platform`) with one test module each. One source type per parser is the specification's own shape; consolidating them would destroy the mapping.
