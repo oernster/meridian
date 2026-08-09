@@ -17,9 +17,27 @@ from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
 from PySide6.QtQml import QQmlComponent, QQmlEngine
 
 from meridian.application.dto.feed_dto import FeedDTO
+from meridian.application.dto.item_dto import ItemDTO, MediaDTO
 from meridian.ui.models import FeedCandidateModel, FeedListModel, ItemListModel
 
 QML_DIR = Path(__file__).resolve().parents[2] / "meridian" / "ui" / "qml"
+
+# The palette the window builds at runtime, as a plain dict. A component under
+# test takes it as its `theme`, so every colour it reads has to be present.
+THEME = {
+    "base": "#1e1e2e",
+    "mantle": "#181825",
+    "surface0": "#313244",
+    "surface1": "#45475a",
+    "text": "#cdd6f4",
+    "subtext": "#a6adc8",
+    "overlay": "#6c7086",
+    "blue": "#89b4fa",
+    "red": "#f38ba8",
+    "green": "#a6e3a1",
+    "amber": "#f9e2af",
+    "isDark": True,
+}
 
 
 def feed_dto(
@@ -42,7 +60,38 @@ def feed_dto(
     )
 
 
+def item_dto(
+    item_id: int,
+    title: str,
+    *,
+    feed_id: int = 1,
+    item_type: str = "article",
+    url: str | None = None,
+    published: str = "2026-08-01T09:30:00Z",
+    description: str = "",
+    thumbnail: str | None = None,
+    duration: int | None = None,
+    is_read: bool = False,
+    media_url: str = "",
+) -> ItemDTO:
+    return ItemDTO(
+        id=item_id,
+        feed_id=feed_id,
+        item_id=f"item-{item_id}",
+        type=item_type,
+        title=title,
+        url=url or f"https://example.com/item/{item_id}",
+        published_iso=published,
+        description=description,
+        thumbnail_url=thumbnail,
+        duration=duration,
+        is_read=is_read,
+        media=(MediaDTO(url=media_url, mime_type="video/mp4"),) if media_url else (),
+    )
+
+
 class StubController(QObject):
+    feedsChanged = Signal()
     errorOccurred = Signal(str)
     newItemsAvailable = Signal(int, int)
     itemsChanged = Signal()
@@ -51,13 +100,20 @@ class StubController(QObject):
     searchError = Signal(str)
     searchCancelled = Signal()
 
-    def __init__(self, feeds: list[FeedDTO] | None = None) -> None:
+    def __init__(
+        self,
+        feeds: list[FeedDTO] | None = None,
+        items: list[ItemDTO] | None = None,
+    ) -> None:
         super().__init__()
         self._feeds = FeedListModel()
         self._items = ItemListModel()
         self._candidates = FeedCandidateModel()
+        self._selected_feed_id = 0
         if feeds:
             self._feeds.refresh(feeds)
+        if items:
+            self._items.refresh(items)
         self.calls: list[tuple] = []
 
     def _record(self, name: str, *args) -> None:
@@ -78,9 +134,9 @@ class StubController(QObject):
     def candidateModel(self) -> QObject:
         return self._candidates
 
-    @Property(int, constant=True)
+    @Property(int, notify=feedsChanged)
     def selectedFeedId(self) -> int:
-        return 0
+        return self._selected_feed_id
 
     @Slot()
     def loadFeeds(self) -> None:
@@ -89,6 +145,8 @@ class StubController(QObject):
     @Slot(int)
     def selectFeed(self, feed_id: int) -> None:
         self._record("selectFeed", feed_id)
+        self._selected_feed_id = feed_id
+        self.feedsChanged.emit()
 
     @Slot(int)
     def unsubscribe(self, feed_id: int) -> None:
@@ -110,9 +168,9 @@ class StubController(QObject):
     def markRead(self, item_id: int) -> None:
         self._record("markRead", item_id)
 
-    @Slot()
-    def markAllRead(self) -> None:
-        self._record("markAllRead")
+    @Slot(int)
+    def markAllRead(self, feed_id: int) -> None:
+        self._record("markAllRead", feed_id)
 
     @Slot(str)
     def subscribe(self, url: str) -> None:

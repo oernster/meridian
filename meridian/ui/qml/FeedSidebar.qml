@@ -42,40 +42,19 @@ Rectangle {
         checkAll.forceActiveFocus(Qt.TabFocusReason)
     }
 
-    // Both return whether they found a chip to land on, because the caller has
-    // somewhere different to go when every chip is the active one.
-    function _focusNextChipAfter(index) {
-        for (var i = index + 1; i < sortRepeater.count; i++) {
-            var chip = sortRepeater.itemAt(i)
-            if (chip && !chip.isActive) {
-                chip.forceActiveFocus(Qt.TabFocusReason)
-                return true
-            }
-        }
-        return false
+    // The chip row answers whether a chip took focus, because every chip being
+    // the active one is possible and there is somewhere else to go then.
+    function _forwardPastChips() {
+        if (!sortChips.focusFirst()) feedList.forceActiveFocus(Qt.TabFocusReason)
     }
 
-    function _focusPreviousChipBefore(index) {
-        for (var i = index - 1; i >= 0; i--) {
-            var chip = sortRepeater.itemAt(i)
-            if (chip && !chip.isActive) {
-                chip.forceActiveFocus(Qt.BacktabFocusReason)
-                return true
-            }
-        }
-        return false
-    }
-
-    function _forwardIntoChips(index) {
-        if (!sidebar._focusNextChipAfter(index)) {
-            feedList.forceActiveFocus(Qt.TabFocusReason)
-        }
-    }
-
-    function _backwardOutOfChips(index) {
-        if (sidebar._focusPreviousChipBefore(index)) return
+    function _focusBeforeChips() {
         if (removeBtn.visible) removeBtn.forceActiveFocus(Qt.BacktabFocusReason)
         else checkAll.forceActiveFocus(Qt.BacktabFocusReason)
+    }
+
+    function _backwardFromList() {
+        if (!sortChips.focusLast()) sidebar._focusBeforeChips()
     }
 
     function _toggleAll() {
@@ -130,12 +109,12 @@ Rectangle {
                     Keys.onTabPressed: {
                         event.accepted = true
                         if (removeBtn.visible) removeBtn.forceActiveFocus(Qt.TabFocusReason)
-                        else sidebar._forwardIntoChips(-1)
+                        else sidebar._forwardPastChips()
                     }
                     Keys.onRightPressed: {
                         event.accepted = true
                         if (removeBtn.visible) removeBtn.forceActiveFocus(Qt.TabFocusReason)
-                        else sidebar._forwardIntoChips(-1)
+                        else sidebar._forwardPastChips()
                     }
                     Keys.onBacktabPressed: { event.accepted = true; sidebar.focusBackwardRequested() }
                     Keys.onLeftPressed:    { event.accepted = true; sidebar.focusBackwardRequested() }
@@ -182,64 +161,23 @@ Rectangle {
                             event.accepted = true
                         }
                     }
-                    Keys.onTabPressed:     { event.accepted = true; sidebar._forwardIntoChips(-1) }
-                    Keys.onRightPressed:   { event.accepted = true; sidebar._forwardIntoChips(-1) }
+                    Keys.onTabPressed:     { event.accepted = true; sidebar._forwardPastChips() }
+                    Keys.onRightPressed:   { event.accepted = true; sidebar._forwardPastChips() }
                     Keys.onBacktabPressed: { event.accepted = true; checkAll.forceActiveFocus(Qt.BacktabFocusReason) }
                     Keys.onLeftPressed:    { event.accepted = true; checkAll.forceActiveFocus(Qt.BacktabFocusReason) }
                 }
 
-                Row {
-                    spacing: 4
-                    Repeater {
-                        id: sortRepeater
-                        model: sidebar._sortOptions
-                        delegate: Rectangle {
-                            id: chip
-                            objectName: "sortChip_" + modelData.key
-                            property bool isActive: sidebar._feedSort === modelData.key
-                            property bool hovered: false
-                            height: 24; radius: 4
-                            implicitWidth: chipLabel.implicitWidth + 12
-                            activeFocusOnTab: !isActive
-                            color: isActive ? theme.surface0 : "transparent"
-                            border.color: isActive ? theme.blue
-                                        : (hovered || activeFocus) ? theme.amber : "transparent"
-                            border.width: activeFocus ? 2 : 1
-                            Label {
-                                id: chipLabel
-                                anchors.centerIn: parent
-                                text: modelData.label
-                                color: chip.isActive ? theme.blue
-                                     : (chip.hovered || chip.activeFocus) ? theme.text : theme.overlay
-                                font.pixelSize: 10; font.bold: chip.isActive
-                            }
-                            HoverHandler { onHoveredChanged: chip.hovered = hovered }
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: !chip.isActive
-                                cursorShape: chip.isActive ? Qt.ArrowCursor : Qt.PointingHandCursor
-                                onClicked: chip._choose()
-                            }
-
-                            function _choose() {
-                                if (chip.isActive) return
-                                sidebar._feedSort = modelData.key
-                                sidebar.sortChosen(modelData.key)
-                            }
-
-                            Keys.onReturnPressed: chip._choose()
-                            Keys.onPressed: function(event) {
-                                if (event.key === Qt.Key_Space) {
-                                    chip._choose()
-                                    event.accepted = true
-                                }
-                            }
-                            Keys.onTabPressed:     { event.accepted = true; sidebar._forwardIntoChips(index) }
-                            Keys.onRightPressed:   { event.accepted = true; sidebar._forwardIntoChips(index) }
-                            Keys.onBacktabPressed: { event.accepted = true; sidebar._backwardOutOfChips(index) }
-                            Keys.onLeftPressed:    { event.accepted = true; sidebar._backwardOutOfChips(index) }
-                        }
+                SortChipRow {
+                    id: sortChips
+                    theme: sidebar.theme
+                    options: sidebar._sortOptions
+                    current: sidebar._feedSort
+                    onChosen: function(key) {
+                        sidebar._feedSort = key
+                        sidebar.sortChosen(key)
                     }
+                    onForwardOverflow: feedList.forceActiveFocus(Qt.TabFocusReason)
+                    onBackwardOverflow: sidebar._focusBeforeChips()
                 }
             }
         }
@@ -297,8 +235,8 @@ Rectangle {
                 var next = feedList.nextItemInFocusChain(true)
                 if (next && next !== feedList) next.forceActiveFocus(Qt.TabFocusReason)
             }
-            Keys.onBacktabPressed: { event.accepted = true; sidebar._backwardOutOfChips(sortRepeater.count) }
-            Keys.onLeftPressed:    { event.accepted = true; sidebar._backwardOutOfChips(sortRepeater.count) }
+            Keys.onBacktabPressed: { event.accepted = true; sidebar._backwardFromList() }
+            Keys.onLeftPressed:    { event.accepted = true; sidebar._backwardFromList() }
         }
     }
 }

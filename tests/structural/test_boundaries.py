@@ -51,11 +51,7 @@ _SIZE_SCAN: dict[str, tuple[str, ...]] = {
 
 # Files already over the limit when the scan widened to QML and to the tests.
 # Tracked debt: this set may only shrink. Do not add to it; decompose instead.
-_LEGACY_OVER_LIMIT = frozenset(
-    {
-        "meridian/ui/qml/FeedReader.qml",
-    }
-)
+_LEGACY_OVER_LIMIT = frozenset({})
 
 FORBIDDEN: dict[str, list[str]] = {
     "domain": ["application", "infrastructure", "ui"],

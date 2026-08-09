@@ -2,32 +2,7 @@
 
 A standing reference to the project's outstanding technical debt. It records what is still open, weighs whether each item is worth doing and gives the rationale. Every item is a behaviour-preserving internal concern: nothing here proposes reverting a feature or changing any UI or UX behaviour. Scope is the whole repository (the `meridian` package, the QML front end, the bespoke installer and the delivery scripts) read against `ARCHITECTURE.md` and `tests/structural/test_boundaries.py`.
 
----
-
-## 1. `FeedReader.qml` is 816 lines
-
-The Python side of this repository is held to an unusually strong standard: a 100% branch-coverage gate over the `meridian` package and `installer/ops`, with three named omissions, plus AST layer-boundary tests, a 400-line cap with its danger band and an in-suite `black` and `flake8` run. That is stricter than most of the portfolio.
-
-The size cap now reads `.qml`, so this one is carried explicitly in `_LEGACY_OVER_LIMIT` in `tests/structural/test_boundaries.py` and nothing new can join it. Coverage still measures Python only, so the QML remains unmeasured by it.
-
-**The split now has a safety net it did not have.** `tests/ui/test_qml_compiles.py` compiles every QML file and fails on a syntax error, a property assigned on a type that has none or an unresolvable component: exactly what a careless extraction introduces; none of it visible before launch otherwise. All three were mutation-checked. `qmllint` was considered and rejected as a gate: it reports unqualified-access warnings by the hundred across this front end, which is inherent to one driven by context properties rather than a defect; it exits 0 regardless, so it cannot fail a build even where the report is fair.
-
-**Two things a split has to know, both learned the expensive way.**
-
-An extracted component still resolves the ids of the file that created it, because the instance's context chains to its creation context. That is why `ToastBar.qml` reads `theme` while declaring no such property. It means an outer-scope read survives extraction silently, invisible until the component is used somewhere else, so a new component declares what it needs and its test builds it with no caller in scope and asserts the engine raised no warnings.
-
-The keyboard focus ring is the part that breaks quietly. Wiring by id inside one file becomes a signal the composition has to connect; a missed connection compiles, leaves every component correct on its own and simply strands the user at whichever end the ring broke. Nothing short of real key events through a real window shows it, because the handlers are `Keys.onTabPressed` on whichever item holds focus. `tests/ui/test_main_window_focus_ring.py` walks the whole ring that way and `test_discovery_focus_ring.py` does the same for the drawer.
-
-A third thing, cheaper but wasteful to rediscover: a `Repeater`'s delegates belong to its `QQmlDelegateModel` rather than to the item they are laid out in, so `findChild` cannot see them at all. A test that needs one searches the visual tree through `childItems()`.
-
-Twice the cap, carrying the reader state machine: the item list with its sort and mark-all-read, plus the detail pane with the media player, the description and open-in-browser. This is where the application's user-facing behaviour actually lives; it is the least constrained code in the repository. It is also the file the rest of the front end wraps its Tab chain through, via `firstHeaderBtn` and `lastFocusItem`, so its focus ring is the one with the most outside it.
-
-Two things close this. They are independent:
-
-- Split it along the seams QML already gives (component extraction into sibling `.qml` files, which is the idiomatic decomposition and needs no new concepts). Each one that lands under the cap leaves the allowlist; the staleness test fails if it is left behind. The window is the pattern to copy: shared state and wiring in the composing file, each panel naming nothing outside itself, with anything written out more than twice becoming a component of its own.
-- Push the decision-shaped parts of those files down through the bridge into `meridian/application`, where the coverage gate can see them. The `test_bridge_*` modules show the bridge is already testable; the QML above it is doing more than presentation.
-
-This is the only item in the file. `tests/infrastructure/parser/test_atom_parser.py` sits at exactly 400, within the cap but with no room left: whoever edits it next should take it to 350 or below rather than shave a line off.
+**Nothing is open.** What follows is the standing decisions around the debt that was: what looks like debt and is deliberately left; what looks like debt and is correct as it stands.
 
 ---
 
@@ -38,6 +13,7 @@ This is the only item in the file. `tests/infrastructure/parser/test_atom_parser
 - The fifteen tracked PNG sizes plus the `.ico`. Each is emitted by `create_icons.py` from a single master and consumed by a named packaging path. The single-master rule working, not asset sprawl.
 - `installer/ui/_header_fit.py` and `_main_window_actions.py` carrying leading underscores at module level. Unconventional for a package, clear in intent (private to the installer UI) and harmless.
 - The `asyncio_mode = "auto"` pytest setting. It hides explicit markers; removing it would mean annotating every async test for no behavioural gain.
+- `tests/infrastructure/parser/test_atom_parser.py` at exactly 400 lines. Within the cap and clear of the danger band, so nothing is owed today. Whoever edits it next takes it to 350 or below rather than shaving a line off, since a file at the cap breaks on the next edit either way. Count it with Python: `Measure-Object -Line` skips blank lines and reads this one as 366.
 
 ## Not debt (do not "fix" these)
 
