@@ -7,8 +7,13 @@ from pathlib import Path
 
 
 def _read_apache2_text() -> str:
+    # Same probe-by-probe guarding as `lgpl3_license_text`: the installer runs
+    # frozen, from a source tree and from an extracted payload, and a
+    # different candidate is the working one in each case, so one unavailable
+    # source must not discard the rest.
     candidates: list[Path] = []
 
+    # Only present in a frozen bundle.
     try:
         meipass = getattr(sys, "_MEIPASS", None)
         if meipass:
@@ -16,11 +21,15 @@ def _read_apache2_text() -> str:
     except Exception:
         pass
 
+    # A onefile bootstrap can leave `sys.executable` pointing somewhere that
+    # will not resolve.
     try:
         candidates.append(Path(sys.executable).resolve().parent / "LICENSE")
     except Exception:
         pass
 
+    # `__file__` is absent under some import machinery, and `parents[2]`
+    # assumes a layout that a relocated module may not have.
     try:
         candidates.append(Path(__file__).resolve().parents[2] / "LICENSE")
     except Exception:
@@ -28,6 +37,9 @@ def _read_apache2_text() -> str:
 
     candidates.append(Path.cwd() / "LICENSE")
 
+    # Unlike the LGPL loader this one falls back to an embedded summary rather
+    # than raising, so an unreadable candidate is stepped over and the dialog
+    # still shows a licence.
     for p in candidates:
         try:
             if p.exists() and p.is_file():

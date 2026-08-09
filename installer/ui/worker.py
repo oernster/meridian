@@ -41,6 +41,11 @@ class OperationWorker(QObject):
     def run(self) -> None:
         logger = logging.getLogger("installer.worker")
 
+        # COM is needed on this thread only so `create_shortcut` can run here.
+        # If it will not initialise, the operation still proceeds and the
+        # shortcut step raises its own specific error, which is a far better
+        # message than one about COM apartments. `pythoncom` is reset to None
+        # so the matching CoUninitialize below is skipped.
         pythoncom = None
         try:
             import pythoncom as _pythoncom  # type: ignore
@@ -67,10 +72,18 @@ class OperationWorker(QObject):
             logger.exception("Operation failed (expected): %s", exc)
             self.finished.emit(OperationResult(ok=False, message=str(exc)))
         except Exception as exc:
+            # The backstop for this thread. Nothing is being hidden: the
+            # traceback is logged and the failure is reported to the interface
+            # as a result. It exists because an exception escaping here would
+            # end the thread without ever emitting `finished`, leaving the
+            # window stuck on "Working..." with no error and no way forward.
             logger.exception("Operation failed (unexpected): %s", exc)
             self.finished.emit(OperationResult(ok=False, message=repr(exc)))
         finally:
             self._emit_progress("")
+            # Balancing CoInitialize as the thread ends. A failure here would
+            # leak one apartment from a process that is about to exit, and
+            # must not displace the result already emitted above.
             try:
                 if pythoncom is not None:
                     pythoncom.CoUninitialize()
@@ -105,10 +118,11 @@ class _GuiRelay(QObject):
 
     @Slot(object)
     def store_result(self, result) -> None:  # noqa: ANN001
-        try:
-            self._result = result
-        except Exception:
-            self._result = OperationResult(ok=False, message="Invalid operation result")
+        # Plain attribute assignment, which cannot raise. This carried a
+        # try/except whose fallback was unreachable; the real "no result"
+        # case is a `finished` that never arrives, and `notify_finished`
+        # below already covers it by checking for None.
+        self._result = result
 
     @Slot()
     def notify_finished(self) -> None:
@@ -143,6 +157,11 @@ class OperationController:
             return
         self._thread.quit()
         if not self._thread.wait(timeout_ms):
+            # Last resort on a thread that ignored `quit`. Terminating one is
+            # allowed to fail, and if it does there is nothing further to try:
+            # the process is closing, and blocking the close to report an
+            # unkillable background thread helps nobody. Both waits are
+            # bounded so this can never become the shutdown that hangs.
             try:
                 self._thread.terminate()
                 self._thread.wait(500)
@@ -193,6 +212,10 @@ class OperationController:
                 self._thread = None
                 self._worker = None
                 self._relay = None
+                # The controller's references are already cleared in the
+                # `finally` above, so the thread is collectable either way.
+                # Scheduling the C++ side for deletion can fail if it has
+                # already gone, which is the outcome being asked for.
                 try:
                     thread.deleteLater()
                 except Exception:

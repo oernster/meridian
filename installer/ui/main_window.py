@@ -58,6 +58,10 @@ class InstallerMainWindow(QMainWindow):
 
         self._header_fit = HeaderFitController(self)
 
+        # Per-window repeat of the application icon set in `app.py`, which has
+        # already logged any failure. Cosmetic, and this runs inside the
+        # constructor: raising here would abort the window rather than the
+        # icon, so the window is built and simply wears the Qt default.
         try:
             icon = build_installer_window_icon(
                 project_root=Path(__file__).resolve().parents[2]

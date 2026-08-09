@@ -45,6 +45,10 @@ def main(argv: list[str] | None = None) -> int:
     set_windows_app_user_model_id("com.oliverernster.meridian.installer")
 
     logger = logging.getLogger("installer.icon")
+    # The window icon is cosmetic and this runs before the window exists, so
+    # there is no interface on which to report a failure. It is logged with a
+    # traceback and the installer continues with the default Qt icon: refusing
+    # to start over a missing picture would be absurd.
     try:
         icon = build_installer_window_icon(
             project_root=Path(__file__).resolve().parents[1]

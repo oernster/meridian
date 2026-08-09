@@ -23,8 +23,12 @@ def build_installer_window_icon(*, project_root: Path) -> QIcon:
 def _find_brand_icon_path(*, project_root: Path) -> Path | None:
     filenames = ["meridian.png", "meridian.ico"]
 
+    # Each root is probed under its own guard so an unavailable one costs a
+    # single candidate rather than the whole search. `project_root` is passed
+    # in and needs no guard.
     roots: list[Path] = []
 
+    # Only present in a frozen bundle.
     try:
         meipass = getattr(sys, "_MEIPASS", None)
         if meipass:
@@ -34,16 +38,21 @@ def _find_brand_icon_path(*, project_root: Path) -> Path | None:
 
     roots.append(project_root)
 
+    # A onefile bootstrap can leave `sys.executable` unresolvable.
     try:
         roots.append(Path(sys.executable).resolve().parent)
     except Exception:
         pass
 
+    # The working directory can be deleted from under a running process.
     try:
         roots.append(Path.cwd())
     except Exception:
         pass
 
+    # An unreadable candidate is not the icon, so the search moves on. Coming
+    # up empty returns None and the caller falls back to a default Qt icon:
+    # the installer opens either way, with a plainer window.
     for root in roots:
         for name in filenames:
             p = root / name
@@ -60,6 +69,9 @@ def set_windows_app_user_model_id(app_id: str) -> None:
     if os.name != "nt":
         return
 
+    # Purely presentational: it groups the installer's taskbar button under
+    # its own identity. Older or restricted shells reject the call, and the
+    # only consequence is a button grouped with generic Python windows.
     try:
         import ctypes
 
