@@ -26,11 +26,13 @@ Two things close this. They are independent:
 
 This is the single largest item in the file and everything else here is smaller.
 
-## 2. The installer is 2812 lines with no tests and thirty unexplained broad handlers
+## 2. The installer is barely tested and carries seventeen unexplained broad handlers
 
 `installer/` is better structured than most bespoke installers here: `ops/` (install, uninstall, repair, shortcuts, running-app detection) is genuinely separated from `ui/`; no module is over 400 lines. The decomposition is already done, which is what makes the rest surprising.
 
-`[tool.coverage.run] source = ["meridian"]` means none of it is measured; there are no installer tests. Around thirty `except Exception` blocks across `install_ops.py`, `shortcuts.py`, `repair_ops.py`, `uninstall_ops.py`, `_main_window_actions.py` and `_header_fit.py` carry no `# noqa` and no comment.
+`[tool.coverage.run] source = ["meridian"]` means none of it is measured. The first installer tests now exist (`tests/ui/test_installer_dispatch.py`, nine cases over the extracted `_operation_dispatch`, mutation-checked) but they cover the dispatch only, and because the installer is outside the coverage source nothing reports how little of it that is.
+
+Seventeen `except Exception` blocks carrying no `# noqa` and no comment remain, across `install_ops.py` (7), `shortcuts.py` (5), `_header_fit.py` (3), `repair_ops.py` (1) and `uninstall_ops.py` (1). `_main_window_actions.py` is done: six duplicated wiring handlers collapsed into one documented helper, two duplicated rebind handlers into another, and each of the eight that remain now states what it degrades to and why.
 
 The exposure is concrete: `install_ops.py` writes the HKCU uninstall key, `shortcuts.py` creates Start Menu and Desktop entries and `uninstall_ops.py` removes files from a user's machine. Every one of those is a swallowed exception away from leaving a half-installed application with no visible error. Because `ops/` is already pure of Qt, bringing it into the coverage source and testing it against a temporary directory and a fake registry writer is a contained piece of work with a high return.
 
@@ -60,13 +62,15 @@ The realistic route is therefore to consume the specification's artefacts rather
 
 Until then this is a known, deliberate gap, not an oversight. It is recorded so the phrase "reference implementation" is never read as "verified against the spec".
 
-## 6. The installer tree is invisible to the size rule, which has no danger band
+## 6. `builddmg.py` fails `black --check`
 
-`_SIZE_SCAN` in `tests/structural/test_boundaries.py` reads `meridian/` and `tests/` only, so `installer/` (35 modules, 2812 lines) is measured by nothing. The debt file has twice recorded that no installer module is over 400 lines; that was true both times and guarded neither time.
+`python -m black --check builddmg.py` exits 1 with "would reformat builddmg.py". The script also carries twelve `flake8` violations: four `E221` multiple-spaces-before-operator, which black fixes, and four `E501` long lines, which it does not.
 
-Measured 2026-08-09: `installer/ui/_main_window_actions.py` is 383 lines. That is inside the danger band, the top 5% of the cap (381 to 399), where the rule is to take the file to 350 or below rather than shave a line off it and have the next edit break it again. The suite expresses only the 400 half of that rule, so nothing has ever reported this file.
+This is drift rather than a deliberate exemption, which was settled by measurement on 2026-08-09: `buildexe.py`, `buildinstaller.py`, `create_icons.py`, `create_splash.py`, the whole of `installer/` and the whole of `tests/` all pass black cleanly. `builddmg.py` is the only file in the repository outside `meridian/` that does not, and it already failed before the licence work touched it.
 
-The two halves close together. Add `installer` to `_SIZE_SCAN` and add the danger-band assertion, deriving the band from `_MAX_LINES` rather than writing 380 as a second literal so the two numbers cannot drift apart. NarrateX's `tests/structural/test_loc_limits.py` is the reference implementation of both. `_main_window_actions.py` then has to come down, which is the same file carrying fourteen of the unexplained broad handlers in item 2, so the two are worth doing in one pass.
+The "Looks like debt" note below covers `builddmg.py` for its 530 lines, which is the module-cap exemption. That exemption is about length and says nothing about formatting; a delivery script being exempt from being split is not a reason for it to be unformatted.
+
+Closing it is a black run plus a manual pass over the four long lines. The durable half is extending `test_black_compliance`, which currently checks `meridian/` only, to the delivery scripts as well, so the same drift cannot recur silently.
 
 ---
 

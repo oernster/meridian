@@ -1,62 +1,67 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 
-from installer.ops.errors import InstallerOperationError
-from installer.ops.install_ops import InstallOptions, install_new, upgrade_or_reinstall
-from installer.ops.repair_ops import RepairOptions, repair
-from installer.ops.uninstall_ops import UninstallOptions, uninstall_with_feedback
 from installer.state.model import InstalledInfo, InstallerState, Operation
+from installer.ui._main_window_types import UiSelections
+from installer.ui._operation_dispatch import operation_callable
 from installer.ui.licence_dialog import InstallerLicenceDialog
 from meridian.version import APP_NAME, __version__
-
-from installer.ui._main_window_types import UiSelections
 
 if TYPE_CHECKING:  # pragma: no cover
     from installer.ui.main_window import InstallerMainWindow
 
 
+def _wire(connect: Callable[[], None]) -> None:
+    """Run one signal connection, tolerating a control this layout never built.
+
+    The window builds its controls conditionally, so a control named here can
+    be absent. Degrading to an unwired control is deliberate: aborting the
+    wiring partway would leave a window whose remaining buttons do nothing,
+    which is worse than one button that does nothing.
+
+    The whole connection runs inside the guard, attribute lookup included,
+    because the missing piece is usually the widget rather than the slot.
+    """
+    try:
+        connect()
+    except Exception:
+        pass
+
+
 def connect_signals(window: InstallerMainWindow) -> None:
-    try:
-        window._licence_btn.clicked.connect(window._show_installer_licence)
-    except Exception:
-        pass
-    try:
-        window._theme_toggle_btn.clicked.connect(window._toggle_theme)
-    except Exception:
-        pass
-    try:
-        if getattr(window, "_browse_btn", None) is not None:
-            window._browse_btn.clicked.connect(window._browse_install_dir)
-    except Exception:
-        pass
-    try:
-        window._btn_primary_left.clicked.connect(
+    _wire(lambda: window._licence_btn.clicked.connect(window._show_installer_licence))
+    _wire(lambda: window._theme_toggle_btn.clicked.connect(window._toggle_theme))
+    if getattr(window, "_browse_btn", None) is not None:
+        _wire(lambda: window._browse_btn.clicked.connect(window._browse_install_dir))
+    _wire(
+        lambda: window._btn_primary_left.clicked.connect(
             lambda: window._request_operation(Operation.INSTALL)
         )
-    except Exception:
-        pass
-    try:
-        window._btn_primary_right.clicked.connect(
+    )
+    _wire(
+        lambda: window._btn_primary_right.clicked.connect(
             lambda: window._request_operation(Operation.REPAIR)
         )
-    except Exception:
-        pass
-    try:
-        window._btn_uninstall.clicked.connect(
+    )
+    _wire(
+        lambda: window._btn_uninstall.clicked.connect(
             lambda: window._request_operation(Operation.UNINSTALL)
         )
-    except Exception:
-        pass
+    )
 
 
 def show_installer_licence(window: InstallerMainWindow) -> None:
     existing = getattr(window, "_installer_licence_dialog", None)
     if isinstance(existing, QDialog):
+        # The Python reference outlives the C++ widget, so raising an
+        # already-destroyed dialog raises rather than returning. Falling
+        # through builds a fresh one, which is the desired outcome anyway.
         try:
             existing.raise_()
             existing.activateWindow()
@@ -67,12 +72,18 @@ def show_installer_licence(window: InstallerMainWindow) -> None:
     window._installer_licence_dialog = dlg
 
     def _clear_ref() -> None:
+        # Runs while the dialog is being torn down, by which point the window
+        # may be going too. Failing to drop the reference costs one dialog's
+        # worth of memory for the rest of the process, so it is not worth
+        # raising out of a teardown callback.
         try:
             if getattr(window, "_installer_licence_dialog", None) is dlg:
                 window._installer_licence_dialog = None
         except Exception:
             pass
 
+    # Losing this connection only means the reference is cleared later, when
+    # the dialog is reopened. The dialog itself must still be shown.
     try:
         dlg.finished.connect(_clear_ref)
     except Exception:
@@ -155,34 +166,33 @@ def set_buttons_for_allowed_ops(
             Operation.REPAIR: "Repair",
         }[op]
 
-    if left is None:
-        window._btn_primary_left.setVisible(False)
-    else:
-        window._btn_primary_left.setVisible(True)
-        window._btn_primary_left.setText(_label(left))
+    def _bind(button, op: Operation | None) -> None:  # noqa: ANN001
+        """Relabel one primary button and point it at `op`, or hide it."""
+        if op is None:
+            button.setVisible(False)
+            return
+        button.setVisible(True)
+        button.setText(_label(op))
+        # Qt raises when a button carries no connection, which is the normal
+        # case the first time it is labelled, so an empty button is expected
+        # rather than an error worth surfacing.
         try:
-            window._btn_primary_left.clicked.disconnect()
+            button.clicked.disconnect()
         except Exception:
             pass
-        window._btn_primary_left.clicked.connect(
-            lambda: window._request_operation(left)
-        )
+        button.clicked.connect(lambda: window._request_operation(op))
 
-    if right is None:
-        window._btn_primary_right.setVisible(False)
-    else:
-        window._btn_primary_right.setVisible(True)
-        window._btn_primary_right.setText(_label(right))
-        try:
-            window._btn_primary_right.clicked.disconnect()
-        except Exception:
-            pass
-        window._btn_primary_right.clicked.connect(
-            lambda: window._request_operation(right)
-        )
+    _bind(window._btn_primary_left, left)
+    _bind(window._btn_primary_right, right)
 
 
 def validate_install_dir(path: Path) -> bool:
+    """Probe the directory by writing to it, since permission is not readable.
+
+    Any failure means the same thing to the caller: this installer cannot
+    write here without elevation. The specific errno does not change the
+    answer, and the caller reports it as one message.
+    """
     try:
         path.mkdir(parents=True, exist_ok=True)
         test = path / ".meridian_installer_write_test"
@@ -300,6 +310,9 @@ def on_operation_finished(
 
     refresh_state(window)
 
+    # Cosmetic: clears the finished message after a beat. If the timer cannot
+    # be armed the message simply stays until the next operation overwrites
+    # it, which is a worse-looking success rather than a failure.
     try:
         from PySide6.QtCore import QTimer
 
@@ -309,6 +322,9 @@ def on_operation_finished(
 
     if op == Operation.UNINSTALL and result.ok:
         if getattr(window._cli_args, "uninstall", False):
+            # The delay only lets the user read "Uninstalled" before the
+            # window goes. Closing immediately is the correct degradation,
+            # so this handler closes rather than swallowing.
             try:
                 from PySide6.QtCore import QTimer
 
@@ -316,68 +332,3 @@ def on_operation_finished(
             except Exception:
                 window.close()
         return
-
-
-def operation_callable(
-    window: InstallerMainWindow,
-    op: Operation,
-    selections: UiSelections,
-):
-    read_entry = getattr(window, "_read_uninstall_entry", None)
-    if read_entry is None:
-        from installer.state.registry import read_uninstall_entry as read_entry
-
-    entry = read_entry(window._identity.uninstall_key)
-    current_install_dir = entry.install_location if entry else None
-
-    if op == Operation.INSTALL:
-        return (
-            install_new,
-            {
-                "identity": window._identity,
-                "opts": InstallOptions(
-                    target_dir=selections.install_dir,
-                    create_desktop_shortcut=selections.shortcut_desktop,
-                    create_start_menu_shortcut=selections.shortcut_start_menu,
-                ),
-            },
-        )
-
-    if op in {Operation.UPGRADE, Operation.REINSTALL}:
-        if current_install_dir is None:
-            raise InstallerOperationError("No existing installation detected")
-        return (
-            upgrade_or_reinstall,
-            {
-                "identity": window._identity,
-                "current_install_dir": current_install_dir,
-                "opts": InstallOptions(
-                    target_dir=selections.install_dir,
-                    create_desktop_shortcut=selections.shortcut_desktop,
-                    create_start_menu_shortcut=selections.shortcut_start_menu,
-                ),
-            },
-        )
-
-    if op == Operation.REPAIR:
-        return (
-            repair,
-            {
-                "identity": window._identity,
-                "opts": RepairOptions(
-                    restore_desktop_shortcut=selections.shortcut_desktop,
-                    restore_start_menu_shortcut=selections.shortcut_start_menu,
-                ),
-            },
-        )
-
-    if op == Operation.UNINSTALL:
-        return (
-            uninstall_with_feedback,
-            {
-                "identity": window._identity,
-                "opts": UninstallOptions(remove_user_data=True),
-            },
-        )
-
-    raise InstallerOperationError(f"Unsupported operation: {op}")

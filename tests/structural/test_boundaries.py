@@ -25,13 +25,26 @@ _SRC = _ROOT / "meridian"
 
 _MAX_LINES = 400
 
+# The top 5% of the cap. A file landing here is one edit from breaking the cap,
+# so shaving a line off it buys nothing: the same file comes back for the same
+# refactor. The rule is to take it to _BAND_TARGET or below in one go. Both
+# bounds derive from the cap rather than being written as second literals, so
+# the numbers cannot drift apart.
+_DANGER_BAND_START = _MAX_LINES - _MAX_LINES // 20
+_BAND_TARGET = 350
+
 # Trees the size rule reads, with the suffixes it measures in each. Delivery
 # scripts sit at the repository root and are deliberately absent: they are
 # linear recipes read top to bottom, where splitting a sequence of flags and
 # steps across modules costs more than it buys.
+#
+# `installer` was absent until 2026-08-09, which is why this file twice
+# recorded that no installer module exceeded the cap: true both times, guarded
+# neither, while `installer/ui/_main_window_actions.py` sat at 383 unreported.
 _SIZE_SCAN: dict[str, tuple[str, ...]] = {
     "meridian": (".py", ".qml"),
     "tests": (".py",),
+    "installer": (".py",),
 }
 
 # Files already over the limit when the scan widened to QML and to the tests.
@@ -111,6 +124,23 @@ def test_all_source_files_within_line_limit() -> None:
             oversized.append(f"{rel}: {lines} lines (limit {_MAX_LINES})")
     assert not oversized, "Files over the line limit (decompose them):\n" + "\n".join(
         sorted(oversized)
+    )
+
+
+def test_no_source_file_sits_in_the_danger_band() -> None:
+    banded = []
+    for path in _scanned_files():
+        rel = _rel(path)
+        if rel in _LEGACY_OVER_LIMIT:
+            continue
+        lines = _line_count(path)
+        if _DANGER_BAND_START < lines < _MAX_LINES:
+            banded.append(f"{rel}: {lines} lines")
+    assert not banded, (
+        f"Files in the danger band ({_DANGER_BAND_START + 1} to "
+        f"{_MAX_LINES - 1} lines). Extract a cohesive module and take each to "
+        f"{_BAND_TARGET} or below, rather than shaving a line off the cap:\n"
+        + "\n".join(sorted(banded))
     )
 
 
