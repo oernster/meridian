@@ -64,7 +64,9 @@
     semantics the spec mandates (conditional GET, the 300 second floor, the honest MMSP/1.0
     User-Agent) sit behind a pure domain inside a four-layer architecture whose boundaries are
     enforced by structural tests, with 100% branch coverage on every build. Subscriptions and read
-    state live in local SQLite; there is no account, no cloud and no server.</p>
+    state live in local SQLite; there is no account, no sync, no telemetry and no server of ours.
+    The reader talks to your feeds and to the media they point at; feed discovery, when you use it,
+    asks Feedly's search API and Wikipedia's topic suggestions and nothing else.</p>
   <p>What works now is a calm three-pane reader for Windows, macOS and Linux: topic-based feed
     discovery, per-feed filter expressions, bulk management, a built-in media player, Catppuccin
     themes and every control reachable by keyboard. The protocol remains the heart of the project:

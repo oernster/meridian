@@ -2,18 +2,18 @@
 AST-based structural tests enforcing layer boundary invariant:
   UI -> Application -> Domain <- Infrastructure
 
-Domain must not import Application, Infrastructure, or UI.
+Domain must not import Application, Infrastructure or UI.
 Application must not import Infrastructure or UI.
 
 The size rule covers QML and the test tree as well as the Python package. It
 walked ``*.py`` under ``meridian/`` only, which reported a clean repository
 while four QML files carried 3736 lines between them and one test module ran
 to 1029. A rule that cannot see most of the UI is not a rule.
-``_LEGACY_OVER_LIMIT`` carries what is left of those as tracked debt: the set
+``_LEGACY_OVER_LIMIT`` carried what was left of those as tracked debt: the set
 may only shrink, so ``test_legacy_allowlist_has_no_stale_entries`` fails if an
-entry is no longer over the limit or no longer exists. `FeedDiscovery.qml` and
-`test_bridge.py` both left it on 2026-08-09 by that route, so what remains is
-QML alone.
+entry is no longer over the limit or no longer exists. Every entry left it that
+way on 2026-08-09, the last being `FeedReader.qml`, so the set is now empty and
+every file in scope clears the cap on its own.
 """
 
 import ast

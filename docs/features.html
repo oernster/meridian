@@ -68,7 +68,7 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       </div>
       <h3>Feed discovery</h3>
-      <p>Search new feeds by topic via feedsearch.dev. 46 category autocomplete, result cap selector (10 to 200) and bulk subscribe with a confirmation dialog.</p>
+      <p>Search new feeds by topic through Feedly's public search API, with topic suggestions from Wikipedia as you type, a result cap selector (10 to 200) and bulk subscribe behind a confirmation dialog. Feedly indexes RSS, Atom and podcast sources, so MFEED feeds are added by URL.</p>
     </div>
 
     <div class="feat">
@@ -84,7 +84,7 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       </div>
       <h3>Background polling</h3>
-      <p>Conditional GET with ETag and Last-Modified. Rate-limit backoff, 300 s poll floor. Async asyncio scheduler - zero CPU when no feeds are due.</p>
+      <p>Conditional GET with ETag and Last-Modified. Rate-limit backoff, 300 s poll floor. An async asyncio scheduler that wakes every ten seconds and does nothing until a feed is due.</p>
     </div>
 
     <div class="feat">
@@ -108,7 +108,7 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
       </div>
       <h3>Full keyboard navigation</h3>
-      <p>Every control reachable without a mouse. Tab wraps cleanly end-to-end. Enter, Space, Left, Right all wired. Escape closes drawers and dialogs.</p>
+      <p>Every control reachable without a mouse. Tab wraps cleanly end to end. Space activates throughout and Enter almost everywhere, Left and Right move between sort chips and dialog footers, Escape closes drawers and dialogs.</p>
     </div>
 
     <div class="feat">
@@ -132,7 +132,7 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       </div>
       <h3>Single-device by design</h3>
-      <p>No account, no cloud, no server. Your subscriptions and read state stay on your machine. JSON export/import moves them between machines - the migration path, not live sync.</p>
+      <p>No account, no sync, no telemetry and no server of ours. Your subscriptions and read state stay on your machine, in one SQLite file. The only things Meridian talks to are your feeds, the media they point at and (when you use discovery) Feedly's search and Wikipedia's topic suggestions. JSON export and import moves a reading list between machines: the migration path, not live sync.</p>
     </div>
 
   </div>

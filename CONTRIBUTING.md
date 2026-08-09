@@ -5,7 +5,7 @@ built, the standards a change has to meet and the design boundaries a change has
 to respect. Reading it before you open a pull request will save a round trip.
 
 Meridian is a single-device desktop feed reader built on the
-[MMSP](https://oernster.github.io/MMSP-Spec/) protocol, written in Python with a
+[MMSP](https://ernster.dev/MMSP-Spec/) protocol, written in Python with a
 Qt Quick (QML) UI and laid out as a clean-architecture project. The bar for
 merging is correctness, layer discipline and a green test suite at 100% coverage.
 
@@ -79,21 +79,31 @@ not a style note.
 - **Dependency injection only.** Wiring happens in one place, `meridian/main.py`
   (the composition root). No module-level singletons, no service locators and no
   containers. Constructors take their dependencies as arguments.
-- **Module size.** Source modules stay at or under 400 lines. If a module grows
-  past that, decompose it. This too is checked by a structural test.
+- **Module size.** Modules stay at or under 400 lines; the rule reads the
+  QML components and the test tree and the installer, not just the package. A
+  file landing in the top 5% of the cap (381 to 399) is one edit from breaking
+  it, so the rule is to take it to 350 or below in one go rather than shave a
+  line off. The root delivery scripts are exempt by design, being linear
+  recipes; the exemption is about length and never about formatting. All of
+  this is checked by structural tests.
 - **One version string.** The root `VERSION` file is the single source of truth.
   `meridian/version.py` reads it and everything else imports `__version__` from
   there. Do not write a version number into source, into a build script or into
   any markdown file; the `docs/` site carries stamped tokens that
   `stamp_version.py` refreshes.
 - **Formatting and linting.** `black` (line length 88) and `flake8` are run as
-  part of the test suite, so unformatted or lint-failing code fails the build.
-  Run both before you push:
+  part of the test suite over `meridian/`, `installer/`, `tests/` and every
+  `*.py` at the repository root, so unformatted or lint-failing code fails the
+  build. Run both before you push:
 
   ```bash
-  black meridian tests
-  flake8 meridian tests
+  black meridian installer tests
+  flake8 meridian installer tests
+  pytest tests/structural/test_boundaries.py
   ```
+
+  The last command is the one that decides: it holds the root delivery scripts
+  too, which the first two do not reach.
 
 - **Prose style.** In code comments, docstrings and docs, avoid em dashes and
   avoid the serial comma; prefer a comma, colon, semicolon or parentheses for a
@@ -122,7 +132,7 @@ Put each test at the layer it exercises:
 | domain | pure unit tests | none |
 | application | unit tests with the interfaces faked or mocked | none |
 | infrastructure | integration tests against a real SQLite tmpdir; `respx` for HTTP | yes (temp) |
-| ui | `pytest-qt`, real QApplication, offscreen platform | none |
+| ui | real QApplication from the session `qapp` fixture in `tests/ui/conftest.py`, offscreen platform | none |
 | structural | AST and source scans (boundaries, module size, black, flake8) | file reads |
 
 Never mock Qt. The UI tests use a real `QApplication` on the offscreen platform.
@@ -132,8 +142,12 @@ Never mock Qt. The UI tests use a real `QApplication` on the offscreen platform.
 Meridian is fully keyboard operable and every interactive control has to remain
 so. If you add or change a control in the QML layer, wire its focus and key
 handling to match the rest of the UI: every control reachable by Tab, an
-explicit focus ring, Enter and Space to activate, Left and Right to move between
-buttons and dialog footer actions and Escape to close drawers and dialogs. See
+explicit focus ring, Space and Enter to activate, Left and Right to move between
+sort chips and dialog footer actions and Escape to close drawers and dialogs. A
+Qt Quick Controls `Button` handles Space for you but never Enter, so a bare
+`Button` needs its own `Keys.onReturnPressed`. Two in the tree still lack one,
+the reader's Mark all read and the transport's play and pause, which is a defect
+rather than a pattern to copy. See
 the keyboard-navigation notes in [ARCHITECTURE.md](ARCHITECTURE.md) for the
 `forceActiveFocus` and `FocusScope` gotchas before you touch the tab chain.
 

@@ -51,20 +51,24 @@
 <section class="section" id="whats-new">
   <div class="section-label">Changelog</div>
   <h2 class="section-title">What's new</h2>
-  <p class="section-sub">Recent releases have focused on what ships with the repository, a single source of truth for the version, keyboard navigation completeness and feed discovery from the app itself.</p>
+  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version.</p>
 
   <div class="changelog-grid">
 
     <div class="cl-entry">
       <div class="ver-tag">v<!--VERSION-->2.5.0<!--/VERSION--></div>
-      <h3>Neutral sample feeds, one version file, a rebuilt site</h3>
+      <h3>A hardening release: the front end split, the keyboard proven, the installer tested</h3>
       <ul>
+        <li>The QML front end is four composition files with their panels, rows and dialogs beside them, where it was four files of more than three and a half thousand lines between them. Nothing about using the application changes</li>
+        <li>Every keyboard ring is now walked by real key presses through a real window, forwards and backwards: the window, the reader, the subscription manager and the discovery drawer. Each test was checked by cutting one connection at a time, forty two in all</li>
+        <li>The size rule reads the QML, the tests and the installer as well as the package; nothing is left over the limit</li>
+        <li>The part of the installer that touches your machine is inside the same complete coverage requirement as the application; an upgrade whose swap and rollback both fail now leaves the previous installation in place</li>
         <li>The bundled sample subscriptions are now a neutral set in examples/feeds_sample.json, still covering RSS, Atom and MFEED</li>
         <li>The version lives in a single VERSION file at the repository root that the application, the packaging metadata and every build script read</li>
+        <li>The protocol version rule is asserted against the specification's own published schema, so the client and the document it implements cannot drift apart</li>
         <li>The site is five focused pages instead of one long scroll, with live download metadata, social previews and structured data</li>
-        <li>The architecture document opens with the invariants the codebase cannot break, each naming the test that enforces it</li>
-        <li>Documentation corrected on transport: an imported or discovered plain-HTTP feed loads, while the subscription field, redirects and media stay HTTPS</li>
-        <li>A standing technical-debt reference ships with the repository, recording what is open and what is deliberately left alone</li>
+        <li>Every document was read against the code: feed discovery is Feedly's search API and the typeahead is Wikipedia, both now named; the claim that feed HTML was sanitised is gone, because the library for it is declared and never imported</li>
+        <li>A standing technical-debt reference ships with the repository, recording what is open and what is deliberately left alone. It currently records nothing open</li>
       </ul>
     </div>
 

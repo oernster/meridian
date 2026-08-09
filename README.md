@@ -2,7 +2,9 @@
 
 Meridian is a desktop feed reader and subscription manager: the reference client for the [MMSP](https://ernster.dev/MMSP-Spec/) protocol and its MFEED JSON feed format. It also reads RSS, Atom, podcast and YouTube channel feeds, so one application covers everything you already subscribe to while MFEED adoption grows.
 
-Everything stays on the machine it runs on. Subscriptions and read state live in a local SQLite database; there is no account, no cloud and no server component.
+Your reading stays on the machine it runs on. Subscriptions and read state live in a local SQLite database at `~/.meridian/meridian.db`; there is no account, no sync, no telemetry and no server component of any kind.
+
+Meridian talks to the network in four places and nowhere else: it fetches the feeds you subscribed to, it loads the images and media those feeds point at, it asks Feedly's search API when you use feed discovery and it asks Wikipedia for topic suggestions while you type in the discovery field. Nothing about your subscriptions or your reading is sent anywhere.
 
 <img width="1273" height="824" alt="Meridian main window" src="https://github.com/user-attachments/assets/c6565996-d66f-4df7-a26b-5691c2ee32f4" />
 
@@ -23,14 +25,14 @@ Everything stays on the machine it runs on. Subscriptions and read state live in
 ## Capabilities
 
 - Subscribe to MFEED, RSS 2.0 and 1.0, Atom 1.0, podcast RSS and YouTube channel feeds.
-- Feed discovery by topic through feedsearch.dev: search, preview candidates and subscribe individually or in bulk, with category autocomplete and a result-cap selector.
+- Feed discovery by topic through Feedly's public search API: search, preview candidates and subscribe individually or in bulk, with a result-cap selector. The field suggests topics as you type from Wikipedia's OpenSearch endpoint. Feedly indexes RSS, Atom and podcast sources, so MFEED feeds are added by URL rather than found here.
 - Per-feed filter expressions using the MMSP Appendix A ABNF grammar. The filter dialog shows existing terms as toggleable rows, so common cases need no syntax knowledge.
 - Background polling with conditional GET (ETag and Last-Modified), rate-limit backoff and a 300 second poll floor.
 - Bulk feed management with select-all checkboxes; in-place list removal preserves scroll position.
 - Import and export subscriptions as JSON.
 - Catppuccin Mocha and Latte themes with a single toggle; the preference persists across restarts.
 - Full-text `content:encoded` rendering for article feeds, plus a built-in media player for podcast and video items.
-- Full keyboard navigation: Tab and Shift+Tab wrap cleanly end to end, Enter and Space activate the focused control, Left and Right move between buttons and dialog footer actions, Escape closes drawers and dialogs; an amber focus ring marks the focused control everywhere.
+- Full keyboard navigation: Tab and Shift+Tab wrap cleanly end to end through the window, the reader, the subscription manager and the discovery drawer, Left and Right move between sort chips and dialog footer actions, Escape closes drawers and dialogs; an amber focus ring marks the focused control everywhere. Space activates the focused control throughout; Enter activates it everywhere except the reader's Mark all read and the media transport's play and pause.
 
 ## Stack
 
@@ -41,8 +43,7 @@ Everything stays on the machine it runs on. Subscriptions and read state live in
 | Persistence | SQLAlchemy over SQLite | Subscriptions, items and polling state |
 | Networking | httpx | Async feed polling and discovery |
 | Parsing | defusedxml, python-dateutil | Safe XML parsing and RSS / Atom date handling |
-| Rendering | bleach | HTML sanitisation before display |
-| Tests | pytest, pytest-qt, pytest-cov, respx | Suite, Qt fixtures, coverage gate and HTTP mocking |
+| Tests | pytest, pytest-cov, respx, jsonschema | Suite, coverage gate, HTTP mocking and MMSP schema conformance |
 | Packaging | PyInstaller, Flatpak | Windows installer, macOS DMG, Linux Flatpak |
 
 ## Install and run
@@ -73,11 +74,11 @@ pip install -e .
 meridian
 ```
 
-The database is created automatically at first launch in the platform user-data directory.
+The database is created automatically at first launch, at `~/.meridian/meridian.db` on every platform.
 
 ## Sample feeds
 
-`examples/feeds_sample.json` holds a small neutral set of RSS, Atom and MFEED subscriptions ready to import. To load them, launch Meridian, open **File > Import Feeds...** and select `feeds_sample.json` from the `examples/` directory. All feeds are added and begin polling immediately.
+`examples/feeds_sample.json` holds a small neutral set of RSS, Atom and MFEED subscriptions ready to import. To load them, launch Meridian, press **Import** on the header bar and select `feeds_sample.json` from the `examples/` directory. All feeds are added and begin polling immediately.
 
 ## Tests
 

@@ -10,7 +10,7 @@ These are the rules the codebase is not allowed to break. Each one names the tes
 | No Python module or QML component under `meridian/` exceeds 400 lines; nor does any module under `tests/` or `installer/`; nor does any of them sit in the danger band of 381 to 399. `_LEGACY_OVER_LIMIT`, the allowance for files that predated the scan widening, is empty: every file in scope now clears the cap on its own. The set may only shrink, so an entry that no longer needs the allowance fails the suite. Both band bounds derive from the cap rather than being written as second literals, so they cannot drift apart. | `tests/structural/test_boundaries.py::test_all_source_files_within_line_limit`, `::test_no_source_file_sits_in_the_danger_band` and `::test_legacy_allowlist_has_no_stale_entries` |
 | Every Python file is `black`-formatted at line length 88: `meridian/`, `installer/`, `tests/` and every root delivery script. The delivery scripts are exempt from the size cap, never from the formatters. | `tests/structural/test_boundaries.py::test_black_compliance` |
 | Every Python file in the same set is `flake8`-clean. | `tests/structural/test_boundaries.py::test_flake8_compliance` |
-| Branch coverage is 100% over the `meridian` package, `installer/ops` and the installer's operation dispatch. Three omissions, each named and reasoned: `meridian/main.py` (composition root), `shortcuts.create_shortcut` (writes a real `.lnk` through COM into the running user's own profile) and `uninstall_ops._schedule_delete_after_exit` (spawns a detached PowerShell holding a real deletion). Every caller of the latter two is covered and asserts what they are handed. | `--cov-fail-under=100` in `pyproject.toml`, over the whole suite |
+| Branch coverage is 100% over the `meridian` package, `installer/ops` and the installer's operation dispatch. Five omissions, each named and reasoned: `meridian/main.py` (composition root), `shortcuts.create_shortcut` (writes a real `.lnk` through COM into the running user's own profile), `uninstall_ops._schedule_delete_after_exit` (spawns a detached PowerShell holding a real deletion) and two `# pragma: no cover` branches that only a broken system reaches, the `case _` exhaustiveness guard in `http_fetcher` and the stale-generation guard in `bridge._on_done`. Every caller of the named functions is covered and asserts what they are handed. | `--cov-fail-under=100` in `pyproject.toml`, over the whole suite |
 | Every QML file compiles. The coverage gate reads Python only and `qmllint` cannot be turned into a gate here (unqualified-access warnings by the hundred, inherent to a context-property front end, plus an exit code of 0 regardless), so compiling is the check that holds: it catches a syntax error, a property assigned on a type that has none or an unresolvable component, which is what extracting components can introduce. | `tests/ui/test_qml_compiles.py` |
 | The keyboard focus ring closes: across the window (header to sidebar to reader), through the reader itself (sort chips to mark-all-read to the item list, across into the detail pane and back out to the header) and across the discovery drawer. Each handover between components is a signal the composing file connects; a missed connection compiles and leaves every component correct alone, so each is asserted with real key events through a real window rather than by inspection. | `tests/ui/test_main_window_focus_ring.py`, `test_feed_reader.py` and `test_discovery_focus_ring.py` |
 | Removing a feed, singly or in bulk, asks before it acts. The sidebar and the context menu only report the request; the window is what opens the confirmation, so only its `accepted` reaches the controller. | `tests/ui/test_main_window_focus_ring.py::test_removing_the_selection_asks_first` |
@@ -50,7 +50,7 @@ meridian/
       feed.py               Feed (frozen dataclass: id, url, title, source_type, filter_expr)
       item.py               Item (frozen dataclass: feed_id, item_id, type, title, url, published, description, media, authors, tags)
     value_objects/
-      source_type.py        SourceType enum (rss, atom, mfeed, podcast, youtube)
+      source_type.py        SourceType enum (mfeed, rss, atom, podcast, platform). A YouTube channel is an Atom feed and is read by the Atom parser; `platform` is for a registered adapter
       item_type.py          ItemType enum (article, video, audio, short, livestream, podcast)
       media.py              Media, Thumbnail, Author, ItemSource value objects
       poll_config.py        PollConfig (min_interval_seconds); POLL_FLOOR_SECONDS = 300
@@ -87,7 +87,7 @@ meridian/
       mmsp.py               The MMSP protocol version and the Section 5.7 rule for which documents are readable
       http_fetcher.py       HttpFetcher: httpx async client, User-Agent derived from the protocol version, conditional GET (ETag/Last-Modified), HTTPS-only redirects, 10 MB document cap, 300s poll floor
       scheduler.py          PollScheduler: asyncio task per feed, 10s tick, per-feed backoff state
-      feedsearch_fetcher.py FeedsearchFetcher: implements DiscoveryFetcher via feedsearch.dev REST API (httpx async)
+      feedsearch_fetcher.py FeedsearchFetcher: implements DiscoveryFetcher against Feedly's public search API at cloud.feedly.com (httpx async). The name is a leftover from an earlier directory; Feedly indexes RSS, Atom and podcast sources only, so no MFEED feed is discoverable here
       parser/
         platform_parser.py  Dispatcher: registered adapters first, RSS fallback
         rss_parser.py       RSS 2.0 + RSS 1.0/RDF; content:encoded preferred over description
@@ -96,9 +96,11 @@ meridian/
         mfeed_parser.py     MMSP JSON feed format
 
   ui/
-    bridge.py
+    models.py
       FeedListModel         QAbstractListModel: feedId, feedUrl, feedTitle, feedIcon, feedSourceType, feedUnreadCount, feedDescription, feedFilter (UserRole+0..7); remove_rows_by_ids() for in-place removal
-      ItemListModel         QAbstractListModel: all ItemDTO fields as QML roles
+      ItemListModel         QAbstractListModel: every ItemDTO field as a QML role (UserRole+0..10)
+      FeedCandidateModel    QAbstractListModel: the discovery results (UserRole+0..5); mark_subscribed() flips one row rather than resetting the model
+    bridge.py
       AppController         QObject: loadFeeds, selectFeed, subscribe, unsubscribe, bulkUnsubscribe, markRead, markAllRead, setFeedSort, setItemSort, setFilter (calls loadFeeds to refresh filter label), updateFeedUrl, importFeeds, exportFeeds, searchFeeds, cancelSearch, subscribeFromDiscovery, bulkSubscribeFromDiscovery, setResultCap
     qml/
       main.qml              Application window, composition only: owns the feed selection (which the sidebar shows, the context menu acts on and the removal confirmations consume), the palette, plus the wiring from each panel's signals to the controller. A 0x0 focus absorber holds focus at startup so nothing wears a border before the first Tab. Header, sidebar and reader name nothing outside themselves; the focus ring passes between them here
@@ -124,7 +126,7 @@ meridian/
       FilterDialog.qml      Set or clear a feed's filter. A filter is one string of terms joined by AND, unreadable to edit as text, so it splits into a togglable row per term with a field for adding one more, then rejoins whatever is still active
       FeedDiscovery.qml     Feed discovery drawer, composition only: holds the search state, the selection and the error text, wires the search bar to the results and both to the controller, then owns the bulk-subscribe confirmations. The two halves name nothing outside themselves, so every crossing (focus handover, search, cap, subscribe) passes through here as a signal
       DiscoverySearchBar.qml   Heading, query field, result cap and the Search/Cancel button, with the busy row underneath. Owns the first half of the panel's focus ring; focusFirst() and focusLast() are the entry points and focusForwardRequested is the exit, because the Search button is only a tab stop while there is something to search for
-      DiscoveryQueryField.qml  The query field with its topic autocomplete: popup, debounce timer and the suggestion fetch as one unit. Dismisses its own popup before emitting searchRequested, so no caller knows the popup exists. Escape closes the popup, then cancels a running search, then closes the panel
+      DiscoveryQueryField.qml  The query field with its topic autocomplete: popup, debounce timer and the suggestion fetch as one unit. The suggestions are Wikipedia's OpenSearch endpoint, asked over XHR from two characters, debounced at 250ms and capped at ten, with the previous request aborted; this is the one outbound call the UI layer makes for itself. Dismisses its own popup before emitting searchRequested, so no caller knows the popup exists. Escape closes the popup, then cancels a running search, then closes the panel
       DiscoveryResults.qml     The error, empty and idle placeholders plus the results list and its header. Owns the second half of the focus ring, handing back through focusForwardRequested and focusBackwardRequested; the bulk-subscribe button is a conditional stop, so entering asks rather than assumes
       CandidateRow.qml      One discovery search result, used as the results ListView delegate. Six `required` properties named for FeedCandidateModel's roles, so the view binds them by name; `theme` and `selected` come from the caller and the two actions are signals (toggleRequested, subscribeRequested). The candidate* properties stay on the root because the ListView's Space and Return handlers read them off currentItem
       ToastBar.qml          Transient confirmation strip: fades in, holds, fades out. One `show(message)` call; anchors nothing itself, so the caller places it
@@ -136,14 +138,37 @@ meridian/
   main.py                   Composition root (excluded from coverage)
   version.py                Application identity; reads the root VERSION file with a 0.0.0-dev fallback
 
+installer/                  The bespoke per-user Windows installer, shipped as MeridianSetup.exe. Decomposed the same way as the application, which is what let half of it join the coverage gate
+  app.py, cli.py            Entry point and argument parsing
+  constants.py              Install paths, the registry key and the application identity
+  ops/                      Everything that touches the machine, free of Qt and inside the coverage gate: payload extraction, install, repair, uninstall, shortcut creation, running-app detection, the typed error hierarchy
+  state/                    The install state: the registry read and write, the model it produces and version comparison through `packaging`
+  ui/                       The PySide6 installer window, its themes, licence dialogs, worker thread and the operation dispatch (the one Qt-free part, gated with `ops`)
+  shared/                   Logging setup and resource resolution under PyInstaller's `sys._MEIPASS`
+  payload/                  Where `build_payload.py` stages the zipped application and its manifest
+
+examples/
+  feeds_sample.json         A neutral starter reading list, importable from the header's Import button
+
+Root delivery scripts (exempt from the size cap, never from the formatters):
+  buildexe.py, buildinstaller.py, builddmg.py, build_flatpak.sh, cleanup_flatpak.sh
+  build_resources.py        The single list of resources every delivery script bundles, so a missing licence text cannot reach a build
+  create_icons.py, create_splash.py, stamp_version.py
+
 tests/
   structural/
     test_boundaries.py      AST-based layer boundary enforcement + module size limits + black and flake8
+    test_delivery_resources.py  Every delivery script bundles the same licence texts, because `main.py` degrades to "Licence text unavailable." rather than raising, so an omission ships silently
   domain/                   Unit tests for domain services and entities
   application/              Unit tests for application services (fakes for infrastructure)
   infrastructure/
-    parser/                 Parser tests for RSS, Atom, podcast, mfeed formats
+    parser/                 Parser tests for RSS, Atom, podcast, mfeed and the platform dispatcher
     test_repositories.py    SQLite repository integration tests
+    test_http_fetcher.py    Conditional GET, redirects, backoff and the document cap, with `respx`
+    test_feedsearch_fetcher.py  The discovery client against recorded Feedly responses
+    test_scheduler.py       The poll loop, its tick and per-feed backoff
+    test_mmsp_conformance.py    The Section 5.7 version rule, asserted against the published schema where MMSP-Spec is checked out beside this repository
+  test_installer_*.py       The installer operations: install, deploy edges, repair, uninstall, shortcuts, running-app detection and the payload
   ui/
     conftest.py             The session QApplication; Qt is never mocked
     bridge_dtos.py          DTO builders and the service stand-ins the bridge tests share
@@ -155,6 +180,7 @@ tests/
     test_bridge_sorting.py  AppController: the feed and item sort settings
     test_bridge_discovery.py      AppController: search lifecycle on the background loop
     test_qml_compiles.py    Every QML file compiles
+    test_installer_dispatch.py  The installer's Qt-free operation dispatch
     test_url_list_dialog.py, test_candidate_row.py, test_discovery_query_field.py
                             The extracted QML components, each built with no caller in scope
     test_discovery_focus_ring.py, test_main_window_focus_ring.py, test_subscription_manager.py, test_feed_reader.py
@@ -215,13 +241,13 @@ FilterEvaluator (Domain)
 
 **Platform adapters**: registered at runtime via `platform_parser.register_adapter()`. No adapters are built-in; RSS is always the fallback.
 
-**HTML rendering**: `TextArea { textFormat: Text.RichText }` in QML. Plain-text descriptions (no HTML tags) are converted to `<br/>`-separated HTML before display. Raw HTML from `content:encoded` is passed through directly.
+**HTML rendering**: `TextArea { textFormat: Text.RichText }` in QML. Plain-text descriptions (no HTML tags) are escaped and converted to `<br/>`-separated HTML before display. Raw HTML from `content:encoded` is passed through directly. **Nothing sanitises it.** `bleach` is a declared runtime dependency and is imported nowhere; what protects the reader is Qt's rich-text engine accepting only a small HTML subset and executing no script, not a sanitising pass. Either wire `bleach` in or drop it; do not describe the application as sanitising while neither has happened.
 
 **Transport policy**: `Feed.__post_init__` accepts `http://` and `https://` and rejects every other scheme, so an imported or discovered plain-HTTP feed still loads. Everything downstream of that is stricter: the Add Subscription field in `SubscriptionManager.qml` only enables Subscribe for an `https://` URL, `HttpFetcher` discards a non-HTTPS redirect target; the parsers drop non-HTTPS media, enclosure and thumbnail URLs.
 
 **QML component extraction**: the front end is decomposed the way QML itself offers, into sibling `.qml` files, with the composing file holding the shared state and every crossing between panels. Two things govern it, both learned the expensive way. An extracted component still resolves the ids of the file that created it, because the instance's context chains to its creation context, so an outer-scope read survives extraction silently and only fails once the component is used somewhere else: a new component declares every input it takes; its test builds it with no caller in scope. Separately, a `Repeater`'s delegates belong to its `QQmlDelegateModel` rather than to the item they are laid out in, so `findChild` cannot see them at all: a test that needs one walks the visual tree through `childItems()`, starting at the dialog's own `contentItem` where the content is in the overlay.
 
-**Keyboard navigation**: Qt Quick Controls `Button` handles Space natively but not Enter/Return. Every `StyledButton` instance and interactive `Rectangle` in the QML layer has an explicit `Keys.onReturnPressed` handler. Dialog footer buttons are given IDs and Left/Right key handlers to allow lateral navigation between Cancel and OK without leaving the keyboard. Qt6 TextField intercepts Tab internally; tab-chain control uses `activeFocusOnTab` on surrounding items rather than `KeyNavigation.tab` on the field itself.
+**Keyboard navigation**: Qt Quick Controls `Button` handles Space natively but not Enter/Return. Every `StyledButton` instance and interactive `Rectangle` in the QML layer has an explicit `Keys.onReturnPressed` handler. Two bare `Button` instances do not, so Enter does nothing on them: `markAllReadBtn` in `ItemListPanel.qml` and `playPauseBtn` in `MediaPlayerPanel.qml`. Both are in the focus ring and both answer to Space. That is a defect rather than a decision, recorded here so it is not read as the pattern. Dialog footer buttons are given IDs and Left/Right key handlers to allow lateral navigation between Cancel and OK without leaving the keyboard. Qt6 TextField intercepts Tab internally; tab-chain control uses `activeFocusOnTab` on surrounding items rather than `KeyNavigation.tab` on the field itself.
 
 Tab wrap-around uses explicit `forceActiveFocus()` with `event.accepted = true` on every boundary. `KeyNavigation.tab` and `setFocus()` both fail across QML `FocusScope` boundaries; only `forceActiveFocus()` works. Critical invariant: `ScrollView`'s `contentItem` is a `Flickable`, which is a `FocusScope`, so any focusable control inside a `ScrollView` is trapped and Tab can never escape it. Controls that must participate in the outer Tab chain must be placed outside the `ScrollView` in the component tree.
 
@@ -244,7 +270,7 @@ Meridian is dual-licensed, split by component (see `LICENSE` for the map):
 Third-party runtime dependencies:
 
 PySide6: LGPL-3.0 (dynamically linked; compliant by default install).
-bleach: Apache-2.0.
+bleach: Apache-2.0 (declared in `requirements.txt` and imported nowhere; see the HTML rendering note above).
 SQLAlchemy: MIT.
 httpx: BSD-3-Clause.
 defusedxml: PSF.

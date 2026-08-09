@@ -31,7 +31,7 @@ pip install -r requirements-dev.txt
 | httpx | >=0.27 | Async HTTP client for feed polling |
 | defusedxml | >=0.7 | Safe XML parsing (feed content) |
 | python-dateutil | >=2.9 | RSS / Atom date parsing |
-| bleach | >=6.1 | HTML sanitisation before rendering |
+| bleach | >=6.1 | **Declared but never imported.** It was added for HTML sanitisation, which the application does not currently perform: feed HTML reaches the detail pane as Qt RichText exactly as the feed wrote it. Either wire it in or drop it from the dependency set; do not describe the app as sanitising until one of those happens |
 
 ## Dev Dependencies (additional in `requirements-dev.txt`)
 
@@ -40,7 +40,7 @@ pip install -r requirements-dev.txt
 | pytest >=8.0 | Test runner |
 | pytest-asyncio >=0.23 | Async test support |
 | pytest-cov >=5.0 | Coverage enforcement |
-| pytest-qt >=4.4 | Qt/QML test fixtures (`qapp`) |
+| pytest-qt >=4.4 | **Declared but never used.** No test takes `qtbot`; the session `qapp` fixture is the repo's own, in `tests/ui/conftest.py` |
 | jsonschema >=4.20 | Validating this client's versioning rule against the published MMSP schema |
 | respx >=0.21 | httpx request mocking |
 | black >=24.0 | Code formatter |
@@ -72,9 +72,18 @@ pytest --cov-report=html
 
 ## Formatting and Linting
 
+The in-suite assertions hold `meridian/`, `installer/`, `tests/` and every `*.py` at the repository root, so formatting only the package leaves the delivery scripts able to fail the suite. That is how `builddmg.py` drifted once already.
+
 ```bash
-black meridian tests
-flake8 meridian tests
+black meridian installer tests
+black build_resources.py builddmg.py buildexe.py buildinstaller.py create_icons.py create_splash.py stamp_version.py
+flake8 meridian installer tests
+```
+
+The root scripts are named individually because PowerShell does not expand a `*.py` glob for a native command. `tests/structural/test_boundaries.py` is the authority on the set; run it to confirm rather than trusting the list above:
+
+```bash
+pytest tests/structural/test_boundaries.py
 ```
 
 ## Running the App
@@ -83,7 +92,7 @@ flake8 meridian tests
 python -m meridian.main
 ```
 
-The database is created automatically at first launch in the platform user-data directory.
+The database is created automatically at first launch, at `~/.meridian/meridian.db` on every platform (`_DEFAULT_DB_PATH` in `meridian/infrastructure/db/session.py`).
 
 ## Project Entry Point
 
