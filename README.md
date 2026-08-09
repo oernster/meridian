@@ -101,15 +101,15 @@ Branch coverage is gated at 100%; `black` and `flake8` run as in-suite assertion
 python buildexe.py           # Windows: standalone application directory
 python buildinstaller.py     # Windows: MeridianSetup.exe (per-user installer)
 python builddmg.py           # macOS: signed .app and DMG (needs Xcode command-line tools)
-./build_flatpak.sh           # Linux: meridian.flatpak (needs flatpak and flatpak-builder)
+./build_flatpak.sh           # Linux: build meridian.flatpak then install it (needs flatpak and flatpak-builder)
 ./cleanup_flatpak.sh         # Linux: uninstall and remove all build artefacts
 ```
 
-Installing and running the Flatpak bundle:
+`build_flatpak.sh` installs the bundle it has just built, so there is no separate install step. Running and removing it:
 
 ```bash
-flatpak install --user meridian.flatpak
 flatpak run uk.codecrafter.Meridian
+./cleanup_flatpak.sh
 ```
 
 The root `VERSION` file is the single source of truth for the version. `meridian/version.py` reads it, every other module and build script imports `__version__` from there; `stamp_version.py` refreshes the copies in the `docs/` site.

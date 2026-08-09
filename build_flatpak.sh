@@ -230,11 +230,19 @@ flatpak build-bundle \
     "${BUNDLE}" \
     "${APP_ID}"
 
+# ── Install ───────────────────────────────────────────────────────────────────
+section "Installing ${APP_ID}"
+# --reinstall rather than a bare install: during development the usual case is
+# that a build of the same version is already on the machine, so a bare install
+# stops with "already installed" after every bit of the work is done.
+# -y because a build script that pauses to ask a question has not finished.
+flatpak install --user -y --reinstall "${BUNDLE}"
+
 echo
-echo "${bold}Build complete: ${BUNDLE}${reset}"
-echo
-echo "Install with:"
-echo "  flatpak install --user ${BUNDLE}"
+echo "${bold}Build complete and installed: ${BUNDLE}${reset}"
 echo
 echo "Run with:"
 echo "  flatpak run ${APP_ID}"
+echo
+echo "Remove with:"
+echo "  ./cleanup_flatpak.sh"

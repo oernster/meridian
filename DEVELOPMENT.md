@@ -116,7 +116,7 @@ Bumping a release is therefore one edit to `VERSION` followed by `python stamp_v
 python buildexe.py           # Windows: standalone application directory
 python buildinstaller.py     # Windows: MeridianSetup.exe (per-user installer)
 python builddmg.py           # macOS: signed .app and DMG (needs Xcode command-line tools)
-./build_flatpak.sh           # Linux: meridian.flatpak (needs flatpak and flatpak-builder)
+./build_flatpak.sh           # Linux: build meridian.flatpak then install it (needs flatpak and flatpak-builder)
 ./cleanup_flatpak.sh         # Linux: uninstall and remove all build artefacts
 ```
 
