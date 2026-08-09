@@ -7,8 +7,8 @@ Application must not import Infrastructure or UI.
 
 The size rule covers QML and the test tree as well as the Python package. It
 walked ``*.py`` under ``meridian/`` only, which reported a clean repository
-while four QML files carried roughly 4100 lines between them and one test
-module ran to 1029. A rule that cannot see most of the UI is not a rule.
+while four QML files carried 3736 lines between them and one test module ran
+to 1029. A rule that cannot see most of the UI is not a rule.
 ``_LEGACY_OVER_LIMIT`` carries those five as tracked debt: the set may only
 shrink, and ``test_legacy_allowlist_has_no_stale_entries`` fails if an entry is
 no longer over the limit or no longer exists.

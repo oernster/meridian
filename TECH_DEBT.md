@@ -4,7 +4,7 @@ A standing reference to the project's outstanding technical debt. It records wha
 
 ---
 
-## 1. Four QML files carry roughly 4100 lines between them
+## 1. Four QML files carry 3736 lines between them
 
 The Python side of this repository is held to an unusually strong standard: a 100% branch-coverage gate over the whole `meridian` package with only `main.py` omitted, plus AST layer-boundary tests, a 400-line cap and an in-suite `black` and `flake8` run. That is stricter than most of the portfolio.
 
@@ -17,7 +17,7 @@ The size cap now reads `.qml`, so these four are carried explicitly in `_LEGACY_
 | `meridian/ui/qml/SubscriptionManager.qml` | 857 |
 | `meridian/ui/qml/FeedReader.qml` | 816 |
 
-Four files, each two to two and a half times the module cap, carrying the keyboard focus wiring, the discovery flow, the delete confirmations and the reader state machine. This is where the application's user-facing behaviour actually lives; it is the least constrained code in the repository.
+Four files, each two to two and three-quarter times the module cap, carrying the keyboard focus wiring, the discovery flow, the delete confirmations and the reader state machine. This is where the application's user-facing behaviour actually lives; it is the least constrained code in the repository.
 
 Two things close this. They are independent:
 
@@ -60,13 +60,13 @@ The realistic route is therefore to consume the specification's artefacts rather
 
 Until then this is a known, deliberate gap, not an oversight. It is recorded so the phrase "reference implementation" is never read as "verified against the spec".
 
-## 6. The macOS build ships without the two licence texts the app tries to read
+## 6. The installer tree is invisible to the size rule, which has no danger band
 
-`meridian/main.py` reads `LICENSE-LGPL-3.0.txt` and `LICENSE-APACHE-2.0.txt` at startup and injects them as the `uiLicenceText` and `modelLicenceText` context properties. `buildexe.py` and `build_flatpak.sh` both bundle those files. `builddmg.py` bundles only the root `LICENSE`.
+`_SIZE_SCAN` in `tests/structural/test_boundaries.py` reads `meridian/` and `tests/` only, so `installer/` (35 modules, 2812 lines) is measured by nothing. The debt file has twice recorded that no installer module is over 400 lines; that was true both times and guarded neither time.
 
-`_read_text` degrades to the string "Licence text unavailable.", so the DMG does not crash: both licence dialogs simply render that line instead of a licence. For an application whose header carries two dedicated licence buttons and whose dual-licence split is a documented design decision, that is a shipped defect rather than a cosmetic one.
+Measured 2026-08-09: `installer/ui/_main_window_actions.py` is 383 lines. That is inside the danger band, the top 5% of the cap (381 to 399), where the rule is to take the file to 350 or below rather than shave a line off it and have the next edit break it again. The suite expresses only the 400 half of that rule, so nothing has ever reported this file.
 
-The fix is three more `--add-data` entries in `build_app_bundle()`. It is listed last because it is the smallest item here, not because it is the least real. A regression test would have to assert over a built bundle, which the suite deliberately does not do, so the durable guard is a single list of bundled resources shared by all three delivery scripts rather than three hand-maintained copies.
+The two halves close together. Add `installer` to `_SIZE_SCAN` and add the danger-band assertion, deriving the band from `_MAX_LINES` rather than writing 380 as a second literal so the two numbers cannot drift apart. NarrateX's `tests/structural/test_loc_limits.py` is the reference implementation of both. `_main_window_actions.py` then has to come down, which is the same file carrying fourteen of the unexplained broad handlers in item 2, so the two are worth doing in one pass.
 
 ---
 

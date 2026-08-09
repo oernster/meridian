@@ -25,6 +25,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from build_resources import LICENCE_FILES
+
 
 VERSION_FILE = Path(__file__).parent / "VERSION"
 
@@ -147,6 +149,10 @@ def build_app_bundle(entitlements_path: Path, icns_path: Path | None = None) -> 
 
     icon_args = ["--icon", str(icns_path)] if icns_path else []
 
+    licence_args: list[str] = []
+    for name in LICENCE_FILES:
+        licence_args += ["--add-data", f"{name}:."]
+
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--noconfirm",
@@ -156,7 +162,7 @@ def build_app_bundle(entitlements_path: Path, icns_path: Path | None = None) -> 
         "--add-data", f"{qml_dir}:meridian/ui/qml",
         "--add-data", "VERSION:.",
         "--add-data", "meridian.png:.",
-        "--add-data", "LICENSE:.",
+        *licence_args,
         "--hidden-import", "meridian.ui.bridge",
         "--hidden-import", "PySide6.QtQml",
         "--hidden-import", "PySide6.QtQuick",

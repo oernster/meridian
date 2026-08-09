@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from build_resources import LICENCE_FILES
+
 
 def _regen_splash(root: Path) -> int:
     print("Regenerating splash screen...")
@@ -67,10 +69,7 @@ def build_exe() -> int:
         "--add-data=meridian_256.png:.",
         "--add-data=meridian_512.png:.",
         "--add-data=meridian.ico:.",
-        "--add-data=LICENSE:.",
-        "--add-data=LICENSE-LGPL-3.0.txt:.",
-        "--add-data=LICENSE-APACHE-2.0.txt:.",
-        "--add-data=LICENSE-GPL-3.0.txt:.",
+        *[f"--add-data={name}:." for name in LICENCE_FILES],
         "--icon=meridian.ico",
         "--splash=meridian_splash.png",
         "--hidden-import=PySide6.QtMultimedia",
