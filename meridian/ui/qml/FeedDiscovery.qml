@@ -952,51 +952,13 @@ Rectangle {
     }
 
     // Single-subscribe toast
-    Rectangle {
+    ToastBar {
         id: toastBar
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 16
         anchors.bottomMargin: 16
-        height: 40
-        radius: 8
-        color: theme.surface0
-        border.color: theme.green
-        border.width: 1
-        opacity: 0
-        visible: opacity > 0
-
-        Label {
-            id: toastLbl
-            anchors.centerIn: parent
-            color: theme.green
-            font.pixelSize: 12
-            font.bold: true
-        }
-
-        Timer {
-            id: toastTimer
-            interval: 2000
-            onTriggered: toastHide.start()
-        }
-
-        NumberAnimation {
-            id: toastShow
-            target: toastBar
-            property: "opacity"
-            to: 1.0
-            duration: 180
-            onStarted: toastTimer.restart()
-        }
-
-        NumberAnimation {
-            id: toastHide
-            target: toastBar
-            property: "opacity"
-            to: 0.0
-            duration: 300
-        }
     }
 
     Timer {
@@ -1064,9 +1026,6 @@ Rectangle {
     }
 
     function _showSingleToast(title) {
-        toastLbl.text = "Subscribed to " + title
-        toastHide.stop()
-        toastBar.opacity = 0
-        toastShow.start()
+        toastBar.show("Subscribed to " + title)
     }
 }
