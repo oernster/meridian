@@ -28,7 +28,7 @@ pip install -r requirements-dev.txt
 |---------|---------|---------|
 | PySide6 | >=6.7 | Qt Quick UI, QML engine, media playback |
 | sqlalchemy | >=2.0 | ORM and SQLite persistence |
-| httpx | >=0.27 | Async HTTP client for feed polling |
+| httpx | >=0.27 | HTTP client: async for feed polling and discovery, sync for the update check |
 | defusedxml | >=0.7 | Safe XML parsing (feed content) |
 | python-dateutil | >=2.9 | RSS / Atom date parsing |
 

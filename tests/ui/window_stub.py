@@ -213,8 +213,39 @@ class StubController(QObject):
         self._record("bulkSubscribeFromDiscovery", tuple(urls))
 
 
+class StubUpdateController(QObject):
+    """The update surface `main.qml` reaches for, recorded like the stub above."""
+
+    updateAvailable = Signal(str, str, str, str)
+    upToDate = Signal()
+    checkFailed = Signal()
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls: list[tuple] = []
+
+    def _record(self, name: str, *args) -> None:
+        self.calls.append((name, *args))
+
+    def called(self, name: str) -> list[tuple]:
+        return [c for c in self.calls if c[0] == name]
+
+    @Slot(str)
+    def checkAutomatically(self, skipped_version: str) -> None:
+        self._record("checkAutomatically", skipped_version)
+
+    @Slot()
+    def checkManually(self) -> None:
+        self._record("checkManually")
+
+    @Slot(str)
+    def openDownload(self, url: str) -> None:
+        self._record("openDownload", url)
+
+
 def load_main_window(
     controller: StubController,
+    update_controller: StubUpdateController | None = None,
 ) -> tuple[QQmlEngine, QQmlComponent, QObject]:
     """Load the real `main.qml` against the stub, with the context it expects.
 
@@ -225,6 +256,12 @@ def load_main_window(
     engine = QQmlEngine()
     context = engine.rootContext()
     context.setContextProperty("controller", controller)
+    # Kept referenced via the engine: setContextProperty does not take
+    # ownership, and a garbage-collected default stub would leave QML calling
+    # a deleted object.
+    update_stub = update_controller or StubUpdateController()
+    engine._update_controller = update_stub
+    context.setContextProperty("updateController", update_stub)
     context.setContextProperty("appVersion", "0.0.0-test")
     context.setContextProperty("appIconUrl", "")
     context.setContextProperty("uiLicenceText", "UI licence text")

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>What's new in Meridian: release history</title>
-  <meta name="description" content="Meridian's release history: neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta name="description" content="Meridian's release history: the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="apple-touch-icon" href="meridian-512.png">
@@ -13,7 +13,7 @@
   <meta property="og:site_name" content="Meridian">
   <meta property="og:url" content="https://ernster.dev/meridian/whats-new.html">
   <meta property="og:title" content="What's new in Meridian: release history">
-  <meta property="og:description" content="Neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta property="og:description" content="The in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <meta property="og:image" content="https://ernster.dev/meridian/meridian-512.png">
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
@@ -21,7 +21,7 @@
   <meta property="og:locale" content="en_GB">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="What's new in Meridian: release history">
-  <meta name="twitter:description" content="Neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta name="twitter:description" content="The in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <meta name="twitter:image" content="https://ernster.dev/meridian/meridian-512.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -56,7 +56,17 @@
   <div class="changelog-grid">
 
     <div class="cl-entry">
-      <div class="ver-tag">v<!--VERSION-->2.5.1<!--/VERSION--></div>
+      <div class="ver-tag">v<!--VERSION-->2.6.0<!--/VERSION--></div>
+      <h3>An update check that respects you</h3>
+      <ul>
+        <li>Meridian now notices when a newer release has been published: a few seconds after launch and once a day while it stays open, it asks GitHub's releases API and offers what it finds. Download opens the right file for your platform (installer, DMG or Flatpak, falling back to the release page), Skip This Version silences that version permanently and Later closes the prompt until the next check</li>
+        <li>A manual check lives on the About dialog and reports every outcome, including an honest failure when GitHub cannot be reached; it deliberately ignores a skipped version so a declined release stays reachable</li>
+        <li>Built not to intrude: only a formally published release can prompt, every failure is silent on the automatic path and the request carries no identifier and nothing about your subscriptions or your reading. The README's account of exactly where Meridian touches the network now names this sixth place alongside the other five</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.5.1</div>
       <h3>A selection that survives scrolling</h3>
       <ul>
         <li>Selecting feeds in the subscription manager and then scrolling the list quietly dropped every row that scrolled out of view. The selection was tied to the lifetime of the row on screen rather than to the feed; a list only keeps the rows you can see. Select a long list, scroll it to check what you had chosen, only for the confirmation to offer a fraction of it while reporting that smaller number as though it were your selection</li>

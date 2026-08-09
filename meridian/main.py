@@ -55,7 +55,15 @@ from meridian.infrastructure.repositories.sqlite_item_repository import (  # noq
 from meridian.infrastructure.repositories.sqlite_poll_state_repository import (  # noqa: E402, E501
     SqlitePollStateRepository,
 )
+from meridian.application.services.update_service import (  # noqa: E402
+    UpdateService,
+    platform_key_for,
+)
+from meridian.infrastructure.update.github_release_source import (  # noqa: E402
+    GitHubReleaseSource,
+)
 from meridian.ui.bridge import AppController  # noqa: E402
+from meridian.ui.update_bridge import UpdateController  # noqa: E402
 from meridian.version import APP_APPUSERMODELID, __version__  # noqa: E402
 
 
@@ -146,6 +154,11 @@ def main() -> None:
 
     scheduler = PollScheduler(feed_repo, orchestrator, on_new_items)
 
+    update_service = UpdateService(
+        GitHubReleaseSource(), __version__, platform_key_for(sys.platform)
+    )
+    update_controller = UpdateController(update_service)
+
     icon_url = (
         QUrl.fromLocalFile(str(_ICON_PATH)).toString() if _ICON_PATH.exists() else ""
     )
@@ -159,6 +172,7 @@ def main() -> None:
         engine.addImportPath(qml_import_path)
 
     engine.rootContext().setContextProperty("controller", controller)
+    engine.rootContext().setContextProperty("updateController", update_controller)
     engine.rootContext().setContextProperty("appVersion", __version__)
     engine.rootContext().setContextProperty("appIconUrl", icon_url)
     engine.rootContext().setContextProperty(

@@ -69,17 +69,21 @@ meridian/
       feed_dto.py           FeedDTO (cross-boundary carrier: id, url, title, source_type, unread_count, ...)
       item_dto.py           ItemDTO (cross-boundary carrier: all item fields as primitives)
       feed_candidate_dto.py FeedCandidateDTO (discovery result: url, title, description, is_subscribed flag)
+      update_info.py        ReleaseAsset, ReleaseInfo, UpdateStatus (the update check's carriers)
     interfaces/
       feed_repository.py    FeedRepository ABC (get_by_id, list, save, delete, update_filter, update_title)
       item_repository.py    ItemRepository ABC (list_by_feed, save, mark_read, mark_all_read, unread_count, exists)
       poll_state_repository.py  PollStateRepository ABC (get, save)
       discovery_fetcher.py  DiscoveryFetcher ABC + DiscoveryError; DEFAULT_RESULT_CAP = 25
+      release_source.py     ReleaseSource ABC (latest_release)
     services/
       subscription_service.py   subscribe, unsubscribe, list_feeds, set_filter, get_feed
       item_service.py           get_items (dedup + filter), mark_read, mark_all_read
       poll_orchestrator.py      poll_feed (HTTP fetch, parse, persist new items, auto-discover title)
       discovery_service.py      search_feeds (delegates to DiscoveryFetcher, enriches with is_subscribed flag)
       source_type_inference.py  infer SourceType from URL/content-type; extracted from SubscriptionService
+      version_compare.py        is_newer: dotted-integer comparison; anything unparseable is not-newer
+      update_service.py         check (offer decision, skip handling), platform_key_for, select_asset_url
 
   infrastructure/
     db/
@@ -99,6 +103,8 @@ meridian/
         atom_parser.py      Atom 1.0; content preferred over summary; media:group (YouTube)
         podcast_parser.py   RSS with <itunes:*> extensions
         mfeed_parser.py     MMSP JSON feed format
+    update/
+      github_release_source.py  GitHubReleaseSource: one GET against the GitHub releases/latest endpoint (httpx sync, 5s timeout); every failure mode collapses to None. The endpoint returns only a published, non-draft, non-prerelease release, so a tag pushed mid-development can never prompt
 
   ui/
     models.py
@@ -107,8 +113,10 @@ meridian/
       FeedCandidateModel    QAbstractListModel: the discovery results (UserRole+0..5); mark_subscribed() flips one row rather than resetting the model
     bridge.py
       AppController         QObject: loadFeeds, selectFeed, subscribe, unsubscribe, bulkUnsubscribe, markRead, markAllRead, setFeedSort, setItemSort, setFilter (calls loadFeeds to refresh filter label), updateFeedUrl, importFeeds, exportFeeds, searchFeeds, cancelSearch, subscribeFromDiscovery, bulkSubscribeFromDiscovery, setResultCap
+    update_bridge.py
+      UpdateController      QObject: checkAutomatically(skippedVersion), checkManually, openDownload; signals updateAvailable, upToDate, checkFailed. The check runs on a worker thread and reports through an internal signal connected to a bound method, so delivery is queued onto the UI thread. Stateless between calls: the skip and the timers live QML-side
     qml/
-      main.qml              Application window, composition only: owns the feed selection (which the sidebar shows, the context menu acts on and the removal confirmations consume), the palette, plus the wiring from each panel's signals to the controller. A 0x0 focus absorber holds focus at startup so nothing wears a border before the first Tab. Header, sidebar and reader name nothing outside themselves; the focus ring passes between them here
+      main.qml              Application window, composition only: owns the feed selection (which the sidebar shows, the context menu acts on and the removal confirmations consume), the palette, plus the wiring from each panel's signals to the controller. A 0x0 focus absorber holds focus at startup so nothing wears a border before the first Tab. Header, sidebar and reader name nothing outside themselves; the focus ring passes between them here. Also owns the update wiring: the 3s launch and 24h periodic timers that call the update controller, the skipped-version Settings (category "Updates") and the update dialogs
       Theme.qml             The palette: Catppuccin Mocha and Latte, with `isDark` choosing. A plain property, not a binding, so the toggle sticks and the window writes the new value back to Qt.labs.settings
       HeaderBar.qml         Header: Import, Export, Search, Manage on the left; the two licences, About and the theme toggle on the right. Reports what was pressed rather than acting. firstFocusItem is the Import button, which FeedReader wraps its own Tab chain back to
       HeaderButton.qml      One header button. Neighbours are Items rather than signals, because they all live in one row and genuinely know each other; leaving one unset marks the end of the row and raises an overflow signal instead
@@ -120,7 +128,7 @@ meridian/
       ItemListPanel.qml     The reader's left panel: sort chips, mark-all-read and the item list. Reads the model directly through one map of role offsets, because a delegate for an unrealised row does not exist, so currentItem cannot answer what the current row holds
       ItemRow.qml           One item in the reader list, used as its delegate. Eight `required` properties named for ItemListModel's roles, so the view binds them by name; the duration caption is formatted by the panel and handed in
       ItemDetailPane.qml    The right pane: placeholder, article and open-in-browser. Its state is ordinary properties, which is what a component can have and the inline block could not (three hidden Labels parked outside the layout, so a rebuild would not lose them). openButton is a direct child of the pane, NOT inside the ScrollView (ScrollView's Flickable is a FocusScope that traps Tab)
-      MediaPlayerPanel.qml  Video surface, YouTube embed or audio placeholder, plus the transport bar. Decides which of the three by matching the page URL against a watch or youtu.be link. Everything but the embed plays locally through QtMultimedia; the embed is a `WebEngineView` loading `youtube.com/embed/<id>`, which is the application's only use of QtWebEngine and the only place the UI reaches a third party of its own accord. The transport is hidden for an embed, which brings its own, so hasTransport is what both focus neighbours ask rather than assuming the panel is a stop
+      MediaPlayerPanel.qml  Video surface, YouTube embed or audio placeholder, plus the transport bar. Decides which of the three by matching the page URL against a watch or youtu.be link. Everything but the embed plays locally through QtMultimedia; the embed is a `WebEngineView` loading `youtube.com/embed/<id>`, which is the application's only use of QtWebEngine and one of the two outbound calls the UI layer makes for itself (the other being the discovery field's topic suggestions). The transport is hidden for an embed, which brings its own, so hasTransport is what both focus neighbours ask rather than assuming the panel is a stop
       SortChipRow.qml       A row of sort chips where the active one is not a tab stop. Used by both the sidebar and the reader; the search past the active chip is two functions here rather than the twelve copies it was. Both return whether a chip took focus, because a single-option row has none to give and the caller has somewhere else to go
       SubscriptionManager.qml  Drawer, composition only: owns the selection the list header shows and the rows toggle, the list itself, plus the wiring from each panel's signals to the controller. The selection is keyed by feed id and deliberately carries no per-delegate register or unregister, since a row leaving the viewport is destroyed and must not take its feed out of the selection with it. focusUrlField() reaches into the add bar, which is what the drawer opens onto
       AddSubscriptionBar.qml   The URL field and Subscribe. The https:// test is one readonly property rather than the six copies it was; Subscribe is only a tab stop while the field passes it, so focusLast() asks rather than assumes
@@ -138,7 +146,8 @@ meridian/
       UrlListDialog.qml     Modal dialog: heading over a scrollable list of feed URLs, with the caller's buttons reparented into the footer row. Carries the chrome the two bulk dialogs in FeedDiscovery.qml duplicated. Wears an AutoScroller, which does nothing until the list is longer than the dialog
       AutoScroller.qml      Attach one to any Flickable and long content reads itself: holds still, descends slowly, holds at the end, rewinds fast, repeats. The pace constants live here and no caller overrides one. Any hand on the surface suspends it and it resumes in place; `active` freezes it where it stands rather than stopping it
       StyledButton.qml      Shared Button: required `theme` property, transparent fill, amber border on hover and a 2px amber border on activeFocus, focusPolicy Qt.TabFocus
-      AboutDialog.qml       About dialog (keyboard: Enter/Escape closes)
+      UpdateDialog.qml      The update prompt: Download, Skip This Version, Later. ConfirmDialog's chrome with three outcomes; Later just closes, Skip reports the offered tag for the window to persist, Download reports and the window decides between the asset URL and the release page
+      AboutDialog.qml       About dialog (keyboard: Enter/Escape closes). Carries Check for Updates, the manual entry point, since the application has no menu bar
       LicenceDialog.qml     Licence dialog (keyboard: scroll text, Tab to Close, Enter/Escape closes). Wears an AutoScroller, since a licence always overflows and nobody should have to wheel through one
 
   main.py                   Composition root (excluded from coverage)
@@ -166,25 +175,28 @@ tests/
     test_boundaries.py      AST-based layer boundary enforcement + module size limits + black and flake8
     test_delivery_resources.py  Every delivery script bundles the same licence texts, because `main.py` degrades to "Licence text unavailable." rather than raising, so an omission ships silently
   domain/                   Unit tests for domain services and entities
-  application/              Unit tests for application services (fakes for infrastructure)
+  application/              Unit tests for application services (fakes for infrastructure), version comparison and the update offer decision
   infrastructure/
     parser/                 Parser tests for RSS, Atom, podcast, mfeed and the platform dispatcher
     test_repositories.py    SQLite repository integration tests
     test_http_fetcher.py    Conditional GET, redirects, backoff and the document cap, with `respx`
     test_feedsearch_fetcher.py  The discovery client against recorded Feedly responses
+    test_github_release_source.py  The update check's GitHub adapter: request shape, timeout and every malformed-payload path, with `respx`
     test_scheduler.py       The poll loop, its tick and per-feed backoff
     test_mmsp_conformance.py    The Section 5.7 version rule, asserted against the published schema where MMSP-Spec is checked out beside this repository
   test_installer_*.py       The installer operations: install, deploy edges, repair, uninstall, shortcuts, running-app detection and the payload
   ui/
     conftest.py             The session QApplication; Qt is never mocked
     bridge_dtos.py          DTO builders and the service stand-ins the bridge tests share
-    window_stub.py          A hand-written controller with exactly the surface main.qml reaches for, the feed and item builders that fill it, the palette a component under test takes as its theme, plus the loader that builds the real window against it
+    window_stub.py          Hand-written controllers (app and update) with exactly the surface main.qml reaches for, the feed and item builders that fill them, the palette a component under test takes as its theme, plus the loader that builds the real window against them
     test_bridge_models.py   The three QAbstractListModels, asserted by role number
     test_bridge_subscriptions.py  AppController: add, remove, re-point, filter
     test_bridge_import_export.py  AppController: the JSON round trip of the feed list
     test_bridge_items.py    AppController: read state and new-item arrival
     test_bridge_sorting.py  AppController: the feed and item sort settings
     test_bridge_discovery.py      AppController: search lifecycle on the background loop
+    test_update_bridge.py   UpdateController: the three outcomes, with the queued cross-thread delivery proven rather than assumed (a probe receiver whose own queued event lands after the controller's)
+    test_update_flow.py     The window's update wiring through the real main.qml: prompt, download fallback, skip persistence and the About entry point
     test_qml_compiles.py    Every QML file compiles
     test_installer_dispatch.py  The installer's Qt-free operation dispatch
     test_url_list_dialog.py, test_candidate_row.py, test_discovery_query_field.py
@@ -221,6 +233,12 @@ HttpFetcher (Infrastructure)
 
 FilterEvaluator (Domain)
   pure evaluation of ABNF filter expressions against Item entities
+
+UpdateController (UI)
+  <- UpdateService (Application)
+       <- ReleaseSource (interface)
+GitHubReleaseSource (Infrastructure)
+  implements ReleaseSource against the GitHub releases/latest endpoint
 ```
 
 ## Execution Flow
@@ -266,7 +284,9 @@ A fourth rule follows from the same fact that delegates are transient; it cost c
 
 Tab wrap-around uses explicit `forceActiveFocus()` with `event.accepted = true` on every boundary. `KeyNavigation.tab` and `setFocus()` both fail across QML `FocusScope` boundaries; only `forceActiveFocus()` works. Critical invariant: `ScrollView`'s `contentItem` is a `Flickable`, which is a `FocusScope`, so any focusable control inside a `ScrollView` is trapped and Tab can never escape it. Controls that must participate in the outer Tab chain must be placed outside the `ScrollView` in the component tree.
 
-**Theme persistence**: dark/light mode stored via `Qt.labs.settings` with `category: "Theme"`, property `isDark: true`. Reads on startup; written on toggle. Uses same `QSettings` backend as volume (category `"Player"`); no conflict since categories are separate.
+**Theme persistence**: dark/light mode stored via `Qt.labs.settings` with `category: "Theme"`, property `isDark: true`. Reads on startup; written on toggle. Uses the same `QSettings` backend as the volume (category `"Player"`) and the update check's skipped version (category `"Updates"`); no conflict since categories are separate.
+
+**Update check**: the decision of what to offer is Application logic (`UpdateService`), the one outbound call is Infrastructure (`GitHubReleaseSource`) and the UI owns only delivery and prompting, all inside the coverage gate. Three properties are structural rather than promised. Only a published release can prompt, because `releases/latest` excludes drafts and prereleases by its own contract; nothing re-checks those flags client-side. A malformed tag can never prompt, because anything unparseable compares as not-newer, which also keeps a `0.0.0-dev` fallback build silent. Every failure (network, non-200, malformed payload, an exception anywhere in the check) collapses to None and an automatic check reports None as silence; only the manual check on the About dialog reports it. The skip persists QML-side through `Qt.labs.settings` like the theme and the volume, so the Python side stays stateless: the automatic check is handed the skipped tag and the manual check ignores it by construction. The prompt's Download opens the platform-matched asset (`.exe`, `.dmg` or `.flatpak` by filename suffix), falling back to the release page when none matches.
 
 ## Quality Enforcement
 

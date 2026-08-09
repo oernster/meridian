@@ -27,6 +27,33 @@ ApplicationWindow {
         property bool isDark: true
     }
 
+    Settings {
+        id: updateSettings
+        objectName: "updateSettings"
+        category: "Updates"
+        // The exact release tag the user chose to skip; that version never
+        // prompts again. The manual check ignores it by construction.
+        property string skippedVersion: ""
+    }
+
+    // The launch check waits so it never contends with startup work; the
+    // periodic re-check covers sessions that stay open for days.
+    readonly property int _updateLaunchDelayMs: 3000
+    readonly property int _updateRecheckIntervalMs: 24 * 60 * 60 * 1000
+
+    Timer {
+        interval: root._updateLaunchDelayMs
+        running: true
+        onTriggered: updateController.checkAutomatically(updateSettings.skippedVersion)
+    }
+
+    Timer {
+        interval: root._updateRecheckIntervalMs
+        running: true
+        repeat: true
+        onTriggered: updateController.checkAutomatically(updateSettings.skippedVersion)
+    }
+
     Theme {
         id: theme
         isDark: appSettings.isDark
@@ -242,7 +269,48 @@ ApplicationWindow {
 
     AboutDialog {
         id: aboutDialog
+        objectName: "aboutDialog"
         theme: theme
+        onCheckUpdatesRequested: updateController.checkManually()
+    }
+
+    Connections {
+        target: updateController
+        function onUpdateAvailable(latest, current, downloadUrl, pageUrl) {
+            updateDialog.latestVersion = latest
+            updateDialog.currentVersion = current
+            updateDialog.downloadUrl = downloadUrl
+            updateDialog.pageUrl = pageUrl
+            updateDialog.open()
+        }
+        function onUpToDate() {
+            updateInfoDialog.message = "You are running the latest version."
+            updateInfoDialog.open()
+        }
+        function onCheckFailed() {
+            updateInfoDialog.message = "The update check could not reach GitHub. "
+                                     + "Please try again later."
+            updateInfoDialog.open()
+        }
+    }
+
+    UpdateDialog {
+        id: updateDialog
+        objectName: "updateDialog"
+        theme: theme
+        onDownloadRequested: updateController.openDownload(
+            updateDialog.downloadUrl !== "" ? updateDialog.downloadUrl
+                                            : updateDialog.pageUrl)
+        onSkipRequested: updateSettings.skippedVersion = updateDialog.latestVersion
+    }
+
+    ConfirmDialog {
+        id: updateInfoDialog
+        objectName: "updateInfoDialog"
+        theme: theme
+        title: "Check for Updates"
+        okOnly: true
+        bodyLineHeight: 1.0
     }
 
     LicenceDialog {

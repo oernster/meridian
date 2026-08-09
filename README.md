@@ -4,7 +4,7 @@ Meridian is a desktop feed reader and subscription manager: the reference client
 
 Your reading stays on the machine it runs on. Subscriptions and read state live in a local SQLite database at `~/.meridian/meridian.db`; there is no account, no sync, no telemetry and no server component of any kind.
 
-Meridian talks to the network in five places and nowhere else: it fetches the feeds you subscribed to, it loads the images and media those feeds point at, it asks Feedly's search API when you use feed discovery, it asks Wikipedia for topic suggestions while you type in the discovery field and it loads YouTube's embedded player when you play a YouTube item. Meridian itself sends nothing about your subscriptions or your reading anywhere.
+Meridian talks to the network in six places and nowhere else: it fetches the feeds you subscribed to, it loads the images and media those feeds point at, it asks Feedly's search API when you use feed discovery, it asks Wikipedia for topic suggestions while you type in the discovery field, it loads YouTube's embedded player when you play a YouTube item and it asks GitHub's releases API once at launch and once a day whether a newer Meridian exists. The update check carries no identifier and nothing about your subscriptions; a failure is silent. Meridian itself sends nothing about your subscriptions or your reading anywhere.
 
 The YouTube embed is the one exception worth knowing about. It is Google's own player running in an embedded browser (QtWebEngine, which ships inside PySide6), so playing a YouTube video is visible to Google exactly as it would be in a browser tab. Nothing else in the application renders through it; every other item type plays locally through Qt's own media stack.
 
@@ -32,6 +32,7 @@ The YouTube embed is the one exception worth knowing about. It is Google's own p
 - Background polling with conditional GET (ETag and Last-Modified), rate-limit backoff and a 300 second poll floor.
 - Bulk feed management with select-all checkboxes; in-place list removal preserves scroll position.
 - Import and export subscriptions as JSON.
+- An update check against GitHub's releases API: a few seconds after launch and once a day while running, with Download, Skip This Version and Later on the prompt; a manual check lives on the About dialog and reports every outcome. Only a published release can prompt, a skipped version never prompts again and an unreachable network is silent.
 - Catppuccin Mocha and Latte themes with a single toggle; the preference persists across restarts.
 - Full-text `content:encoded` rendering for article feeds, plus a built-in media player for podcast and video items.
 - Long content reads itself. A licence dialog holds still, descends at reading pace, holds at the end and rewinds; the URL list shown before a bulk subscribe does the same once it overflows. Touching the surface suspends the cycle and it resumes from where you left it rather than the top.
@@ -45,7 +46,7 @@ The YouTube embed is the one exception worth knowing about. It is Google's own p
 | UI | PySide6 (Qt Quick / QML) | Native desktop front end and local media playback |
 | Embedded browser | QtWebEngine (ships inside PySide6) | The YouTube player and nothing else |
 | Persistence | SQLAlchemy over SQLite | Subscriptions, items and polling state |
-| Networking | httpx | Async feed polling and discovery |
+| Networking | httpx | Feed polling, discovery and the update check |
 | Parsing | defusedxml, python-dateutil | Safe XML parsing and RSS / Atom date handling |
 | Tests | pytest, pytest-cov, respx, jsonschema | Suite, coverage gate, HTTP mocking and MMSP schema conformance |
 | Packaging | PyInstaller, Flatpak | Windows installer, macOS DMG, Linux Flatpak |

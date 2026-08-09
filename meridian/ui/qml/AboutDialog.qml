@@ -12,6 +12,9 @@ Dialog {
 
     required property var theme
 
+    // The application has no menu bar, so the manual update check lives here.
+    signal checkUpdatesRequested()
+
     onOpened: closeBtn.forceActiveFocus(Qt.OtherFocusReason)
 
     background: Rectangle {
@@ -65,6 +68,19 @@ Dialog {
             color: theme.surface0
         }
         StyledButton {
+            id: checkUpdatesBtn
+            objectName: "checkUpdatesBtn"
+            anchors.left: parent.left
+            anchors.leftMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Check for Updates"
+            theme: root.theme
+            onClicked: { root.checkUpdatesRequested(); root.close() }
+            Keys.onReturnPressed: { root.checkUpdatesRequested(); root.close() }
+            Keys.onEscapePressed: root.close()
+            Keys.onRightPressed: { closeBtn.forceActiveFocus(); event.accepted = true }
+        }
+        StyledButton {
             id: closeBtn
             anchors.right: parent.right
             anchors.rightMargin: 12
@@ -74,6 +90,7 @@ Dialog {
             onClicked: root.close()
             Keys.onReturnPressed: root.close()
             Keys.onEscapePressed: root.close()
+            Keys.onLeftPressed: { checkUpdatesBtn.forceActiveFocus(); event.accepted = true }
         }
     }
 
