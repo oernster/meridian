@@ -67,7 +67,8 @@
         <li>The version lives in a single VERSION file at the repository root that the application, the packaging metadata and every build script read</li>
         <li>The protocol version rule is asserted against the specification's own published schema, so the client and the document it implements cannot drift apart</li>
         <li>The site is five focused pages instead of one long scroll, with live download metadata, social previews and structured data</li>
-        <li>Every document was read against the code: feed discovery is Feedly's search API and the typeahead is Wikipedia, both now named; the claim that feed HTML was sanitised is gone, because the library for it is declared and never imported</li>
+        <li>Every document was read against the code: feed discovery is Feedly's search API and the typeahead is Wikipedia, both now named wherever discovery is described</li>
+        <li>Two dependencies that nothing imported have been dropped, taking with them the claim that feed HTML was sanitised before display. Qt's rich-text engine is what stands between a feed and the reader, as it always was</li>
         <li>A standing technical-debt reference ships with the repository, recording what is open and what is deliberately left alone. It currently records nothing open</li>
       </ul>
     </div>

@@ -80,7 +80,6 @@ def build_exe() -> int:
         "--hidden-import=sqlalchemy.dialects.sqlite",
         "--hidden-import=defusedxml",
         "--hidden-import=defusedxml.ElementTree",
-        "--hidden-import=bleach",
         "--hidden-import=dateutil",
         "--exclude-module=tkinter",
         "--exclude-module=unittest",

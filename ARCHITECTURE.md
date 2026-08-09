@@ -241,7 +241,7 @@ FilterEvaluator (Domain)
 
 **Platform adapters**: registered at runtime via `platform_parser.register_adapter()`. No adapters are built-in; RSS is always the fallback.
 
-**HTML rendering**: `TextArea { textFormat: Text.RichText }` in QML. Plain-text descriptions (no HTML tags) are escaped and converted to `<br/>`-separated HTML before display. Raw HTML from `content:encoded` is passed through directly. **Nothing sanitises it.** `bleach` is a declared runtime dependency and is imported nowhere; what protects the reader is Qt's rich-text engine accepting only a small HTML subset and executing no script, not a sanitising pass. Either wire `bleach` in or drop it; do not describe the application as sanitising while neither has happened.
+**HTML rendering**: `TextArea { textFormat: Text.RichText }` in QML. Plain-text descriptions (no HTML tags) are escaped and converted to `<br/>`-separated HTML before display. Raw HTML from `content:encoded` is passed through directly. **Nothing sanitises it, deliberately.** What protects the reader is Qt's rich-text engine, which accepts only a small HTML subset and executes no script, rather than a sanitising pass. `bleach` sat in the dependency set for that pass and was imported nowhere, so it was dropped; adding a sanitiser back is a decision to make on its own terms, not a dependency to leave lying about.
 
 **Transport policy**: `Feed.__post_init__` accepts `http://` and `https://` and rejects every other scheme, so an imported or discovered plain-HTTP feed still loads. Everything downstream of that is stricter: the Add Subscription field in `SubscriptionManager.qml` only enables Subscribe for an `https://` URL, `HttpFetcher` discards a non-HTTPS redirect target; the parsers drop non-HTTPS media, enclosure and thumbnail URLs.
 
@@ -270,7 +270,6 @@ Meridian is dual-licensed, split by component (see `LICENSE` for the map):
 Third-party runtime dependencies:
 
 PySide6: LGPL-3.0 (dynamically linked; compliant by default install).
-bleach: Apache-2.0 (declared in `requirements.txt` and imported nowhere; see the HTML rendering note above).
 SQLAlchemy: MIT.
 httpx: BSD-3-Clause.
 defusedxml: PSF.

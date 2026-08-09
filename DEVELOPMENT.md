@@ -31,7 +31,6 @@ pip install -r requirements-dev.txt
 | httpx | >=0.27 | Async HTTP client for feed polling |
 | defusedxml | >=0.7 | Safe XML parsing (feed content) |
 | python-dateutil | >=2.9 | RSS / Atom date parsing |
-| bleach | >=6.1 | **Declared but never imported.** It was added for HTML sanitisation, which the application does not currently perform: feed HTML reaches the detail pane as Qt RichText exactly as the feed wrote it. Either wire it in or drop it from the dependency set; do not describe the app as sanitising until one of those happens |
 
 ## Dev Dependencies (additional in `requirements-dev.txt`)
 
@@ -40,7 +39,6 @@ pip install -r requirements-dev.txt
 | pytest >=8.0 | Test runner |
 | pytest-asyncio >=0.23 | Async test support |
 | pytest-cov >=5.0 | Coverage enforcement |
-| pytest-qt >=4.4 | **Declared but never used.** No test takes `qtbot`; the session `qapp` fixture is the repo's own, in `tests/ui/conftest.py` |
 | jsonschema >=4.20 | Validating this client's versioning rule against the published MMSP schema |
 | respx >=0.21 | httpx request mocking |
 | black >=24.0 | Code formatter |

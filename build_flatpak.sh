@@ -180,7 +180,7 @@ modules:
   - name: python-deps
     buildsystem: simple
     build-commands:
-      - pip3 install --no-cache-dir --prefix=/app "SQLAlchemy>=2.0" "httpx>=0.27" "defusedxml>=0.7" "python-dateutil>=2.9" "bleach>=6.1"
+      - pip3 install --no-cache-dir --prefix=/app "SQLAlchemy>=2.0" "httpx>=0.27" "defusedxml>=0.7" "python-dateutil>=2.9"
 
   # ── PySide6 (Qt for Python) ────────────────────────────────────────────────
   - name: pyside6
