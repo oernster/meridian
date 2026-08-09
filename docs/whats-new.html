@@ -70,6 +70,7 @@
         <li>The protocol version rule is asserted against the specification's own published schema, so the client and the document it implements cannot drift apart</li>
         <li>The site is five focused pages instead of one long scroll, with live download metadata, social previews and structured data</li>
         <li>Every document was read against the code: feed discovery is Feedly's search API and the typeahead is Wikipedia, both now named wherever discovery is described</li>
+        <li>The same reading found one undisclosed thing, now stated plainly everywhere: playing a YouTube item loads Google's own player in an embedded browser, so a video you watch is visible to Google as it would be in a browser tab. Nothing about the behaviour changed; it is simply no longer unsaid</li>
         <li>Two dependencies that nothing imported have been dropped, taking with them the claim that feed HTML was sanitised before display. Qt's rich-text engine is what stands between a feed and the reader, as it always was</li>
         <li>A standing technical-debt reference ships with the repository, recording what is open and what is deliberately left alone. It currently records nothing open</li>
       </ul>
@@ -90,12 +91,12 @@
       <div class="ver-tag">v2.3.0</div>
       <h3>Cross-Platform Release + Diagnostics</h3>
       <ul>
-        <li>macOS DMG build - tested on Tahoe</li>
-        <li>Linux Flatpak - tested on Ubuntu</li>
+        <li>macOS DMG build, tested on Tahoe</li>
+        <li>Linux Flatpak, tested on Ubuntu</li>
         <li>Windows installer rebuilt and re-tested on Windows 11</li>
         <li>Crash diagnostics: stdout/stderr redirected to ~/Library/Logs/Meridian/meridian.log in frozen mode</li>
         <li>About dialog icon and Licence dialog text rendering fixed</li>
-        <li>Bulk subscribe confirmation dialog height corrected - previously showed only one URL</li>
+        <li>Bulk subscribe confirmation dialog height corrected; it previously showed only one URL</li>
       </ul>
     </div>
 
@@ -128,9 +129,9 @@
       <div class="ver-tag">v2.0.0</div>
       <h3>Feed Discovery</h3>
       <ul>
-        <li>Search by topic or keyword - subscribe to one or many feeds without leaving the app</li>
+        <li>Search by topic or keyword, then subscribe to one or many feeds without leaving the app</li>
         <li>Discovery panel runs on an isolated async event loop in a daemon thread</li>
-        <li>DiscoveryFetcher ABC with FeedsearchFetcher implementation - same layered boundaries as the rest of the system</li>
+        <li>DiscoveryFetcher ABC with FeedsearchFetcher implementation: same layered boundaries as the rest of the system</li>
         <li>HTTP and HTTPS feed URLs accepted (HTTP feeds follow redirects transparently)</li>
         <li>Splash screen with rounded corners; Win32 mutex prevents multiple instances</li>
         <li>100% branch coverage maintained including the new discovery stack</li>
@@ -142,7 +143,7 @@
       <h3>Feed Reader UI + Sample Feeds</h3>
       <ul>
         <li>Reworked FeedReader layout: hero thumbnail, media player, sort controls, unread indicator dot</li>
-        <li>feeds_export.json ships with the repo - curated RSS, Atom and MFEED subscriptions ready to import</li>
+        <li>feeds_export.json ships with the repo: curated RSS, Atom and MFEED subscriptions ready to import</li>
         <li>LGPL-3.0 licence added to Help menu and corrected throughout documentation</li>
         <li>black formatting and flake8 clean across all Python sources</li>
       </ul>

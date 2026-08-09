@@ -32,6 +32,8 @@ pip install -r requirements-dev.txt
 | defusedxml | >=0.7 | Safe XML parsing (feed content) |
 | python-dateutil | >=2.9 | RSS / Atom date parsing |
 
+QtWebEngine is not a separate line here because it ships inside the PySide6 wheel. It is still a real part of what the application loads: `MediaPlayerPanel.qml` uses a `WebEngineView` for the YouTube embed and nothing else. It is by far the heaviest component in the tree and it is why `build_flatpak.sh` sets `QTWEBENGINE_DISABLE_SANDBOX=1` and grants `--share=network`. A test run starting a `WebEngineView` prints Chromium GPU warnings on the offscreen platform; those are noise, not failures.
+
 ## Dev Dependencies (additional in `requirements-dev.txt`)
 
 | Package | Purpose |

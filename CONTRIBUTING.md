@@ -170,6 +170,12 @@ these will be declined regardless of code quality, so check here first:
   enclosure and transcript URLs.
 - **No new heavy dependencies** without discussion. The runtime dependency set
   is intentionally small. Propose additions in an issue first.
+- **QtWebEngine is already in, for exactly one thing.** `MediaPlayerPanel.qml`
+  renders the YouTube embed through a `WebEngineView` because YouTube offers no
+  other playable stream. That is the whole of its remit. Do not reach for it to
+  render feed HTML, a settings page or anything else: article content goes
+  through Qt's rich-text engine, whereas widening the browser's role would put
+  a full Chromium between the reader and content that does not need one.
 
 ## Destructive actions
 

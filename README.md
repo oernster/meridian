@@ -4,7 +4,9 @@ Meridian is a desktop feed reader and subscription manager: the reference client
 
 Your reading stays on the machine it runs on. Subscriptions and read state live in a local SQLite database at `~/.meridian/meridian.db`; there is no account, no sync, no telemetry and no server component of any kind.
 
-Meridian talks to the network in four places and nowhere else: it fetches the feeds you subscribed to, it loads the images and media those feeds point at, it asks Feedly's search API when you use feed discovery and it asks Wikipedia for topic suggestions while you type in the discovery field. Nothing about your subscriptions or your reading is sent anywhere.
+Meridian talks to the network in five places and nowhere else: it fetches the feeds you subscribed to, it loads the images and media those feeds point at, it asks Feedly's search API when you use feed discovery, it asks Wikipedia for topic suggestions while you type in the discovery field and it loads YouTube's embedded player when you play a YouTube item. Meridian itself sends nothing about your subscriptions or your reading anywhere.
+
+The YouTube embed is the one exception worth knowing about. It is Google's own player running in an embedded browser (QtWebEngine, which ships inside PySide6), so playing a YouTube video is visible to Google exactly as it would be in a browser tab. Nothing else in the application renders through it; every other item type plays locally through Qt's own media stack.
 
 <img width="1273" height="824" alt="Meridian main window" src="https://github.com/user-attachments/assets/c6565996-d66f-4df7-a26b-5691c2ee32f4" />
 
@@ -32,6 +34,7 @@ Meridian talks to the network in four places and nowhere else: it fetches the fe
 - Import and export subscriptions as JSON.
 - Catppuccin Mocha and Latte themes with a single toggle; the preference persists across restarts.
 - Full-text `content:encoded` rendering for article feeds, plus a built-in media player for podcast and video items.
+- Long content reads itself. A licence dialog holds still, descends at reading pace, holds at the end and rewinds; the URL list shown before a bulk subscribe does the same once it overflows. Touching the surface suspends the cycle and it resumes from where you left it rather than the top.
 - Full keyboard navigation: Tab and Shift+Tab wrap cleanly end to end through the window, the reader, the subscription manager and the discovery drawer, Left and Right move between sort chips and dialog footer actions, Escape closes drawers and dialogs; an amber focus ring marks the focused control everywhere. Space activates the focused control throughout; Enter activates it everywhere except the reader's Mark all read and the media transport's play and pause.
 
 ## Stack
@@ -39,7 +42,8 @@ Meridian talks to the network in four places and nowhere else: it fetches the fe
 | Layer | Technology | Purpose |
 |---|---|---|
 | Language | Python 3.11+ | 3.12 or later recommended |
-| UI | PySide6 (Qt Quick / QML) | Native desktop front end and media playback |
+| UI | PySide6 (Qt Quick / QML) | Native desktop front end and local media playback |
+| Embedded browser | QtWebEngine (ships inside PySide6) | The YouTube player and nothing else |
 | Persistence | SQLAlchemy over SQLite | Subscriptions, items and polling state |
 | Networking | httpx | Async feed polling and discovery |
 | Parsing | defusedxml, python-dateutil | Safe XML parsing and RSS / Atom date handling |
@@ -51,6 +55,8 @@ Meridian talks to the network in four places and nowhere else: it fetches the fe
 ### Pre-built releases
 
 Download the installer for your platform from the [Releases page](https://github.com/oernster/meridian/releases).
+
+The Windows installer is per-user: it installs under `%LOCALAPPDATA%` and registers under `HKEY_CURRENT_USER`, so it never asks for administrator rights. It offers to launch Meridian when it has finished, ticked by default, after a repair or a reinstall as much as after a first install; untick the box and it just closes.
 
 ### Run from source
 

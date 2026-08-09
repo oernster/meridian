@@ -76,7 +76,7 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
       </div>
       <h3>Filter expressions</h3>
-      <p>Per-feed MMSP Appendix A ABNF filters. The filter dialog surfaces existing terms as toggleable rows - no syntax knowledge required for common cases.</p>
+      <p>Per-feed MMSP Appendix A ABNF filters. The filter dialog surfaces existing terms as toggleable rows: no syntax knowledge required for common cases.</p>
     </div>
 
     <div class="feat">
@@ -101,6 +101,14 @@
       </div>
       <h3>Full-text rendering</h3>
       <p>content:encoded preferred over description so full article HTML is shown where available. Media player for podcast and video items built in.</p>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon ic-teal">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+      </div>
+      <h3>Long content reads itself</h3>
+      <p>A licence dialog holds still, descends at reading pace, holds at the end and rewinds, so you never have to wheel through one. The URL list shown before a bulk subscribe does the same once it overflows. Touch the surface and it stops, then resumes from where you left it rather than the top.</p>
     </div>
 
     <div class="feat">
@@ -132,7 +140,7 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       </div>
       <h3>Single-device by design</h3>
-      <p>No account, no sync, no telemetry and no server of ours. Your subscriptions and read state stay on your machine, in one SQLite file. The only things Meridian talks to are your feeds, the media they point at and (when you use discovery) Feedly's search and Wikipedia's topic suggestions. JSON export and import moves a reading list between machines: the migration path, not live sync.</p>
+      <p>No account, no sync, no telemetry and no server of ours. Your subscriptions and read state stay on your machine, in one SQLite file. Meridian talks to your feeds, the media they point at and (when you use discovery) Feedly's search and Wikipedia's topic suggestions. One thing is worth naming beyond those: playing a YouTube item loads Google's own player in an embedded browser, so a video you watch is visible to Google just as it would be in a browser tab. JSON export and import moves a reading list between machines: the migration path, not live sync.</p>
     </div>
 
   </div>
