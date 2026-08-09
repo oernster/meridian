@@ -12,6 +12,9 @@ from meridian.version import APP_APPUSERMODELID
 
 
 def _default_icon_location_for(target_exe: Path) -> str:
+    # Resolving touches the filesystem and can fail on an unreachable path.
+    # The executable carries its own icon resource, so falling back to it
+    # yields a correct shortcut with a slightly lower-resolution icon.
     try:
         ico = target_exe.resolve().parent / "meridian.ico"
         if ico.exists() and ico.is_file():
@@ -92,10 +95,17 @@ def create_shortcut(
     except InstallerOperationError:
         raise
     except Exception as exc:
+        # Not swallowed: COM reports a dozen unrelated failure types across
+        # the import, the instance creation and the save. They mean one thing
+        # to the caller, so they are translated into the installer's own error
+        # with the original attached rather than surfaced raw.
         raise InstallerOperationError(
             f"Failed to create shortcut '{shortcut_path}' -> '{target_exe}': {exc!r}"
         ) from exc
     finally:
+        # Balancing CoInitialize. A failure here leaks one COM apartment for
+        # the few seconds the installer has left to live, which must not mask
+        # the real error being raised above.
         try:
             if pythoncom is not None and com_initialized:
                 pythoncom.CoUninitialize()
@@ -104,11 +114,18 @@ def create_shortcut(
 
 
 def remove_shortcut(shortcut_path: Path) -> None:
+    # A shortcut the user has locked, moved or already deleted is not worth
+    # failing an uninstall over: the application itself is still removed. If
+    # the file will not go, neither will its folder, so this returns rather
+    # than falling through.
     try:
         shortcut_path.unlink(missing_ok=True)
     except Exception:
         return
 
+    # Tidying an emptied Start Menu folder is a courtesy. The guard makes the
+    # intent explicit; `rmdir` would refuse a non-empty directory anyway, and
+    # a folder left behind is litter rather than a failure.
     try:
         if shortcut_path.parent.exists() and not any(shortcut_path.parent.iterdir()):
             shortcut_path.parent.rmdir()

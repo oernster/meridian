@@ -19,5 +19,9 @@ def is_app_running(exe_path: Path) -> bool:
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
         except Exception:
+            # One unreadable process must never end the walk. Returning early
+            # would report "not running" and let the caller delete files from
+            # under a live application, so anything odd is stepped over and
+            # the search continues.
             continue
     return False

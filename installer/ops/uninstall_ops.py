@@ -53,6 +53,10 @@ def uninstall(identity, opts: UninstallOptions) -> None:  # noqa: ANN001
     if entry is None or entry.shortcut_start_menu is not False:
         remove_shortcut(sp.start_menu_lnk)
 
+    # The shortcuts are already gone and the files are already scheduled for
+    # deletion, so a key that will not delete leaves a dead Apps-list row
+    # rather than a half-removed application. Aborting here would be worse:
+    # it would strand the user with no entry point and no way to retry.
     try:
         delete_uninstall_entry(identity.uninstall_key)
     except Exception:

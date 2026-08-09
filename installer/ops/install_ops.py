@@ -74,6 +74,10 @@ def _swap_in_bundle(staging_dir: Path, target_dir: Path) -> None:
         backup_dir = target_dir.with_name(
             target_dir.name + f".old.{uuid.uuid4().hex[:8]}"
         )
+        # Not swallowed: a locked file, a denied directory and an open handle
+        # all arrive differently and mean the same thing to the user, so they
+        # are translated into one actionable message with the original
+        # attached. Stopping here is correct, since nothing has moved yet.
         try:
             target_dir.rename(backup_dir)
         except Exception as exc:
@@ -85,10 +89,19 @@ def _swap_in_bundle(staging_dir: Path, target_dir: Path) -> None:
         try:
             staging_dir.rename(target_dir)
         except OSError:
+            # A rename across volumes fails where a copy succeeds, which is
+            # the ordinary case when the staging area and the target sit on
+            # different drives.
             shutil.copytree(staging_dir, target_dir, dirs_exist_ok=False)
             shutil.rmtree(staging_dir, ignore_errors=True)
     except Exception:
+        # Not swallowed, this re-raises. The point is to put the previous
+        # installation back first: without it a failed upgrade leaves the user
+        # with no application at all, which is far worse than a failed upgrade.
         if backup_dir and backup_dir.exists() and not target_dir.exists():
+            # The rollback itself failing is the one case with nothing left to
+            # try. The original failure is the more useful thing to report, so
+            # it is allowed to propagate rather than being masked by this one.
             try:
                 backup_dir.rename(target_dir)
             except Exception:
@@ -170,6 +183,9 @@ def _deploy_runtime_icon_assets(*, install_dir: Path) -> None:
                 src = Path(meipass) / name
         if not src.exists():
             continue
+        # Icons are decoration. A missing one costs the window and the Apps
+        # list a nicer picture; failing the whole install over it would cost
+        # the user the application.
         try:
             shutil.copy2(src, install_dir / name)
         except Exception:
@@ -253,6 +269,10 @@ def upgrade_or_reinstall(
             _swap_in_bundle(staging_dir, target_dir)
         else:
             _swap_in_bundle(staging_dir, target_dir)
+            # The new installation is already in place and registered, so the
+            # upgrade has succeeded. A previous directory that will not delete
+            # is stale files on disk, not a failed upgrade, and reporting it as
+            # one would send the user chasing a problem they no longer have.
             try:
                 shutil.rmtree(current_install_dir, ignore_errors=True)
             except Exception:
@@ -288,6 +308,10 @@ def _apply_shortcuts(
     exe = install_dir / "Meridian.exe"
     sp = get_shortcut_paths(identity)
 
+    # Creating a shortcut the user asked for is allowed to fail the install:
+    # `create_shortcut` raises. Clearing one they declined is not, since a
+    # leftover shortcut is untidy rather than broken, and the application
+    # underneath it works either way.
     if opts.create_desktop_shortcut:
         create_shortcut(exe, sp.desktop_lnk, working_dir=install_dir)
     else:
@@ -299,6 +323,8 @@ def _apply_shortcuts(
     if opts.create_start_menu_shortcut:
         create_shortcut(exe, sp.start_menu_lnk, working_dir=install_dir)
     else:
+        # As above: a Start Menu entry that will not delete is untidy, never a
+        # reason to fail an install that has otherwise completed.
         try:
             sp.start_menu_lnk.unlink(missing_ok=True)
         except Exception:

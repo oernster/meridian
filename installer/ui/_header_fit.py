@@ -34,6 +34,9 @@ class HeaderFitController:
         title.setProperty("_base_header_font_px", base_px)
         title.setProperty("_base_header_font_pt", base_pt)
 
+        # A size hint is unavailable until the label has been laid out at least
+        # once. Skipping the floor here costs nothing: `_ensure_fits` runs again
+        # on the next resize and sets it then.
         try:
             title.setMinimumSize(title.sizeHint())
         except Exception:
@@ -128,6 +131,10 @@ class HeaderFitController:
         if elided != title.text():
             return False
 
+        # Tight bounds need a glyph raster, which some fonts decline to give.
+        # Reporting "it fits" is the safe answer: the elision check above has
+        # already passed, so the worst case is a header that is not shrunk
+        # further rather than one that is clipped.
         try:
             tight = fm.tightBoundingRect(title.text())
             return title.contentsRect().width() >= int(
@@ -139,6 +146,9 @@ class HeaderFitController:
     @staticmethod
     def _tight_requirements_px(title) -> tuple[int, int]:  # noqa: ANN001
         fm = QFontMetrics(title.font())
+        # Same missing raster as above. Advance width plus line height is a
+        # looser measure of the same thing, so the header is given slightly
+        # more room than it needs rather than none.
         try:
             tight = fm.tightBoundingRect(title.text())
             req_w = int(tight.width() + 6)

@@ -62,6 +62,10 @@ def repair(
             dst = install_dir / e.path
             needs = True
             if dst.exists():
+                # A file that cannot be measured or read is exactly the file a
+                # repair exists to replace, so any failure here means restore
+                # it. The alternative, skipping what could not be checked,
+                # would leave the damaged file in place.
                 try:
                     if dst.stat().st_size == int(e.size):
                         needs = _sha256_file(dst).lower() != str(e.sha256).lower()
