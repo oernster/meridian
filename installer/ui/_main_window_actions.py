@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 
+from installer.ops.launch_ops import exe_to_launch
 from installer.state.model import InstalledInfo, InstallerState, Operation
+from installer.ui._launch_on_finish import launch_and_close
 from installer.ui._main_window_types import UiSelections
 from installer.ui._operation_dispatch import operation_callable
 from installer.ui.licence_dialog import InstallerLicenceDialog
@@ -115,9 +117,14 @@ def refresh_state(window: InstallerMainWindow) -> None:
 
     entry = read_entry(window._identity.uninstall_key)
     installed = None
+    # Recorded as well as tested, because the launch on finish needs the exact
+    # executable this has just proved is there rather than rebuilding the path
+    # from a location that may have changed under it.
+    window._installed_exe = None
     if entry and entry.install_location.exists():
         exe = entry.install_location / "Meridian.exe"
         if exe.exists():
+            window._installed_exe = exe
             installed = InstalledInfo(
                 version=entry.display_version, location=entry.install_location
             )
@@ -167,7 +174,7 @@ def set_buttons_for_allowed_ops(
         }[op]
 
     def _bind(button, op: Operation | None) -> None:  # noqa: ANN001
-        """Relabel one primary button and point it at `op`, or hide it."""
+        """Relabel one primary button and point it at `op`; hide it if none."""
         if op is None:
             button.setVisible(False)
             return
@@ -191,7 +198,7 @@ def validate_install_dir(path: Path) -> bool:
 
     Any failure means the same thing to the caller: this installer cannot
     write here without elevation. The specific errno does not change the
-    answer, and the caller reports it as one message.
+    answer; the caller reports it as one message.
     """
     try:
         path.mkdir(parents=True, exist_ok=True)
@@ -270,6 +277,7 @@ def set_ui_busy(window: InstallerMainWindow, busy: bool) -> None:
         window._install_dir_edit,
         window._desktop_cb,
         window._startmenu_cb,
+        window._launch_cb,
     ]:
         w.setEnabled(not busy)
 
@@ -309,6 +317,17 @@ def on_operation_finished(
         window._progress_bar.setValue(0)
 
     refresh_state(window)
+
+    launch_cb = getattr(window, "_launch_cb", None)
+    exe = exe_to_launch(
+        op=op,
+        succeeded=bool(result.ok),
+        requested=bool(launch_cb is not None and launch_cb.isChecked()),
+        installed_exe=getattr(window, "_installed_exe", None),
+    )
+    if exe is not None:
+        launch_and_close(window, exe)
+        return
 
     # Cosmetic: clears the finished message after a beat. If the timer cannot
     # be armed the message simply stays until the next operation overwrites
