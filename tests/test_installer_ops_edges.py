@@ -5,8 +5,9 @@ across volumes, a locked shortcut, a registry key that will not delete, a
 platform guard. They are the branches least likely to be exercised by hand and
 the most likely to matter when they run, so they are pinned deliberately.
 
-One of these records a defect rather than desired behaviour. See
-`test_a_failed_rollback_currently_discards_the_backup`.
+Two of them cover the backup a failed upgrade depends on. They were written
+against a defect, recorded it, and now assert the fix: the previous
+installation survives whether the rollback succeeds or fails.
 """
 
 from __future__ import annotations
@@ -102,18 +103,15 @@ def test_a_rename_across_volumes_falls_back_to_copying(
     assert not staging.exists()
 
 
-def test_a_failed_rollback_currently_discards_the_backup(
+def test_a_failed_rollback_keeps_the_backup(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """DEFECT, recorded rather than endorsed.
+    """Once the rollback has failed, the backup is the only copy left.
 
-    When the swap fails and the rollback rename also fails, the `finally`
-    block removes the backup directory anyway, because its only condition is
-    that the backup still exists. The user is left with neither the new
-    installation nor the old one.
-
-    This test pins the behaviour as it stands so the fix has something to
-    change. It is not a statement that this is correct.
+    Reaching this needs both the swap and the rollback to fail, which takes
+    something holding a directory open. The `finally` used to clear the backup
+    on the sole condition that it existed, which is exactly the state a failed
+    rollback leaves, so the user ended with no application at all.
     """
     target = _bundle(tmp_path / "Meridian", "old")
     staging = _bundle(tmp_path / "staging", "new")
@@ -128,7 +126,32 @@ def test_a_failed_rollback_currently_discards_the_backup(
     with pytest.raises(RuntimeError, match="copy failed halfway"):
         _swap_in_bundle(staging, target)
 
-    assert not target.exists()
+    backups = [p for p in tmp_path.iterdir() if ".old." in p.name]
+    assert len(backups) == 1, "the previous installation was discarded"
+    assert (backups[0] / "Meridian.exe").read_text(encoding="utf-8") == "old"
+
+
+def test_a_failed_first_install_has_no_backup_to_restore(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With nothing installed there is nothing to roll back to.
+
+    The failure is reported and no backup is invented. Any debris left in the
+    target is fragments of a bundle the user never had.
+    """
+    staging = _bundle(tmp_path / "staging", "new")
+    target = tmp_path / "Meridian"
+
+    _fail_renames(monkeypatch, lambda p: p == staging.resolve())
+
+    def _explode(*args, **kwargs):  # noqa: ANN002, ANN003
+        raise RuntimeError("copy failed halfway")
+
+    monkeypatch.setattr(install_ops.shutil, "copytree", _explode)
+
+    with pytest.raises(RuntimeError, match="copy failed halfway"):
+        _swap_in_bundle(staging, target)
+
     assert [p for p in tmp_path.iterdir() if ".old." in p.name] == []
 
 

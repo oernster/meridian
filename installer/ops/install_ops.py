@@ -79,6 +79,7 @@ def _swap_in_bundle(staging_dir: Path, target_dir: Path) -> None:
                 f"Unable to replace existing install at {target_dir}"
             ) from exc
 
+    swapped = False
     try:
         try:
             staging_dir.rename(target_dir)
@@ -88,21 +89,33 @@ def _swap_in_bundle(staging_dir: Path, target_dir: Path) -> None:
             # different drives.
             shutil.copytree(staging_dir, target_dir, dirs_exist_ok=False)
             shutil.rmtree(staging_dir, ignore_errors=True)
+        swapped = True
     except Exception:
         # Not swallowed, this re-raises. The point is to put the previous
         # installation back first: without it a failed upgrade leaves the user
         # with no application at all, which is far worse than a failed upgrade.
-        if backup_dir and backup_dir.exists() and not target_dir.exists():
+        if backup_dir and backup_dir.exists():
+            # A copy that failed partway leaves a partial target sitting where
+            # the backup needs to go. It holds nothing but fragments of the new
+            # bundle while the backup holds the user's actual installation, so
+            # it is cleared to make room rather than being preserved.
+            shutil.rmtree(target_dir, ignore_errors=True)
             # The rollback itself failing is the one case with nothing left to
             # try. The original failure is the more useful thing to report, so
-            # it is allowed to propagate rather than being masked by this one.
+            # it is allowed to propagate rather than being masked by this one,
+            # and the backup is kept by the `finally` below.
             try:
                 backup_dir.rename(target_dir)
             except Exception:
                 pass
         raise
     finally:
-        if backup_dir and backup_dir.exists():
+        # Discard the backup only once the new installation is actually in
+        # place. Testing that the backup still exists is not enough: that is
+        # exactly the state a failed rollback leaves, and deleting it there
+        # takes away the only surviving copy of the user's application, which
+        # is the outcome this whole dance exists to prevent.
+        if swapped and backup_dir and backup_dir.exists():
             shutil.rmtree(backup_dir, ignore_errors=True)
 
 

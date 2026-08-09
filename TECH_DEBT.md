@@ -1,6 +1,6 @@
 # Meridian: Technical Debt
 
-A standing reference to the project's outstanding technical debt. It records what is still open, weighs whether each item is worth doing and gives the rationale. Every item is a behaviour-preserving internal concern, with one stated exception: item 2 is a defect whose fix necessarily changes behaviour, and it is marked as such where it appears. Nothing here proposes reverting a feature or changing any UI or UX behaviour. Scope is the whole repository (the `meridian` package, the QML front end, the bespoke installer and the delivery scripts) read against `ARCHITECTURE.md` and `tests/structural/test_boundaries.py`.
+A standing reference to the project's outstanding technical debt. It records what is still open, weighs whether each item is worth doing and gives the rationale. Every item is a behaviour-preserving internal concern: nothing here proposes reverting a feature or changing any UI or UX behaviour. Scope is the whole repository (the `meridian` package, the QML front end, the bespoke installer and the delivery scripts) read against `ARCHITECTURE.md` and `tests/structural/test_boundaries.py`.
 
 ---
 
@@ -26,37 +26,13 @@ Two things close this. They are independent:
 
 This is the single largest item in the file and everything else here is smaller.
 
-## 2. A failed rollback destroys the backup it was meant to restore
-
-**This is a defect rather than an internal concern, and the only item in this file whose fix changes behaviour.** It was found while bringing `installer/ops` under test and is pinned by `tests/test_installer_ops_edges.py::test_a_failed_rollback_currently_discards_the_backup`, which records the behaviour as it stands rather than endorsing it.
-
-`_swap_in_bundle` moves an existing installation aside to `<name>.old.<hex>` before putting the new one in place. If the swap then fails, an `except` block renames the backup back. If *that* rename also fails, the `finally` block still runs:
-
-```python
-finally:
-    if backup_dir and backup_dir.exists():
-        shutil.rmtree(backup_dir, ignore_errors=True)
-```
-
-Its only condition is that the backup exists, which is exactly the state a failed rollback leaves. So the user ends an upgrade with neither the new installation nor the old one, and the message they see describes the copy failure rather than the deletion.
-
-The window is narrow (both the swap and the rollback have to fail, which needs something holding a directory open) and the consequence is total for that user. The fix is to make the cleanup conditional on the rollback having succeeded, which is what the `finally` was assuming:
-
-```python
-finally:
-    if backup_dir and backup_dir.exists() and target_dir.exists():
-        shutil.rmtree(backup_dir, ignore_errors=True)
-```
-
-Left open because closing it changes behaviour, which every other item here promises not to do. It wants an explicit decision rather than being folded into a refactor.
-
-## 3. `tests/ui/test_bridge.py` is 1029 lines
+## 2. `tests/ui/test_bridge.py` is 1029 lines
 
 The size cap now reads the test tree as well as the package, so this file is carried in `_LEGACY_OVER_LIMIT` alongside the four QML files. `tests/infrastructure/parser/test_atom_parser.py` sits at exactly 400, within the cap but with no room left: whoever edits it next should take it to 350 or below rather than shave a line off.
 
 The bridge test is doing valuable work (it is why the QML bridge is covered at all), so this is not a suggestion to shrink it by deleting assertions. It wants splitting by the bridge surface it exercises: subscription operations, item operations, discovery and settings.
 
-## 4. There is no `.coveragerc`, so the coverage configuration lives in two idioms
+## 3. There is no `.coveragerc`, so the coverage configuration lives in two idioms
 
 Coverage is configured entirely inside `pyproject.toml` (`[tool.coverage.run]`, `[tool.coverage.report]`) while the rest of the portfolio uses a `.coveragerc` beside it. Both work and `pyproject` is arguably the better home.
 
@@ -64,7 +40,7 @@ It had a second reason: the installer coverage work needed the `source` list edi
 
 **Recommendation: move this to "Not debt".** With its practical driver spent, what is left is a preference for one working idiom over another working idiom. Awaiting a decision rather than being deleted, since an item that vanishes without a ruling is a discrepancy.
 
-## 5. The reference implementation never runs the specification's conformance suite
+## 4. The reference implementation never runs the specification's conformance suite
 
 Meridian is publicly billed as the reference implementation of MMSP. It implements the protocol independently in `meridian/infrastructure/fetching/parser/mfeed_parser.py`, depends on nothing from the MMSP-Spec repository and shares no test with it.
 
@@ -76,7 +52,7 @@ The realistic route is therefore to consume the specification's artefacts rather
 
 Until then this is a known, deliberate gap, not an oversight. It is recorded so the phrase "reference implementation" is never read as "verified against the spec".
 
-## 6. `builddmg.py` fails `black --check`
+## 5. `builddmg.py` fails `black --check`
 
 `python -m black --check builddmg.py` exits 1 with "would reformat builddmg.py". The script also carries twelve `flake8` violations: four `E221` multiple-spaces-before-operator, which black fixes, and four `E501` long lines, which it does not.
 
@@ -106,4 +82,4 @@ These look like candidates but are correct as they stand; changing them would re
 - **The Apache-2.0 model and LGPL-3.0 UI split**, with four licence files at root. `LICENSE` is the map, `LICENSE-APACHE-2.0.txt` covers domain, application, infrastructure and the scripts, `LICENSE-LGPL-3.0.txt` covers the Qt front end and `LICENSE-GPL-3.0.txt` is present because the LGPL text incorporates it by reference. All four are load-bearing. The Apache choice on the model side is deliberate, aligning with the MMSP ecosystem this application is the reference implementation for.
 - **The five separate parser modules** (`rss`, `atom`, `mfeed`, `podcast`, `platform`) with one test module each. One source type per parser is the specification's own shape; consolidating them would destroy the mapping.
 - **`meridian/main.py` being the only coverage omission.** Composition root. Nothing there is a decision.
-- **The separate `installer/ops` and `installer/ui` packages.** The decomposition item 2 asks the rest of the portfolio's installers to adopt.
+- **The separate `installer/ops` and `installer/ui` packages.** The decomposition that made the installer testable at all: `ops/` is free of Qt, which is what let it join the coverage gate, and it is the shape the rest of the portfolio's installers should adopt.

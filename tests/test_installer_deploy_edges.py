@@ -213,14 +213,17 @@ def test_an_old_install_that_will_not_delete_does_not_fail_the_upgrade(
     assert (target / "Meridian.exe").read_bytes() == _PAYLOAD["Meridian.exe"]
 
 
-def test_a_partly_written_target_is_not_overwritten_by_the_rollback(
+def test_a_copy_that_fails_after_creating_the_target_still_rolls_back(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The copy can fail after creating the directory, so the target exists.
+    """`copytree` creates the destination before it copies into it.
 
-    The rollback is guarded on the target being absent. Renaming the backup
-    over a partly-written target would fail anyway, so the original error is
-    raised untouched and the backup is cleared.
+    So a failure partway leaves a partial target sitting where the backup
+    needs to go. That partial directory holds fragments of the new bundle
+    while the backup holds the user's actual installation, so it is cleared
+    and the previous installation is restored over it. The rollback used to be
+    skipped entirely whenever the target existed, and the backup was then
+    deleted by the `finally`.
     """
     from installer.ops.install_ops import _swap_in_bundle
 
@@ -248,7 +251,7 @@ def test_a_partly_written_target_is_not_overwritten_by_the_rollback(
     with pytest.raises(RuntimeError, match="after creating the directory"):
         _swap_in_bundle(staging, target)
 
-    assert target.exists()
+    assert (target / "Meridian.exe").read_bytes() == b"old"
     assert [p for p in tmp_path.iterdir() if ".old." in p.name] == []
 
 
