@@ -30,7 +30,11 @@ This is the single largest item in the file and everything else here is smaller.
 
 `installer/` is better structured than most bespoke installers here: `ops/` (install, uninstall, repair, shortcuts, running-app detection) is genuinely separated from `ui/`; no module is over 400 lines. The decomposition is already done, which is what makes the rest surprising.
 
-`[tool.coverage.run] source = ["meridian"]` means none of it is measured. The first installer tests now exist (`tests/ui/test_installer_dispatch.py`, nine cases over the extracted `_operation_dispatch`, mutation-checked) but they cover the dispatch only, and because the installer is outside the coverage source nothing reports how little of it that is.
+`[tool.coverage.run] source = ["meridian"]` means none of it is measured by the gate. The tests now exist: 79 cases across six files, every one mutation-checked, covering the dispatch, the install and upgrade flows, repair, uninstall, shortcut resolution and the running-application check.
+
+Measured 2026-08-09 with an explicit `--cov=installer.ops`: `running_app` 100%, `_operation_dispatch` 95%, `repair_ops` 94%, `install_ops` 87%, `uninstall_ops` 86%, `payload` 79%, `shortcuts` 44%.
+
+The coverage-source change is deliberately the last move rather than the first. Adding `installer/ops` to `source` while the gate is `--cov-fail-under=100` fails the build the moment it lands, so it goes in once the numbers support it, together with the omissions it needs. Two are irreducible: `create_shortcut` is a COM call that writes a real `.lnk` into the running user's profile, and `_schedule_delete_after_exit` spawns a detached PowerShell process. Both belong in the documented exclusion list in TESTING.md beside the existing Win32 entries, not under a blanket omit of the package. The rest of the gap is ordinary work: the `os.name != "nt"` guards, the degradation branches inside the broad handlers, and `payload`'s `resource_path` helpers.
 
 Seventeen `except Exception` blocks carrying no `# noqa` and no comment remain, across `install_ops.py` (7), `shortcuts.py` (5), `_header_fit.py` (3), `repair_ops.py` (1) and `uninstall_ops.py` (1). `_main_window_actions.py` is done: six duplicated wiring handlers collapsed into one documented helper, two duplicated rebind handlers into another, and each of the eight that remain now states what it degrades to and why.
 
