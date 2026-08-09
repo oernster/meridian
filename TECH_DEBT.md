@@ -4,7 +4,7 @@ A standing reference to the project's outstanding technical debt. It records wha
 
 ---
 
-## 1. Four QML files carry 3610 lines between them
+## 1. Four QML files carry 3419 lines between them
 
 The Python side of this repository is held to an unusually strong standard: a 100% branch-coverage gate over the `meridian` package and `installer/ops`, with three named omissions, plus AST layer-boundary tests, a 400-line cap with its danger band and an in-suite `black` and `flake8` run. That is stricter than most of the portfolio.
 
@@ -12,21 +12,24 @@ The size cap now reads `.qml`, so these four are carried explicitly in `_LEGACY_
 
 **The split now has a safety net it did not have.** `tests/ui/test_qml_compiles.py` compiles every QML file and fails on a syntax error, a property assigned on a type that has none or an unresolvable component: exactly what a careless extraction introduces; none of it visible before launch otherwise. All three were mutation-checked. `qmllint` was considered and rejected as a gate: it reports 198 unqualified-access warnings on `FeedDiscovery.qml` alone, which is inherent to a front end driven by context properties rather than a defect; it exits 0 regardless.
 
-**Progress, measured 2026-08-09.** Two subsets are done, both out of `FeedDiscovery.qml`, which drops from 1072 to 946.
+**Progress, measured 2026-08-09.** Three subsets are done, all out of `FeedDiscovery.qml`, which drops from 1072 to 755.
 
 - `ToastBar.qml` (62 lines). The three-way dance between a hold timer and two animations was spread across the caller and four sibling ids; it is one `show()` call from outside now. The component anchors nothing itself, so placement stays with the caller and it is reusable.
 - `UrlListDialog.qml` (84 lines). The bulk-confirm and bulk-result dialogs carried the same chrome twice: identical size, padding and background, plus a footer built from a mantle strip, a hairline rule and a right-aligned button row. They differed only in heading, list and buttons, so those are what the component exposes. The buttons are default children reparented into the footer, which keeps them in the caller's scope and leaves `root.theme` resolving exactly as it did inline.
+- `CandidateRow.qml` (222 lines). The search-result row, previously an inline `Component` reading `model.*` for its content and reaching out to `root.selectedUrls`, `root._toggleUrl` and `controller.subscribeFromDiscovery` for its state and its actions. Every input is now a declared property and every action a signal. The six `candidate*` properties are `required`, which is what makes the view bind them from `FeedCandidateModel`'s roles of the same name; they stay on the root because the `ListView`'s own Space and Return handlers read them back off `currentItem`.
 
-Remaining seams in `FeedDiscovery.qml`, largest first: the roughly 500-line `Rectangle` holding the search and results body, then the ~200-line `candidateDelegate`. The delegate is the one to take carefully: it reads outer scope unqualified, so extracting it means passing what it uses in explicitly rather than relying on the enclosing file. The body is the one that takes the file under the cap, so it goes last.
+One seam is left in `FeedDiscovery.qml`: the roughly 500-line `Rectangle` holding the search and results body. It is the one that takes the file under the cap.
+
+**A note that cost time, worth keeping.** An extracted component still resolves the ids of the file that created it, because the instance's context chains to its creation context. `ToastBar.qml` and `UrlListDialog.qml` read `theme` with no `theme` property of their own and work for exactly that reason. It means an outer-scope read survives extraction silently, invisible until the component is used somewhere else, so `CandidateRow.qml` declares what it needs and `tests/ui/test_candidate_row.py` builds it with no caller in scope and asserts the engine raised no warnings.
 
 | File | Lines |
 |---|---|
-| `meridian/ui/qml/FeedDiscovery.qml` | 946 |
 | `meridian/ui/qml/main.qml` | 991 |
 | `meridian/ui/qml/SubscriptionManager.qml` | 857 |
 | `meridian/ui/qml/FeedReader.qml` | 816 |
+| `meridian/ui/qml/FeedDiscovery.qml` | 755 |
 
-Four files, each two to two and a half times the module cap, carrying the keyboard focus wiring, the discovery flow, the delete confirmations and the reader state machine. This is where the application's user-facing behaviour actually lives; it is the least constrained code in the repository.
+Four files, the smallest still 755 lines and the largest 991, carrying the keyboard focus wiring, the discovery flow, the delete confirmations and the reader state machine. This is where the application's user-facing behaviour actually lives; it is the least constrained code in the repository.
 
 Two things close this. They are independent:
 

@@ -565,8 +565,18 @@ Rectangle {
                     activeFocusOnTab: true
                     keyNavigationEnabled: true
                     model: controller ? controller.candidateModel : null
-                    delegate: candidateDelegate
                     ScrollBar.vertical: ScrollBar { id: resultsVScroll; policy: ScrollBar.AlwaysOn }
+
+                    delegate: CandidateRow {
+                        width: resultsList.width - resultsVScroll.width
+                        theme: root.theme
+                        selected: !!root.selectedUrls[candidateUrl]
+                        onToggleRequested: root._toggleUrl(candidateUrl)
+                        onSubscribeRequested: {
+                            controller.subscribeFromDiscovery(candidateUrl)
+                            root._showSingleToast(candidateTitle || candidateUrl)
+                        }
+                    }
 
                     Keys.onSpacePressed: function(event) {
                         if (currentIndex >= 0 && currentItem && !currentItem.candidateIsSubscribed) {
@@ -619,207 +629,6 @@ Rectangle {
                     }
                 }
             }
-        }
-    }
-
-    // Candidate row delegate
-    Component {
-        id: candidateDelegate
-
-        Rectangle {
-            id: delegateRoot
-            width: resultsList.width - resultsVScroll.width
-            height: 78
-            clip: true
-            property string candidateUrl: model.candidateUrl
-            property bool candidateIsSubscribed: model.candidateIsSubscribed
-            property string candidateTitle: model.candidateTitle
-            color: (!!root.selectedUrls[model.candidateUrl] || rowHover.hovered || ListView.isCurrentItem)
-                   ? theme.mantle : theme.base
-            border.color: (rowHover.hovered || ListView.isCurrentItem) ? theme.amber : "transparent"
-            border.width: 1
-            opacity: model.candidateIsSubscribed ? 0.55 : 1.0
-
-            // Double-click instant subscribe (single item)
-            TapHandler {
-                enabled: !model.candidateIsSubscribed
-                onDoubleTapped: {
-                    controller.subscribeFromDiscovery(model.candidateUrl)
-                    _showSingleToast(model.candidateTitle || model.candidateUrl)
-                }
-            }
-
-            RowLayout {
-                x: 8
-                y: 8
-                width: parent.width - 18
-                height: parent.height - 16
-                spacing: 8
-                z: 1
-
-                // Checkbox (locked when subscribed)
-                Rectangle {
-                    Layout.preferredWidth: 18
-                    Layout.preferredHeight: 18
-                    Layout.minimumWidth: 18
-                    Layout.minimumHeight: 18
-                    Layout.maximumWidth: 18
-                    Layout.maximumHeight: 18
-                    radius: 3
-                    color: (!!root.selectedUrls[model.candidateUrl] && !model.candidateIsSubscribed)
-                           ? theme.blue : "transparent"
-                    border.color: model.candidateIsSubscribed ? theme.overlay : theme.blue
-                    border.width: 2
-                    Label {
-                        anchors.centerIn: parent
-                        text: model.candidateIsSubscribed ? "✓"
-                            : !!root.selectedUrls[model.candidateUrl] ? "✓" : ""
-                        color: model.candidateIsSubscribed ? theme.overlay
-                             : theme.isDark ? "#1e1e2e" : "#ffffff"
-                        font.pixelSize: 11
-                        font.bold: true
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        anchors.margins: -4
-                        cursorShape: model.candidateIsSubscribed ? Qt.ArrowCursor : Qt.PointingHandCursor
-                        enabled: !model.candidateIsSubscribed
-                        onClicked: root._toggleUrl(model.candidateUrl)
-                    }
-                }
-
-                // Favicon or fallback initial: fixed-size Item isolates image implicitSize from RowLayout
-                Item {
-                    Layout.preferredWidth: 32
-                    Layout.preferredHeight: 32
-                    Layout.minimumWidth: 32
-                    Layout.minimumHeight: 32
-                    Layout.maximumWidth: 32
-                    Layout.maximumHeight: 32
-
-                    Rectangle {
-                        width: 32; height: 32; radius: 6
-                        color: theme.surface0
-                        visible: model.candidateFaviconUrl === ""
-                        Label {
-                            anchors.centerIn: parent
-                            text: (model.candidateTitle || model.candidateUrl).charAt(0).toUpperCase()
-                            color: theme.blue
-                            font.pixelSize: 14
-                            font.bold: true
-                        }
-                    }
-                    Image {
-                        width: 32; height: 32
-                        source: model.candidateFaviconUrl
-                        sourceSize: Qt.size(32, 32)
-                        fillMode: Image.PreserveAspectFit
-                        visible: model.candidateFaviconUrl !== ""
-                    }
-                }
-
-                // Text content
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 3
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 6
-
-                        Label {
-                            text: model.candidateTitle || model.candidateUrl
-                            color: theme.text
-                            font.pixelSize: 13
-                            font.bold: true
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
-                            wrapMode: Text.NoWrap
-                            Layout.fillWidth: true
-                        }
-
-                        Rectangle {
-                            height: 18
-                            width: badgeLbl.contentWidth + 10
-                            radius: 3
-                            color: theme.surface0
-
-                            Label {
-                                id: badgeLbl
-                                anchors.centerIn: parent
-                                text: (model.candidateSourceType || "RSS").toUpperCase()
-                                color: theme.blue
-                                font.pixelSize: 9
-                                font.bold: true
-                            }
-                        }
-                    }
-
-                    Label {
-                        text: model.candidateDescription
-                        color: theme.subtext
-                        font.pixelSize: 11
-                        elide: Text.ElideRight
-                        maximumLineCount: 1
-                        wrapMode: Text.NoWrap
-                        Layout.fillWidth: true
-                        visible: model.candidateDescription !== ""
-                    }
-
-                    Label {
-                        text: model.candidateUrl
-                        color: theme.overlay
-                        font.pixelSize: 10
-                        elide: Text.ElideRight
-                        Layout.fillWidth: true
-                    }
-                }
-
-                // Subscribe / Subscribed indicator
-                Rectangle {
-                    implicitHeight: 28
-                    implicitWidth: rowActionLbl.implicitWidth + 16
-                    radius: 5
-                    color: {
-                        if (model.candidateIsSubscribed) return "transparent"
-                        return rowActionMouse.containsMouse ? theme.surface0 : "transparent"
-                    }
-                    border.color: model.candidateIsSubscribed ? theme.overlay : theme.green
-                    border.width: 1
-
-                    Label {
-                        id: rowActionLbl
-                        anchors.centerIn: parent
-                        text: model.candidateIsSubscribed ? "Subscribed" : "Subscribe"
-                        color: model.candidateIsSubscribed ? theme.overlay : theme.green
-                        font.pixelSize: 11
-                        font.bold: true
-                    }
-
-                    MouseArea {
-                        id: rowActionMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: model.candidateIsSubscribed ? Qt.ArrowCursor : Qt.PointingHandCursor
-                        enabled: !model.candidateIsSubscribed
-                        onClicked: {
-                            controller.subscribeFromDiscovery(model.candidateUrl)
-                            _showSingleToast(model.candidateTitle || model.candidateUrl)
-                        }
-                    }
-                }
-            }
-
-            Rectangle {
-                anchors.bottom: parent.bottom
-                width: parent.width
-                height: 1
-                color: theme.surface0
-                opacity: 0.5
-                visible: !rowHover.hovered && !delegateRoot.ListView.isCurrentItem && !root.selectedUrls[model.candidateUrl]
-            }
-
-            HoverHandler { id: rowHover }
         }
     }
 
