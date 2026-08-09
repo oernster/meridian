@@ -21,12 +21,25 @@ from meridian.domain.value_objects.media import (
     Transcript,
 )
 from meridian.domain.value_objects.poll_config import PollConfig, POLL_FLOOR_SECONDS
+from meridian.infrastructure.fetching.mmsp import (
+    PROTOCOL_MAJOR,
+    PROTOCOL_VERSION,
+    accepts_document_version,
+)
 
 
 def parse(
     feed_id: int, feed_url: str, raw_bytes: bytes
 ) -> tuple[list[Item], PollConfig]:
     data = json.loads(raw_bytes)
+
+    declared = data.get("mmsp")
+    if not accepts_document_version(declared):
+        raise ValueError(
+            f"Unsupported MMSP document version {declared!r}: this client "
+            f"speaks {PROTOCOL_VERSION} and reads any {PROTOCOL_MAJOR}.x feed"
+        )
+
     poll_data = data.get("poll", {})
     min_interval = max(
         poll_data.get("min_interval_seconds", POLL_FLOOR_SECONDS),

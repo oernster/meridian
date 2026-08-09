@@ -40,19 +40,7 @@ It had a second reason: the installer coverage work needed the `source` list edi
 
 **Recommendation: move this to "Not debt".** With its practical driver spent, what is left is a preference for one working idiom over another working idiom. Awaiting a decision rather than being deleted, since an item that vanishes without a ruling is a discrepancy.
 
-## 4. The reference implementation never runs the specification's conformance suite
-
-Meridian is publicly billed as the reference implementation of MMSP. It implements the protocol independently in `meridian/infrastructure/fetching/parser/mfeed_parser.py`, depends on nothing from the MMSP-Spec repository and shares no test with it.
-
-So the normative rules are expressed twice; nothing checks that the two agree. Meridian's parser could drift from the specification it is the reference for; both repositories would stay green. `http_fetcher.py` also hardcodes `_USER_AGENT = "MMSP/1.0"`, a copy of the protocol version that lives nowhere near the specification that defines it.
-
-This is ranked below the QML item because closing it depends on the specification repository; that repository is deliberately not a package: MMSP-Spec publishes the spec text, the JSON Schemas and a conformance suite while declaring no build system or distribution metadata by design. So the validators cannot simply be imported from PyPI.
-
-The realistic route is therefore to consume the specification's artefacts rather than its code: point `tests/infrastructure/parser/test_mfeed_parser.py` at the published JSON Schemas and validate this parser's output against them; take the protocol version from the same place rather than from the `_USER_AGENT` literal here. That keeps the dependency one-directional (implementation depends on spec, never the reverse), which is the correct shape for a reference implementation.
-
-Until then this is a known, deliberate gap, not an oversight. It is recorded so the phrase "reference implementation" is never read as "verified against the spec".
-
-## 5. `builddmg.py` fails `black --check`
+## 4. `builddmg.py` fails `black --check`
 
 `python -m black --check builddmg.py` exits 1 with "would reformat builddmg.py". The script also carries twelve `flake8` violations: four `E221` multiple-spaces-before-operator, which black fixes, and four `E501` long lines, which it does not.
 
@@ -81,5 +69,5 @@ These look like candidates but are correct as they stand; changing them would re
 - **`Feed.__post_init__` accepting `http://` as well as `https://`.** It looks like a hole in the transport policy. It is not: an imported or discovered feed can legitimately be plain HTTP; every layer that matters is already strict. The Add Subscription field only enables Subscribe for `https://`, redirects are followed to HTTPS targets only and the parsers drop non-HTTPS media. Tightening the entity would break import of existing reading lists for no security gain.
 - **The Apache-2.0 model and LGPL-3.0 UI split**, with four licence files at root. `LICENSE` is the map, `LICENSE-APACHE-2.0.txt` covers domain, application, infrastructure and the scripts, `LICENSE-LGPL-3.0.txt` covers the Qt front end and `LICENSE-GPL-3.0.txt` is present because the LGPL text incorporates it by reference. All four are load-bearing. The Apache choice on the model side is deliberate, aligning with the MMSP ecosystem this application is the reference implementation for.
 - **The five separate parser modules** (`rss`, `atom`, `mfeed`, `podcast`, `platform`) with one test module each. One source type per parser is the specification's own shape; consolidating them would destroy the mapping.
-- **`meridian/main.py` being the only coverage omission.** Composition root. Nothing there is a decision.
+- **The three coverage omissions.** `meridian/main.py` is the composition root, where nothing is a decision. `shortcuts.create_shortcut` and `uninstall_ops._schedule_delete_after_exit` are a COM call writing into the running user's own profile and a detached PowerShell holding a real deletion; exercising either is a side effect on the developer's machine rather than a test. Every caller of all three is covered.
 - **The separate `installer/ops` and `installer/ui` packages.** The decomposition that made the installer testable at all: `ops/` is free of Qt, which is what let it join the coverage gate, and it is the shape the rest of the portfolio's installers should adopt.

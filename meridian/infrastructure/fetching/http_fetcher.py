@@ -8,6 +8,7 @@ from meridian.application.interfaces.feed_fetcher import FeedFetcher, FetchResul
 from meridian.domain.entities.feed import Feed
 from meridian.domain.value_objects.poll_config import PollConfig, POLL_FLOOR_SECONDS
 from meridian.domain.value_objects.source_type import SourceType
+from meridian.infrastructure.fetching.mmsp import PROTOCOL_VERSION
 from meridian.infrastructure.fetching.parser import (
     atom_parser,
     mfeed_parser,
@@ -16,7 +17,7 @@ from meridian.infrastructure.fetching.parser import (
     rss_parser,
 )
 
-_USER_AGENT = "MMSP/1.0"
+_USER_AGENT = f"MMSP/{PROTOCOL_VERSION}"
 _MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
 
 

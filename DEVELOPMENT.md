@@ -41,6 +41,7 @@ pip install -r requirements-dev.txt
 | pytest-asyncio >=0.23 | Async test support |
 | pytest-cov >=5.0 | Coverage enforcement |
 | pytest-qt >=4.4 | Qt/QML test fixtures (`qapp`) |
+| jsonschema >=4.20 | Validating this client's versioning rule against the published MMSP schema |
 | respx >=0.21 | httpx request mocking |
 | black >=24.0 | Code formatter |
 | flake8 >=7.0 | Linter |

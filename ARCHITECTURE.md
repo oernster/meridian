@@ -11,6 +11,7 @@ These are the rules the codebase is not allowed to break. Each one names the tes
 | Every source file is `black`-formatted at line length 88. | `tests/structural/test_boundaries.py::test_black_compliance` |
 | Every source file is `flake8`-clean. | `tests/structural/test_boundaries.py::test_flake8_compliance` |
 | Branch coverage is 100% over the `meridian` package, `installer/ops` and the installer's operation dispatch. Three omissions, each named and reasoned: `meridian/main.py` (composition root), `shortcuts.create_shortcut` (writes a real `.lnk` through COM into the running user's own profile) and `uninstall_ops._schedule_delete_after_exit` (spawns a detached PowerShell holding a real deletion). Every caller of the latter two is covered and asserts what they are handed. | `--cov-fail-under=100` in `pyproject.toml`, over the whole suite |
+| The MMSP protocol version is stated once, in `infrastructure/fetching/mmsp.py`, and both the User-Agent and the parser's version gate derive from it. A feed declaring any 1.MINOR is read and anything else is refused, per specification Section 5.7. Where the MMSP-Spec repository is checked out beside this one, that rule is asserted against the published feed schema, so the two expressions of it cannot drift apart. | `tests/infrastructure/test_mmsp_conformance.py` |
 | The version string is read from the root `VERSION` file and appears nowhere else in source. | `tests/test_version.py::test_version_matches_the_root_version_file` and `::test_candidates_cover_package_parent_then_package` |
 | A feed URL has to use `http://` or `https://`; anything else raises. | `tests/domain/test_entities.py::TestFeed::test_rejects_invalid_scheme` and `::test_accepts_http_url` |
 | A redirect is only followed to an HTTPS target; a plain-HTTP `Location` is discarded. | `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_301_http_location_rejected` |
@@ -80,7 +81,8 @@ meridian/
       sqlite_item_repository.py
       sqlite_poll_state_repository.py
     fetching/
-      http_fetcher.py       HttpFetcher: httpx async client, MMSP/1.0 UA, conditional GET (ETag/Last-Modified), HTTPS-only redirects, 10 MB document cap, 300s poll floor
+      mmsp.py               The MMSP protocol version and the Section 5.7 rule for which documents are readable
+      http_fetcher.py       HttpFetcher: httpx async client, User-Agent derived from the protocol version, conditional GET (ETag/Last-Modified), HTTPS-only redirects, 10 MB document cap, 300s poll floor
       scheduler.py          PollScheduler: asyncio task per feed, 10s tick, per-feed backoff state
       feedsearch_fetcher.py FeedsearchFetcher: implements DiscoveryFetcher via feedsearch.dev REST API (httpx async)
       parser/
