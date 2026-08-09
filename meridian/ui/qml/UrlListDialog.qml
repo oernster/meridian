@@ -70,7 +70,17 @@ Dialog {
             Layout.fillHeight: true
             clip: true
             model: control.urls
-            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOn }
+            ScrollBar.vertical: ScrollBar { id: urlScrollBar; policy: ScrollBar.AlwaysOn }
+
+            // A list short enough to fit is left alone; a bulk subscribe of
+            // thirty URLs reads itself so the reader can check what they are
+            // about to confirm without reaching for the wheel.
+            AutoScroller {
+                objectName: "urlListScroller"
+                flick: urlList
+                scrollBar: urlScrollBar
+                active: control.visible
+            }
             delegate: Label {
                 text: "• " + modelData
                 color: theme.subtext

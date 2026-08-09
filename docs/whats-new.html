@@ -61,6 +61,7 @@
       <ul>
         <li>The QML front end is four composition files with their panels, rows and dialogs beside them, where it was four files of more than three and a half thousand lines between them. Nothing about using the application changes</li>
         <li>Every keyboard ring is now walked by real key presses through a real window, forwards and backwards: the window, the reader, the subscription manager and the discovery drawer. Each test was checked by cutting one connection at a time, forty two in all</li>
+        <li>Long content reads itself: the licence dialogs and the URL list shown before a bulk subscribe hold still, take themselves down the page, hold at the end and go round again. Touch the surface and it stops where it is, then carries on from there rather than the top</li>
         <li>The size rule reads the QML, the tests and the installer as well as the package; nothing is left over the limit</li>
         <li>The part of the installer that touches your machine is inside the same complete coverage requirement as the application; an upgrade whose swap and rollback both fail now leaves the previous installation in place</li>
         <li>The bundled sample subscriptions are now a neutral set in examples/feeds_sample.json, still covering RSS, Atom and MFEED</li>

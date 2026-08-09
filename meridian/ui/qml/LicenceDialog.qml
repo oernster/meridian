@@ -83,7 +83,19 @@ Dialog {
         }
     }
 
+    // A licence always overflows, so this is the surface the cycle was written
+    // for. It reads only while the dialog is open; it freezes in place rather
+    // than restarting when it closes.
+    AutoScroller {
+        objectName: "licenceScroller"
+        flick: licenceScroll.contentItem
+        scrollBar: licenceScroll.ScrollBar.vertical
+        active: root.visible
+    }
+
     contentItem: ScrollView {
+        id: licenceScroll
+        objectName: "licenceScroll"
         clip: true
         contentWidth: availableWidth
 
