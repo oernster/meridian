@@ -234,6 +234,16 @@ def test_only_missing_shortcuts_are_recreated(rig) -> None:
     assert rig.created == [rig.paths.start_menu_lnk]
 
 
+def test_an_existing_start_menu_entry_is_not_recreated(rig) -> None:
+    _intact(rig.install_dir)
+    rig.paths.start_menu_lnk.parent.mkdir(parents=True, exist_ok=True)
+    rig.paths.start_menu_lnk.write_text("still here", encoding="utf-8")
+
+    repair(InstallerIdentity(), _BOTH)
+
+    assert rig.created == [rig.paths.desktop_lnk]
+
+
 def test_no_shortcut_is_created_when_neither_is_wanted(rig) -> None:
     _intact(rig.install_dir)
 

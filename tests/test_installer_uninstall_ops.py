@@ -166,6 +166,20 @@ def test_a_shortcut_the_user_declined_is_not_hunted_for(
     assert rig.removed_shortcuts == [rig.paths.start_menu_lnk]
 
 
+def test_a_declined_start_menu_entry_is_not_hunted_for(
+    rig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install_dir = _installed(tmp_path)
+    _found(
+        monkeypatch,
+        _entry(install_dir, shortcut_desktop=True, shortcut_start_menu=False),
+    )
+
+    uninstall(InstallerIdentity(), UninstallOptions())
+
+    assert rig.removed_shortcuts == [rig.paths.desktop_lnk]
+
+
 def test_user_data_goes_only_when_the_option_says_so(
     rig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

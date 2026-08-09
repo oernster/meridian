@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import shutil
 import sys
 import uuid
@@ -39,11 +38,6 @@ class InstallOptions:
     target_dir: Path
     create_desktop_shortcut: bool
     create_start_menu_shortcut: bool
-
-
-def _installer_staging_root() -> Path:
-    local = os.getenv("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
-    return Path(local) / "MeridianInstaller" / "staging"
 
 
 def _extract_payload_to(
@@ -160,10 +154,18 @@ def _register_uninstall(
     )
 
 
-def _deploy_runtime_icon_assets(*, install_dir: Path) -> None:
-    """Deploy icon assets next to Meridian.exe."""
+def _deploy_runtime_icon_assets(
+    *, install_dir: Path, project_root: Path | None = None
+) -> None:
+    """Deploy icon assets next to Meridian.exe.
 
-    project_root = Path(__file__).resolve().parents[2]
+    `project_root` defaults to the repository root and is injectable so the
+    fallback paths (a frozen bundle, a missing asset, a copy that fails) can
+    be exercised without depending on what happens to sit in the real tree.
+    """
+
+    if project_root is None:
+        project_root = Path(__file__).resolve().parents[2]
 
     for name in [
         "meridian.png",

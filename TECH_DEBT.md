@@ -1,12 +1,12 @@
 # Meridian: Technical Debt
 
-A standing reference to the project's outstanding technical debt. It records what is still open, weighs whether each item is worth doing and gives the rationale. Every item is a behaviour-preserving internal concern: nothing here proposes reverting a feature or changing any UI or UX behaviour. Scope is the whole repository (the `meridian` package, the QML front end, the bespoke installer and the delivery scripts) read against `ARCHITECTURE.md` and `tests/structural/test_boundaries.py`.
+A standing reference to the project's outstanding technical debt. It records what is still open, weighs whether each item is worth doing and gives the rationale. Every item is a behaviour-preserving internal concern, with one stated exception: item 2 is a defect whose fix necessarily changes behaviour, and it is marked as such where it appears. Nothing here proposes reverting a feature or changing any UI or UX behaviour. Scope is the whole repository (the `meridian` package, the QML front end, the bespoke installer and the delivery scripts) read against `ARCHITECTURE.md` and `tests/structural/test_boundaries.py`.
 
 ---
 
 ## 1. Four QML files carry 3736 lines between them
 
-The Python side of this repository is held to an unusually strong standard: a 100% branch-coverage gate over the whole `meridian` package with only `main.py` omitted, plus AST layer-boundary tests, a 400-line cap and an in-suite `black` and `flake8` run. That is stricter than most of the portfolio.
+The Python side of this repository is held to an unusually strong standard: a 100% branch-coverage gate over the `meridian` package and `installer/ops`, with three named omissions, plus AST layer-boundary tests, a 400-line cap with its danger band and an in-suite `black` and `flake8` run. That is stricter than most of the portfolio.
 
 The size cap now reads `.qml`, so these four are carried explicitly in `_LEGACY_OVER_LIMIT` in `tests/structural/test_boundaries.py` and no fifth can join them. Coverage still measures Python only, so the QML remains unmeasured.
 
@@ -26,25 +26,29 @@ Two things close this. They are independent:
 
 This is the single largest item in the file and everything else here is smaller.
 
-## 2. The installer is barely tested and carries seventeen unexplained broad handlers
+## 2. A failed rollback destroys the backup it was meant to restore
 
-`installer/` is better structured than most bespoke installers here: `ops/` (install, uninstall, repair, shortcuts, running-app detection) is genuinely separated from `ui/`; no module is over 400 lines. The decomposition is already done, which is what makes the rest surprising.
+**This is a defect rather than an internal concern, and the only item in this file whose fix changes behaviour.** It was found while bringing `installer/ops` under test and is pinned by `tests/test_installer_ops_edges.py::test_a_failed_rollback_currently_discards_the_backup`, which records the behaviour as it stands rather than endorsing it.
 
-`[tool.coverage.run] source = ["meridian"]` means none of it is measured by the gate. The tests now exist: 79 cases across six files, every one mutation-checked, covering the dispatch, the install and upgrade flows, repair, uninstall, shortcut resolution and the running-application check.
+`_swap_in_bundle` moves an existing installation aside to `<name>.old.<hex>` before putting the new one in place. If the swap then fails, an `except` block renames the backup back. If *that* rename also fails, the `finally` block still runs:
 
-Measured 2026-08-09 with an explicit `--cov=installer.ops`: `running_app` 100%, `_operation_dispatch` 95%, `repair_ops` 94%, `install_ops` 87%, `uninstall_ops` 86%, `payload` 79%, `shortcuts` 44%.
+```python
+finally:
+    if backup_dir and backup_dir.exists():
+        shutil.rmtree(backup_dir, ignore_errors=True)
+```
 
-The coverage-source change is deliberately the last move rather than the first. Adding `installer/ops` to `source` while the gate is `--cov-fail-under=100` fails the build the moment it lands, so it goes in once the numbers support it, together with the omissions it needs. Two are irreducible: `create_shortcut` is a COM call that writes a real `.lnk` into the running user's profile, and `_schedule_delete_after_exit` spawns a detached PowerShell process. Both belong in the documented exclusion list in TESTING.md beside the existing Win32 entries, not under a blanket omit of the package. The rest of the gap is ordinary work: the `os.name != "nt"` guards, the degradation branches inside the broad handlers, and `payload`'s `resource_path` helpers.
+Its only condition is that the backup exists, which is exactly the state a failed rollback leaves. So the user ends an upgrade with neither the new installation nor the old one, and the message they see describes the copy failure rather than the deletion.
 
-**The handlers are done, and past the six modules originally named here.** All 46 `except Exception` blocks under `installer/` now state what is degraded and why; a scan for one carrying neither a `# noqa` nor a nearby comment returns nothing. The work went wider than the original scoping because that scoping named six modules while an unscoped count read 53, and closing only the named six would have shrunk the number by redefinition rather than by work.
+The window is narrow (both the swap and the rollback have to fail, which needs something holding a directory open) and the consequence is total for that user. The fix is to make the cleanup conditional on the rollback having succeeded, which is what the `finally` was assuming:
 
-Two findings are worth keeping. Several handlers were not swallowing anything: the shortcut and bundle-swap handlers translate a spread of COM and filesystem failures into one actionable error, and the swap's outer handler exists to put the previous installation back before re-raising, without which a failed upgrade leaves the user with no application at all. And `worker.store_result` carried a handler around a plain attribute assignment, which cannot raise; its fallback was unreachable and is gone, which is why the total is 46 rather than 47.
+```python
+finally:
+    if backup_dir and backup_dir.exists() and target_dir.exists():
+        shutil.rmtree(backup_dir, ignore_errors=True)
+```
 
-Six duplicated wiring handlers in `_main_window_actions.py` were also collapsed into one documented helper, and two duplicated rebind handlers into another.
-
-The exposure is concrete: `install_ops.py` writes the HKCU uninstall key, `shortcuts.py` creates Start Menu and Desktop entries and `uninstall_ops.py` removes files from a user's machine. Every one of those is a swallowed exception away from leaving a half-installed application with no visible error. Because `ops/` is already pure of Qt, bringing it into the coverage source and testing it against a temporary directory and a fake registry writer is a contained piece of work with a high return.
-
-The broad handlers should each get one line saying what is being degraded and why, exactly as `installer/app.py` and the build scripts do elsewhere in the portfolio.
+Left open because closing it changes behaviour, which every other item here promises not to do. It wants an explicit decision rather than being folded into a refactor.
 
 ## 3. `tests/ui/test_bridge.py` is 1029 lines
 
@@ -56,7 +60,9 @@ The bridge test is doing valuable work (it is why the QML bridge is covered at a
 
 Coverage is configured entirely inside `pyproject.toml` (`[tool.coverage.run]`, `[tool.coverage.report]`) while the rest of the portfolio uses a `.coveragerc` beside it. Both work and `pyproject` is arguably the better home.
 
-This is recorded only because it makes cross-project comparison harder than it needs to be, plus item 2's fix requires editing the `source` list: whoever does that should know there is no `.coveragerc` to look for. Not worth changing on its own.
+It had a second reason: the installer coverage work needed the `source` list edited, and whoever did that should know there was no `.coveragerc` to look for. That work is done, so only the cross-project comparison argument remains, which was never worth changing on its own.
+
+**Recommendation: move this to "Not debt".** With its practical driver spent, what is left is a preference for one working idiom over another working idiom. Awaiting a decision rather than being deleted, since an item that vanishes without a ruling is a discrepancy.
 
 ## 5. The reference implementation never runs the specification's conformance suite
 

@@ -87,7 +87,16 @@ def uninstall_with_feedback(
         progress("Uninstall scheduled. Closing...")
 
 
-def _schedule_delete_after_exit(install_dir: Path) -> None:
+def _schedule_delete_after_exit(install_dir: Path) -> None:  # pragma: no cover
+    """Hand the install directory to a detached shell that outlives this one.
+
+    Excluded from coverage deliberately, and recorded in TESTING.md. The
+    installer cannot delete the directory it is running from, so this spawns a
+    detached PowerShell that waits and then removes it. Running it under test
+    would start a real background process holding a real deletion command.
+    `uninstall` is covered, and is asserted to hand this the resolved install
+    directory and nothing else.
+    """
     install_dir = install_dir.resolve()
 
     escaped = str(install_dir).replace("'", "''")

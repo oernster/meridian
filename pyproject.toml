@@ -33,11 +33,16 @@ meridian = ["ui/qml/*.qml"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "--cov=meridian --cov-report=term-missing --cov-fail-under=100"
+addopts = "--cov=meridian --cov=installer.ops --cov=installer.ui._operation_dispatch --cov-report=term-missing --cov-fail-under=100"
 
 [tool.coverage.run]
 branch = true
-source = ["meridian"]
+# `installer.ops` joined the gate on 2026-08-09. It is the part of the
+# installer that writes the uninstall key, creates shortcuts and deletes files
+# from a user's machine, and it was measured by nothing. `installer.ui` stays
+# out because it is Qt, with the single exception of the operation dispatch,
+# which touches no Qt type and is fully covered.
+source = ["meridian", "installer/ops", "installer/ui/_operation_dispatch.py"]
 omit = ["meridian/main.py"]
 
 [tool.coverage.report]

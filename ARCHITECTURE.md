@@ -7,10 +7,10 @@ These are the rules the codebase is not allowed to break. Each one names the tes
 | Invariant | Enforced by |
 |---|---|
 | Domain imports neither Application, Infrastructure nor UI; Application imports neither Infrastructure nor UI. Dependency direction is `UI -> Application -> Domain <- Infrastructure`, checked by AST scanning every module. | `tests/structural/test_boundaries.py::test_layer_boundary` |
-| No Python module or QML component under `meridian/`, and no module under `tests/`, exceeds 400 lines. Four QML files and one test module were already over it and are carried in `_LEGACY_OVER_LIMIT` as tracked debt; that set may only shrink, and an entry that no longer needs the allowance fails the suite. | `tests/structural/test_boundaries.py::test_all_source_files_within_line_limit` and `::test_legacy_allowlist_has_no_stale_entries` |
+| No Python module or QML component under `meridian/`, and no module under `tests/` or `installer/`, exceeds 400 lines, and none sits in the danger band of 381 to 399 either. Four QML files and one test module were already over the cap and are carried in `_LEGACY_OVER_LIMIT` as tracked debt; that set may only shrink, and an entry that no longer needs the allowance fails the suite. Both band bounds derive from the cap rather than being written as second literals, so they cannot drift apart. | `tests/structural/test_boundaries.py::test_all_source_files_within_line_limit`, `::test_no_source_file_sits_in_the_danger_band` and `::test_legacy_allowlist_has_no_stale_entries` |
 | Every source file is `black`-formatted at line length 88. | `tests/structural/test_boundaries.py::test_black_compliance` |
 | Every source file is `flake8`-clean. | `tests/structural/test_boundaries.py::test_flake8_compliance` |
-| Branch coverage of the `meridian` package is 100%, with `main.py` the only omission. | `--cov-fail-under=100` in `pyproject.toml`, over the whole suite |
+| Branch coverage is 100% over the `meridian` package, `installer/ops` and the installer's operation dispatch. Three omissions, each named and reasoned: `meridian/main.py` (composition root), `shortcuts.create_shortcut` (writes a real `.lnk` through COM into the running user's own profile) and `uninstall_ops._schedule_delete_after_exit` (spawns a detached PowerShell holding a real deletion). Every caller of the latter two is covered and asserts what they are handed. | `--cov-fail-under=100` in `pyproject.toml`, over the whole suite |
 | The version string is read from the root `VERSION` file and appears nowhere else in source. | `tests/test_version.py::test_version_matches_the_root_version_file` and `::test_candidates_cover_package_parent_then_package` |
 | A feed URL has to use `http://` or `https://`; anything else raises. | `tests/domain/test_entities.py::TestFeed::test_rejects_invalid_scheme` and `::test_accepts_http_url` |
 | A redirect is only followed to an HTTPS target; a plain-HTTP `Location` is discarded. | `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_301_http_location_rejected` |
@@ -184,8 +184,8 @@ Tab wrap-around uses explicit `forceActiveFocus()` with `event.accepted = true` 
 
 ## Quality Enforcement
 
-- `--cov-fail-under=100`: 100% branch coverage required
-- Structural AST tests enforce layer boundaries; the 400-line size limit is enforced over QML and the test tree as well as the Python package, with an explicit allowlist that can only shrink
+- `--cov-fail-under=100`: 100% branch coverage required, over `installer/ops` as well as the `meridian` package
+- Structural AST tests enforce layer boundaries; the 400-line size limit is enforced over QML, the test tree and the installer as well as the Python package, with an explicit allowlist that can only shrink, and the danger band below the cap is enforced alongside it
 - `black` and `flake8` run as in-suite assertions, so unformatted or lint-failing code is a test failure
 - `POLL_FLOOR_SECONDS = 300` is the single source of truth for the polling floor; no magic numbers in logic
 

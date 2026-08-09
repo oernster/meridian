@@ -50,9 +50,17 @@ def get_shortcut_paths(identity: InstallerIdentity) -> ShortcutPaths:
     )
 
 
-def create_shortcut(
+def create_shortcut(  # pragma: no cover
     target_exe: Path, shortcut_path: Path, *, working_dir: Path | None = None
 ) -> None:
+    """Write a `.lnk` through the Windows shell.
+
+    Excluded from coverage deliberately, and recorded in TESTING.md. Exercising
+    it means creating a real shortcut in the running user's own Desktop and
+    Start Menu through COM, which is a side effect on the developer's machine
+    rather than a test. Every caller is covered, and each is asserted to invoke
+    this with the executable, destination and working directory it should.
+    """
     _require_windows()
     shortcut_path.parent.mkdir(parents=True, exist_ok=True)
 
