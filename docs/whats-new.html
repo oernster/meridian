@@ -51,12 +51,26 @@
 <section class="section" id="whats-new">
   <div class="section-label">Changelog</div>
   <h2 class="section-title">What's new</h2>
-  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version.</p>
+  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. The newest turns the window itself into pictures.</p>
 
   <div class="changelog-grid">
 
     <div class="cl-entry">
-      <div class="ver-tag">v<!--VERSION-->2.6.0<!--/VERSION--></div>
+      <div class="ver-tag">v<!--VERSION-->2.7.0<!--/VERSION--></div>
+      <h3>A window of pictures, plus a way to buy the author a drink</h3>
+      <ul>
+        <li>Every control along the top of the window was an emoji beside a word. An emoji is drawn by whichever font the platform picks, so the row looked different on each of the three platforms Meridian ships to; at a word's height none of them carried much meaning either. They are pictures now, drawn at four times the height of the type the emoji were set in, with the words removed entirely</li>
+        <li>Hovering a control names what it does; so does moving to it with the keyboard, which leaves the Tab ring readable without ever touching the mouse. The same words are what a screen reader is given</li>
+        <li>The row has been rearranged. The two licences moved off the header into a new strip along the foot, since they state what is true of Meridian rather than acting on what you are reading. What is left on the right is a new button opening the MMSP specification, then the light and dark toggle, then About</li>
+        <li>The new strip carries a donation button at its left, apart from everything else because it is the only control that leaves the application. Meridian is free and stays free: no paid tier, no licence key and nothing held back behind a donation</li>
+        <li>Neither the donation nor the specification button adds a place Meridian touches the network. Each hands its address to your desktop and the browser does the asking, so the list of six is unchanged. A desktop that declines to open a browser says which page it could not open rather than leaving you pressing a button that appears to do nothing</li>
+        <li>Every picture is derived from a single master by the icon generator, cropped to its artwork and scaled by height, so the application carries 705KB of pictures rather than the 13.5MB of source artwork they came from</li>
+        <li>The About dialog now carries the year alongside the copyright notice, taking both from the same place the rest of Meridian's identity comes from</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.6.0</div>
       <h3>An update check that respects you</h3>
       <ul>
         <li>Meridian now notices when a newer release has been published: a few seconds after launch and once a day while it stays open, it asks GitHub's releases API and offers what it finds. Download opens the right file for your platform (installer, DMG or Flatpak, falling back to the release page), Skip This Version silences that version permanently and Later closes the prompt until the next check</li>

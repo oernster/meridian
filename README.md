@@ -33,9 +33,11 @@ The YouTube embed is the one exception worth knowing about. It is Google's own p
 - Bulk feed management with select-all checkboxes; in-place list removal preserves scroll position.
 - Import and export subscriptions as JSON.
 - An update check against GitHub's releases API: a few seconds after launch and once a day while running, with Download, Skip This Version and Later on the prompt; a manual check lives on the About dialog and reports every outcome. Only a published release can prompt, a skipped version never prompts again and an unreachable network is silent.
+- A button on the header opens the MMSP specification in your browser; one at the foot opens the donation page. Meridian fetches neither: each address is handed to the desktop.
 - Catppuccin Mocha and Latte themes with a single toggle; the preference persists across restarts.
 - Full-text `content:encoded` rendering for article feeds, plus a built-in media player for podcast and video items.
 - Long content reads itself. A licence dialog holds still, descends at reading pace, holds at the end and rewinds; the URL list shown before a bulk subscribe does the same once it overflows. Touching the surface suspends the cycle and it resumes from where you left it rather than the top.
+- Two bands of picture controls: file and view actions along the top, then the donation button and the two licences along the foot. Every control is a mark with a tooltip that opens on hover and on keyboard focus alike, so the focus ring reads without a mouse.
 - Full keyboard navigation: Tab and Shift+Tab wrap cleanly end to end through the window, the reader, the subscription manager and the discovery drawer, Left and Right move between sort chips and dialog footer actions, Escape closes drawers and dialogs; an amber focus ring marks the focused control everywhere. Space activates the focused control throughout; Enter activates it everywhere except the reader's Mark all read and the media transport's play and pause.
 
 ## Stack
