@@ -678,3 +678,18 @@ footer {
 .prose p a { color: var(--mauve); text-decoration: none; }
 .prose p a:hover { text-decoration: underline; }
 .prose strong { color: var(--text); font-weight: 600; }
+
+/* ── Donate ──────────────────────────────────────────────── */
+/* The mark is sized in em against the button's own type, so the two stay in
+   proportion if that type ever changes; display: block drops the inline
+   descender space that would otherwise add a stray couple of pixels under the
+   artwork. One line box tall would make this button exactly the height of a
+   text-only one beside it, which was tried and is wrong: the artwork is a
+   detailed picture rather than a glyph and is not readable at that size. The
+   mark takes 1.8 times a line instead, so this button is deliberately the
+   taller of the two. */
+.btn-secondary.donate img {
+  display: block;
+  width: auto;
+  height: 2.7em;
+}

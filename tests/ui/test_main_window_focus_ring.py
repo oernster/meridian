@@ -34,10 +34,9 @@ _RING = [
     "exportBtn",
     "discoverBtn",
     "manageBtn",
-    "uiLicenceBtn",
-    "modelLicenceBtn",
-    "aboutBtn",
+    "specBtn",
     "themeToggleBtn",
+    "aboutBtn",
     "checkAll",
     "sortChip_alpha_desc",
     "sortChip_unread",
@@ -138,19 +137,27 @@ def test_shift_tab_goes_from_the_sidebar_to_the_header(window) -> None:  # noqa:
 
     _tab(win, back=True)
 
-    assert _focused(win) == "themeToggleBtn"
+    assert _focused(win) == "aboutBtn"
 
 
 def test_the_header_reports_the_theme_toggle(window) -> None:  # noqa: ANN001
-    """The bar emits; the window owns the palette and the stored setting."""
-    win, _ = window
-    theme_before = _named(win, "themeToggleBtn")
+    """The bar emits; the window owns the palette and the stored setting.
 
-    _named(win, "themeToggleBtn").forceActiveFocus(Qt.TabFocusReason)
+    The toggle offers the palette it would switch to, so the mark it carries is
+    the one the window is not currently wearing. Reading it is how a delivered
+    key press is shown to have reached the palette rather than only the button.
+    """
+    win, _ = window
+    toggle = _named(win, "themeToggleBtn")
+    assert toggle.property("iconSource").fileName() == "light-mode.png"
+
+    toggle.forceActiveFocus(Qt.TabFocusReason)
     QTest.keyClick(win, Qt.Key_Return)
     QGuiApplication.processEvents()
 
-    assert theme_before.property("label") == "🌙", "the palette did not flip to light"
+    assert (
+        toggle.property("iconSource").fileName() == "dark-mode.png"
+    ), "the palette did not flip to light"
 
 
 def test_a_sort_chip_reaches_the_controller(window) -> None:  # noqa: ANN001

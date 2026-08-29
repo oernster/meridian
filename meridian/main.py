@@ -63,8 +63,13 @@ from meridian.infrastructure.update.github_release_source import (  # noqa: E402
     GitHubReleaseSource,
 )
 from meridian.ui.bridge import AppController  # noqa: E402
+from meridian.ui.external_links import ExternalLinkController  # noqa: E402
 from meridian.ui.update_bridge import UpdateController  # noqa: E402
-from meridian.version import APP_APPUSERMODELID, __version__  # noqa: E402
+from meridian.version import (  # noqa: E402
+    APP_APPUSERMODELID,
+    APP_COPYRIGHT,
+    __version__,
+)
 
 
 def _acquire_single_instance_lock() -> object:
@@ -158,6 +163,7 @@ def main() -> None:
         GitHubReleaseSource(), __version__, platform_key_for(sys.platform)
     )
     update_controller = UpdateController(update_service)
+    links_controller = ExternalLinkController()
 
     icon_url = (
         QUrl.fromLocalFile(str(_ICON_PATH)).toString() if _ICON_PATH.exists() else ""
@@ -173,7 +179,9 @@ def main() -> None:
 
     engine.rootContext().setContextProperty("controller", controller)
     engine.rootContext().setContextProperty("updateController", update_controller)
+    engine.rootContext().setContextProperty("linksController", links_controller)
     engine.rootContext().setContextProperty("appVersion", __version__)
+    engine.rootContext().setContextProperty("appCopyright", APP_COPYRIGHT)
     engine.rootContext().setContextProperty("appIconUrl", icon_url)
     engine.rootContext().setContextProperty(
         "uiLicenceText", _read_text(_UI_LICENCE_PATH)

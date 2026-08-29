@@ -7,14 +7,17 @@ import Qt.labs.settings
 // right.
 //
 // What is left here after the split is the join between the two halves, the
-// stored playback volume, and the wiring to the controller. Selecting a row
+// stored playback volume, the wiring to the controller. Selecting a row
 // reports outwards from the list; loading the detail pane and marking the item
 // read both happen here, because neither panel should know the other exists.
 Item {
     id: root
 
     required property var theme
-    property var firstHeaderBtn: null
+    // The stop the ring continues to when Tab leaves the reader. It was the
+    // header's first button until the window grew a foot; the reader does not
+    // know or care which band it lands in, so it is named for what it is.
+    property var wrapForwardItem: null
 
     // The window wraps its own Tab chain back through this.
     readonly property alias lastFocusItem: detailPane.lastFocusItem
@@ -81,8 +84,8 @@ Item {
 
             onVolumeChosen: function(value) { appSettings.volume = value }
             onFocusForwardRequested: {
-                if (root.firstHeaderBtn)
-                    root.firstHeaderBtn.forceActiveFocus(Qt.TabFocusReason)
+                if (root.wrapForwardItem)
+                    root.wrapForwardItem.forceActiveFocus(Qt.TabFocusReason)
             }
             onFocusBackwardRequested: listPanel.focusList()
         }

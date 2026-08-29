@@ -128,8 +128,7 @@ ApplicationWindow {
             onExportRequested: exportDialog.open()
             onSearchRequested: feedDiscoveryDrawer.open()
             onManageRequested: subManagerDrawer.open()
-            onUiLicenceRequested: uiLicenceDialog.open()
-            onModelLicenceRequested: modelLicenceDialog.open()
+            onSpecificationRequested: linksController.openSpecification()
             onAboutRequested: aboutDialog.open()
             onThemeToggleRequested: {
                 theme.isDark = !theme.isDark
@@ -137,7 +136,7 @@ ApplicationWindow {
             }
 
             onFocusForwardRequested: sidebar.focusFirst()
-            onFocusBackwardRequested: feedReader.lastFocusItem.forceActiveFocus(Qt.BacktabFocusReason)
+            onFocusBackwardRequested: bottomTray.focusLast()
         }
 
         RowLayout {
@@ -181,8 +180,22 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 theme: theme
-                firstHeaderBtn: header.firstFocusItem
+                wrapForwardItem: bottomTray.firstFocusItem
             }
+        }
+
+        BottomTray {
+            id: bottomTray
+            objectName: "bottomTray"
+            Layout.fillWidth: true
+            theme: theme
+            headerMarkSize: header.markSize
+
+            onDonateRequested: linksController.openDonation()
+            onUiLicenceRequested: uiLicenceDialog.open()
+            onModelLicenceRequested: modelLicenceDialog.open()
+            onFocusForwardRequested: header.focusFirst()
+            onFocusBackwardRequested: feedReader.lastFocusItem.forceActiveFocus(Qt.BacktabFocusReason)
         }
     }
 
@@ -272,6 +285,14 @@ ApplicationWindow {
         objectName: "aboutDialog"
         theme: theme
         onCheckUpdatesRequested: updateController.checkManually()
+    }
+
+    Connections {
+        target: linksController
+        function onOpenFailed(what) {
+            errorDialog.message = "Could not open a browser for " + what + "."
+            errorDialog.open()
+        }
     }
 
     Connections {

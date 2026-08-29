@@ -49,7 +49,7 @@ _REVERSE_RING = [
     "markAllReadBtn",
     "sortChip_alpha",
     "sortChip_oldest",
-    "firstHeaderBtn",
+    "wrapTarget",
 ]
 
 _USE_SITE = """
@@ -62,7 +62,7 @@ Item {
 
     Button {
         id: headerStub
-        objectName: "firstHeaderBtn"
+        objectName: "wrapTarget"
         width: 120
         height: 32
         text: "Header"
@@ -76,7 +76,7 @@ Item {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         theme: appTheme
-        firstHeaderBtn: headerStub
+        wrapForwardItem: headerStub
     }
 }
 """
@@ -196,7 +196,7 @@ def test_tab_off_the_open_button_reaches_the_header(reader) -> None:  # noqa: AN
 
     _tab(win)
 
-    assert _focused(win) == "firstHeaderBtn"
+    assert _focused(win) == "wrapTarget"
 
 
 def test_a_clip_puts_the_transport_first_in_the_pane(reader) -> None:  # noqa: ANN001

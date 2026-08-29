@@ -120,4 +120,4 @@ python builddmg.py           # macOS: signed .app and DMG (needs Xcode command-l
 ./cleanup_flatpak.sh         # Linux: uninstall and remove all build artefacts
 ```
 
-`create_icons.py` regenerates the full icon set from the single master image and `create_splash.py` regenerates the splash screen; `buildexe.py` calls the latter for you.
+`create_icons.py` regenerates two sets: the application icons from `meridian.png`, plus every tray mark into `meridian/ui/qml/art/` (the header's from the masters in `assets/`, the foot's licence marks from the same place and its donate mark from `donate.png` at the repository root). The marks are cropped to their artwork and scaled by height, never squared, because they are pictures drawn at a button's height rather than icons. `create_splash.py` regenerates the splash screen; `buildexe.py` calls the latter for you.

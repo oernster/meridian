@@ -4,10 +4,18 @@ import QtQuick.Controls
 // The application header: file actions on the left, application actions and
 // the theme toggle on the right.
 //
-// Extracted from main.qml. Every button is a HeaderButton now, so what remains
-// here is the arrangement, the labels and the chain each button hands focus
+// Extracted from main.qml. Every button is a TrayButton now, so what remains
+// here is the arrangement, the marks and the chain each button hands focus
 // along. The bar reports what was pressed rather than acting: opening a file
 // dialog or a drawer is the window's business, not the header's.
+//
+// The marks are files rather than emoji. An emoji is drawn by whichever font
+// the platform picks, so the row looked different on each of the three the
+// application ships to; a render is the same picture everywhere.
+//
+// The two licences used to sit here and sit in the foot now. They say what is
+// true of the application rather than acting on what is being read, which is
+// what everything left on this bar does.
 Rectangle {
     id: bar
 
@@ -17,12 +25,15 @@ Rectangle {
     // rather than a signal.
     readonly property alias firstFocusItem: importBtn
 
+    // The foot's mark is a fraction of this, taken from here rather than named
+    // again, so retuning the header carries the foot with it.
+    readonly property int markSize: importBtn.iconSize
+
     signal importRequested()
     signal exportRequested()
     signal searchRequested()
     signal manageRequested()
-    signal uiLicenceRequested()
-    signal modelLicenceRequested()
+    signal specificationRequested()
     signal aboutRequested()
     signal themeToggleRequested()
 
@@ -35,10 +46,10 @@ Rectangle {
     }
 
     function focusLast() {
-        themeToggleBtn.forceActiveFocus(Qt.BacktabFocusReason)
+        aboutBtn.forceActiveFocus(Qt.BacktabFocusReason)
     }
 
-    height: 52
+    height: 64
     color: theme.mantle
 
     // Left action row: Import | Export | separator | Search | Manage
@@ -48,21 +59,23 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         spacing: 6
 
-        HeaderButton {
+        TrayButton {
             id: importBtn
             objectName: "importBtn"
             theme: bar.theme
-            label: "⬆  Import"
+            iconSource: "art/import.png"
+            tooltip: "Import subscriptions from a file"
             nextItem: exportBtn
             onActivated: bar.importRequested()
             onBackwardOverflow: bar.focusBackwardRequested()
         }
 
-        HeaderButton {
+        TrayButton {
             id: exportBtn
             objectName: "exportBtn"
             theme: bar.theme
-            label: "⬇  Export"
+            iconSource: "art/export.png"
+            tooltip: "Export subscriptions to a file"
             nextItem: discoverBtn
             previousItem: importBtn
             onActivated: bar.exportRequested()
@@ -70,79 +83,73 @@ Rectangle {
 
         Rectangle {
             width: 1
-            height: 24
+            height: 32
             color: theme.surface1
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        HeaderButton {
+        TrayButton {
             id: discoverBtn
             objectName: "discoverBtn"
             theme: bar.theme
-            label: "🔍  Search"
+            iconSource: "art/search.png"
+            tooltip: "Find feeds to subscribe to"
             nextItem: manageBtn
             previousItem: exportBtn
             onActivated: bar.searchRequested()
         }
 
-        HeaderButton {
+        TrayButton {
             id: manageBtn
             objectName: "manageBtn"
             theme: bar.theme
-            label: "⚙  Manage"
-            nextItem: uiLicenceBtn
+            iconSource: "art/manage.png"
+            tooltip: "Manage subscriptions"
+            nextItem: specBtn
             previousItem: discoverBtn
             onActivated: bar.manageRequested()
         }
     }
 
-    // Right action row: UI Licence | Model Licence | About | Theme toggle
+    // Right action row: Specification | Theme toggle | About
     Row {
         anchors.right: parent.right
         anchors.rightMargin: 10
         anchors.verticalCenter: parent.verticalCenter
         spacing: 6
 
-        HeaderButton {
-            id: uiLicenceBtn
-            objectName: "uiLicenceBtn"
+        TrayButton {
+            id: specBtn
+            objectName: "specBtn"
             theme: bar.theme
-            label: "📜  UI Licence"
-            nextItem: modelLicenceBtn
-            previousItem: manageBtn
-            onActivated: bar.uiLicenceRequested()
-        }
-
-        HeaderButton {
-            id: modelLicenceBtn
-            objectName: "modelLicenceBtn"
-            theme: bar.theme
-            label: "⚖️  Model Licence"
-            nextItem: aboutBtn
-            previousItem: uiLicenceBtn
-            onActivated: bar.modelLicenceRequested()
-        }
-
-        HeaderButton {
-            id: aboutBtn
-            objectName: "aboutBtn"
-            theme: bar.theme
-            label: "ℹ️  About"
+            iconSource: "art/specification.png"
+            tooltip: "Read the MMSP specification (opens your browser)"
             nextItem: themeToggleBtn
-            previousItem: modelLicenceBtn
-            onActivated: bar.aboutRequested()
+            previousItem: manageBtn
+            onActivated: bar.specificationRequested()
         }
 
-        HeaderButton {
+        TrayButton {
             id: themeToggleBtn
             objectName: "themeToggleBtn"
             theme: bar.theme
-            label: bar.theme.isDark ? "☀️" : "🌙"
-            fontSize: 16
-            width: 40
-            radius: 6
-            previousItem: aboutBtn
+            iconSource: bar.theme.isDark ? "art/light-mode.png"
+                                         : "art/dark-mode.png"
+            tooltip: bar.theme.isDark ? "Switch to the light palette"
+                                      : "Switch to the dark palette"
+            nextItem: aboutBtn
+            previousItem: specBtn
             onActivated: bar.themeToggleRequested()
+        }
+
+        TrayButton {
+            id: aboutBtn
+            objectName: "aboutBtn"
+            theme: bar.theme
+            iconSource: "art/help.png"
+            tooltip: "About Meridian"
+            previousItem: themeToggleBtn
+            onActivated: bar.aboutRequested()
             onForwardOverflow: bar.focusForwardRequested()
         }
     }

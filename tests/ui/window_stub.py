@@ -19,6 +19,7 @@ from PySide6.QtQml import QQmlComponent, QQmlEngine
 from meridian.application.dto.feed_dto import FeedDTO
 from meridian.application.dto.item_dto import ItemDTO, MediaDTO
 from meridian.ui.models import FeedCandidateModel, FeedListModel, ItemListModel
+from meridian.version import APP_COPYRIGHT
 
 QML_DIR = Path(__file__).resolve().parents[2] / "meridian" / "ui" / "qml"
 
@@ -243,9 +244,42 @@ class StubUpdateController(QObject):
         self._record("openDownload", url)
 
 
+class StubLinkController(QObject):
+    """The external-link surface `main.qml` reaches for.
+
+    The real one is handed an opener and holds the addresses; this one records
+    that it was asked and answers whether the desktop refused, so a test can
+    drive the failure path without a browser opening.
+    """
+
+    openFailed = Signal(str)
+
+    def __init__(self, refuse: bool = False) -> None:
+        super().__init__()
+        self.calls: list[tuple] = []
+        self._refuse = refuse
+
+    def called(self, name: str) -> list[tuple]:
+        return [c for c in self.calls if c[0] == name]
+
+    @Slot()
+    def openDonation(self) -> None:
+        self._asked("openDonation", "the donation page")
+
+    @Slot()
+    def openSpecification(self) -> None:
+        self._asked("openSpecification", "the MMSP specification")
+
+    def _asked(self, name: str, description: str) -> None:
+        self.calls.append((name,))
+        if self._refuse:
+            self.openFailed.emit(description)
+
+
 def load_main_window(
     controller: StubController,
     update_controller: StubUpdateController | None = None,
+    link_controller: "StubLinkController | None" = None,
 ) -> tuple[QQmlEngine, QQmlComponent, QObject]:
     """Load the real `main.qml` against the stub, with the context it expects.
 
@@ -257,12 +291,16 @@ def load_main_window(
     context = engine.rootContext()
     context.setContextProperty("controller", controller)
     # Kept referenced via the engine: setContextProperty does not take
-    # ownership, and a garbage-collected default stub would leave QML calling
+    # ownership; a garbage-collected default stub would leave QML calling
     # a deleted object.
     update_stub = update_controller or StubUpdateController()
     engine._update_controller = update_stub
     context.setContextProperty("updateController", update_stub)
+    link_stub = link_controller or StubLinkController()
+    engine._link_controller = link_stub
+    context.setContextProperty("linksController", link_stub)
     context.setContextProperty("appVersion", "0.0.0-test")
+    context.setContextProperty("appCopyright", APP_COPYRIGHT)
     context.setContextProperty("appIconUrl", "")
     context.setContextProperty("uiLicenceText", "UI licence text")
     context.setContextProperty("modelLicenceText", "Model licence text")

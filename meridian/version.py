@@ -17,8 +17,19 @@ from pathlib import Path
 
 APP_NAME: str = "Meridian"
 APP_AUTHOR: str = "Oliver Ernster"
-APP_COPYRIGHT: str = "© Oliver Ernster"
+APP_COPYRIGHT: str = "© Oliver Ernster 2026"
 APP_APPUSERMODELID: str = "com.oliverernster.meridian"
+
+# Where the donate button sends a browser. The only address the application
+# knows; it is handed to the desktop rather than fetched, so nothing here ever
+# opens a connection of its own and the local-first guarantee is unchanged by
+# the button existing. Generated for Meridian: PigeonPost and ClearBudget carry
+# different paths and a copied one sends money against the wrong project.
+DONATE_URL: str = "https://www.paypal.com/ncp/payment/PHYDFMWLQ6CD4"
+
+# The protocol Meridian is the reference client for. Opened the same way the
+# donation page is: handed to the desktop, never fetched here.
+SPECIFICATION_URL: str = "https://ernster.dev/MMSP-Spec/"
 
 FALLBACK_VERSION: str = "0.0.0-dev"
 

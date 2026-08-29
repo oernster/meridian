@@ -4,7 +4,7 @@ Meridian is a desktop feed reader and subscription manager: the reference client
 
 Your reading stays on the machine it runs on. Subscriptions and read state live in a local SQLite database at `~/.meridian/meridian.db`; there is no account, no sync, no telemetry and no server component of any kind.
 
-Meridian talks to the network in six places and nowhere else: it fetches the feeds you subscribed to, it loads the images and media those feeds point at, it asks Feedly's search API when you use feed discovery, it asks Wikipedia for topic suggestions while you type in the discovery field, it loads YouTube's embedded player when you play a YouTube item and it asks GitHub's releases API once at launch and once a day whether a newer Meridian exists. The update check carries no identifier and nothing about your subscriptions; a failure is silent. Meridian itself sends nothing about your subscriptions or your reading anywhere.
+Meridian talks to the network in six places and nowhere else: it fetches the feeds you subscribed to, it loads the images and media those feeds point at, it asks Feedly's search API when you use feed discovery, it asks Wikipedia for topic suggestions while you type in the discovery field, it loads YouTube's embedded player when you play a YouTube item and it asks GitHub's releases API once at launch and once a day whether a newer Meridian exists. The specification and donate buttons are not a seventh: each hands its address to your desktop, so your browser does the asking and Meridian opens no connection for either. The update check carries no identifier and nothing about your subscriptions; a failure is silent. Meridian itself sends nothing about your subscriptions or your reading anywhere.
 
 The YouTube embed is the one exception worth knowing about. It is Google's own player running in an embedded browser (QtWebEngine, which ships inside PySide6), so playing a YouTube video is visible to Google exactly as it would be in a browser tab. Nothing else in the application renders through it; every other item type plays locally through Qt's own media stack.
 
@@ -85,7 +85,7 @@ The database is created automatically at first launch, at `~/.meridian/meridian.
 
 ## Sample feeds
 
-`examples/feeds_sample.json` holds a small neutral set of RSS, Atom and MFEED subscriptions ready to import. To load them, launch Meridian, press **Import** on the header bar and select `feeds_sample.json` from the `examples/` directory. All feeds are added and begin polling immediately.
+`examples/feeds_sample.json` holds a small neutral set of RSS, Atom and MFEED subscriptions ready to import. To load them, launch Meridian, press the Import mark on the header bar (the leftmost, an arrow into a tray) and select `feeds_sample.json` from the `examples/` directory. All feeds are added and begin polling immediately.
 
 ## Tests
 
@@ -125,6 +125,10 @@ The root `VERSION` file is the single source of truth for the version. `meridian
 <p align="center">
   <img src="docs/architecture.svg" alt="Meridian clean architecture: UI, Application, Domain, Infrastructure, with dependencies pointing inward to a pure Domain" width="860">
 </p>
+
+## Supporting the project
+
+Meridian is free and stays free. There is no paid tier, no licence key and no feature held back behind a donation. A donate button sits at the left of the strip along the foot of the window, beside the two licences; pressing it hands the address to your desktop and your browser does the asking, so Meridian itself opens no connection of its own and the six places above are still the whole list. The same link is on the [project site](https://ernster.dev/meridian/#support).
 
 ## Licence
 

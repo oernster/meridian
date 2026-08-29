@@ -156,7 +156,7 @@ Dialog {
                         font.pixelSize: 12
                     }
                     Label {
-                        text: "© Oliver Ernster"
+                        text: appCopyright
                         color: theme.subtext
                         font.pixelSize: 12
                     }

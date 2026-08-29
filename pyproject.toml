@@ -27,7 +27,7 @@ where = ["."]
 include = ["meridian*"]
 
 [tool.setuptools.package-data]
-meridian = ["ui/qml/*.qml"]
+meridian = ["ui/qml/*.qml", "ui/qml/art/*.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -38,7 +38,7 @@ addopts = "--cov=meridian --cov=installer.ops --cov=installer.ui._operation_disp
 branch = true
 # `installer.ops` joined the gate on 2026-08-09. It is the part of the
 # installer that writes the uninstall key, creates shortcuts and deletes files
-# from a user's machine, and it was measured by nothing. `installer.ui` stays
+# from a user's machine; it was measured by nothing. `installer.ui` stays
 # out because it is Qt, with the single exception of the operation dispatch,
 # which touches no Qt type and is fully covered.
 source = ["meridian", "installer/ops", "installer/ui/_operation_dispatch.py"]
