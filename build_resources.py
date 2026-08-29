@@ -47,7 +47,7 @@ ART_RENDER_DIR = "meridian/ui/qml/art"
 # multiplied by so they stay crisp under display scaling. The buttons carry no
 # words, so the mark is the whole control and is sized to be read as one.
 # TrayButton.qml's iconSize default must match; a structural test says so.
-ART_DRAW_PX = 36
+ART_DRAW_PX = 54
 ART_SUPERSAMPLE = 4
 
 # Every mark the header asks for, named as both master and render. A name here

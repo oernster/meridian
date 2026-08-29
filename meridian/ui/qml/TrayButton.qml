@@ -34,7 +34,7 @@ Rectangle {
     // can read.
     property string tooltip: ""
 
-    property int iconSize: 36
+    property int iconSize: 54
     property int padding: 8
 
     // Which way the tooltip opens. The default is correct everywhere above the

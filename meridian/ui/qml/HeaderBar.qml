@@ -49,7 +49,7 @@ Rectangle {
         aboutBtn.forceActiveFocus(Qt.BacktabFocusReason)
     }
 
-    height: 64
+    height: 82
     color: theme.mantle
 
     // Left action row: Import | Export | separator | Search | Manage
@@ -83,7 +83,7 @@ Rectangle {
 
         Rectangle {
             width: 1
-            height: 32
+            height: 48
             color: theme.surface1
             anchors.verticalCenter: parent.verticalCenter
         }
