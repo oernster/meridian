@@ -215,3 +215,8 @@ contributing you agree that your contribution is provided under whichever of
 those two licences covers the files you change. See [LICENSE](LICENSE) for the
 component map and the third-party licence notes in
 [ARCHITECTURE.md](ARCHITECTURE.md).
+
+You also grant Oliver Ernster the relicensing right set out in clause 3 of the
+[account-wide contribution terms](https://github.com/oernster/.github/blob/main/CONTRIBUTING.md),
+so that your contribution can be offered under commercial or dual-licence terms
+as well as the open-source licences above.

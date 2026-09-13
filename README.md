@@ -8,6 +8,8 @@ Meridian talks to the network in six places and nowhere else: it fetches the fee
 
 The YouTube embed is the one exception worth knowing about. It is Google's own player running in an embedded browser (QtWebEngine, which ships inside PySide6), so playing a YouTube video is visible to Google exactly as it would be in a browser tab. Nothing else in the application renders through it; every other item type plays locally through Qt's own media stack.
 
+> **Commercial licences available.** Meridian is free and open source: Apache-2.0 for the model and LGPL-3.0 for the interface. If those terms do not suit what you are building, a commercial licence can be bought from me separately. It covers my own code; PySide6 keeps its own LGPL-3.0 licence. See [commercial licensing](https://ernster.dev/commercial-licensing.html).
+
 <img width="1273" height="824" alt="Meridian main window" src="https://github.com/user-attachments/assets/c6565996-d66f-4df7-a26b-5691c2ee32f4" />
 
 ## Who it is for
@@ -132,6 +134,8 @@ The root `VERSION` file is the single source of truth for the version. `meridian
 
 Meridian is free and stays free. There is no paid tier, no licence key and no feature held back behind a donation. A donate button sits at the left of the strip along the foot of the window, beside the two licences; pressing it hands the address to your desktop and your browser does the asking, so Meridian itself opens no connection of its own and the six places above are still the whole list. The same link is on the [project site](https://ernster.dev/meridian/#support).
 
+<a href="https://www.paypal.com/ncp/payment/PHYDFMWLQ6CD4"><img src="meridian/ui/qml/art/donate.png" alt="Donate to Meridian" width="120"></a>
+
 ## Licence
 
 Meridian is dual-licensed, split by component:
@@ -140,3 +144,5 @@ Meridian is dual-licensed, split by component:
 - **User interface** (`meridian/ui`) only: LGPL-3.0-or-later, to align with Qt's licensing. See [LICENSE-LGPL-3.0.txt](LICENSE-LGPL-3.0.txt).
 
 See [LICENSE](LICENSE) for the component map and [ARCHITECTURE.md](ARCHITECTURE.md) for third-party licence notes.
+
+A commercial licence for my own code is also available, separately from the open-source licences: see [commercial licensing](https://ernster.dev/commercial-licensing.html).
