@@ -203,8 +203,8 @@ Dialog {
 
             Label {
                 text: "Dual-licensed: the model under Apache-2.0 and the user "
-                      + "interface under LGPL-3.0. Both texts open from the header, "
-                      + "under Model Licence and UI Licence."
+                      + "interface under LGPL-3.0. Both texts open from the strip "
+                      + "along the foot of the window."
                 color: theme.subtext
                 font.pixelSize: 11
                 Layout.fillWidth: true

@@ -36,7 +36,7 @@ _RING = [
     "manageBtn",
     "specBtn",
     "themeToggleBtn",
-    "aboutBtn",
+    "helpBtn",
     "checkAll",
     "sortChip_alpha_desc",
     "sortChip_unread",
@@ -137,7 +137,7 @@ def test_shift_tab_goes_from_the_sidebar_to_the_header(window) -> None:  # noqa:
 
     _tab(win, back=True)
 
-    assert _focused(win) == "aboutBtn"
+    assert _focused(win) == "helpBtn"
 
 
 def test_the_header_reports_the_theme_toggle(window) -> None:  # noqa: ANN001

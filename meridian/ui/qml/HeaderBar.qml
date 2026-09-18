@@ -34,6 +34,7 @@ Rectangle {
     signal searchRequested()
     signal manageRequested()
     signal specificationRequested()
+    signal guideRequested()
     signal aboutRequested()
     signal themeToggleRequested()
 
@@ -46,7 +47,7 @@ Rectangle {
     }
 
     function focusLast() {
-        aboutBtn.forceActiveFocus(Qt.BacktabFocusReason)
+        helpBtn.forceActiveFocus(Qt.BacktabFocusReason)
     }
 
     height: 82
@@ -111,7 +112,7 @@ Rectangle {
         }
     }
 
-    // Right action row: Specification | Theme toggle | About
+    // Right action row: Specification | Theme toggle | Help
     Row {
         anchors.right: parent.right
         anchors.rightMargin: 10
@@ -137,21 +138,33 @@ Rectangle {
                                          : "art/dark-mode.png"
             tooltip: bar.theme.isDark ? "Switch to the light palette"
                                       : "Switch to the dark palette"
-            nextItem: aboutBtn
+            nextItem: helpBtn
             previousItem: specBtn
             onActivated: bar.themeToggleRequested()
         }
 
+        // A dropdown stop: pressing it (or Down) drops the Help menu open.
         TrayButton {
-            id: aboutBtn
-            objectName: "aboutBtn"
+            id: helpBtn
+            objectName: "helpBtn"
             theme: bar.theme
             iconSource: "art/help.png"
-            tooltip: "About Meridian"
+            tooltip: "Help: the Guide and About Meridian"
             previousItem: themeToggleBtn
-            onActivated: bar.aboutRequested()
+            onActivated: helpMenu.openUnder(helpBtn)
             onForwardOverflow: bar.focusForwardRequested()
+            Keys.onDownPressed: { event.accepted = true; helpMenu.openUnder(helpBtn) }
         }
+    }
+
+    HelpMenu {
+        id: helpMenu
+        objectName: "helpMenu"
+        theme: bar.theme
+        onGuideRequested: bar.guideRequested()
+        onAboutRequested: bar.aboutRequested()
+        onFocusForwardRequested: bar.focusForwardRequested()
+        onFocusBackwardRequested: themeToggleBtn.forceActiveFocus(Qt.BacktabFocusReason)
     }
 
     Rectangle {

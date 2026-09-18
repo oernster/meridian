@@ -129,6 +129,7 @@ ApplicationWindow {
             onSearchRequested: feedDiscoveryDrawer.open()
             onManageRequested: subManagerDrawer.open()
             onSpecificationRequested: linksController.openSpecification()
+            onGuideRequested: guideDialog.open()
             onAboutRequested: aboutDialog.open()
             onThemeToggleRequested: {
                 theme.isDark = !theme.isDark
@@ -278,6 +279,12 @@ ApplicationWindow {
             theme: theme
             onClose: feedDiscoveryDrawer.close()
         }
+    }
+
+    GuideDialog {
+        id: guideDialog
+        objectName: "guideDialog"
+        theme: theme
     }
 
     AboutDialog {

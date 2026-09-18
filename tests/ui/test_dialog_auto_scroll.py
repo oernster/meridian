@@ -36,6 +36,14 @@ LicenceDialog {
 }
 """
 
+_GUIDE_SITE = """
+import QtQuick
+
+GuideDialog {
+    theme: appTheme
+}
+"""
+
 # UrlListDialog reads `theme` from the scope that creates it rather than
 # declaring a property, so the palette arrives as a context property here.
 _URL_LIST_SITE = """
@@ -103,6 +111,17 @@ def licence(qapp):  # noqa: ANN001, ANN201
 
 
 @pytest.fixture
+def guide(qapp):  # noqa: ANN001, ANN201
+    engine, component, dialog, win = _open(_GUIDE_SITE, {})
+    view = dialog.findChild(QQuickItem, "guideScroll")
+    assert view is not None, "the guide scroll view was never created"
+    yield dialog, _scroller(dialog, "guideScroller"), view.property("contentItem")
+    win.close()
+    del component
+    del engine
+
+
+@pytest.fixture
 def url_list(qapp):  # noqa: ANN001, ANN201
     engine, component, dialog, win = _open(_URL_LIST_SITE, {"feedUrls": _URLS})
     surface = dialog.findChild(QQuickItem, "urlList")
@@ -157,6 +176,19 @@ def test_closing_the_licence_dialog_freezes_it(licence) -> None:  # noqa: ANN001
 
     assert scroller.property("phase") == phase
     assert scroller.property("wait") == wait
+
+
+def test_the_guide_holds_then_reads_itself(guide) -> None:  # noqa: ANN001
+    """It opens on Close, which is not a reader taking hold of the page."""
+    _, scroller, surface = guide
+
+    assert scroller.property("active") is True
+    _tick(scroller, _START_HOLD_TICKS - 1)
+    assert scroller.property("phase") == "pauseTop", "the opening hold was cut short"
+
+    _tick(scroller, 1 + 20 * _TICKS_PER_STEP)
+
+    assert surface.property("contentY") == 20
 
 
 def test_the_url_list_reads_itself_when_it_overflows(url_list) -> None:  # noqa: ANN001

@@ -36,7 +36,7 @@ _TRAY_BUTTONS = (
     "manageBtn",
     "specBtn",
     "themeToggleBtn",
-    "aboutBtn",
+    "helpBtn",
     "donateBtn",
     "uiLicenceBtn",
     "modelLicenceBtn",
