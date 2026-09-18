@@ -56,7 +56,7 @@ UrlListDialog {
 """
 
 
-def _open(qml: str, extra: dict):  # noqa: ANN001, ANN202
+def _open(qml: str, extra: dict):
     engine = QQmlEngine()
     engine.rootContext().setContextProperty("appTheme", THEME)
     engine.rootContext().setContextProperty("theme", THEME)
@@ -81,7 +81,7 @@ def _open(qml: str, extra: dict):  # noqa: ANN001, ANN202
     return engine, component, dialog, win
 
 
-def _scroller(dialog, name: str):  # noqa: ANN001, ANN202
+def _scroller(dialog, name: str):
     found = dialog.findChild(QObject, name)
     assert found is not None, f"{name} was never created"
     ticker = found.findChild(QObject, "autoScrollTicker")
@@ -93,13 +93,13 @@ def _scroller(dialog, name: str):  # noqa: ANN001, ANN202
     return found
 
 
-def _tick(scroller, times: int = 1) -> None:  # noqa: ANN001
+def _tick(scroller, times: int = 1) -> None:
     for _ in range(times):
         scroller.metaObject().invokeMethod(scroller, "tick")
 
 
 @pytest.fixture
-def licence(qapp):  # noqa: ANN001, ANN201
+def licence(qapp):
     engine, component, dialog, win = _open(_LICENCE_SITE, {"licenceText": _LICENCE})
     # The scrolling surface is the ScrollView's own Flickable contentItem.
     view = dialog.findChild(QQuickItem, "licenceScroll")
@@ -111,7 +111,7 @@ def licence(qapp):  # noqa: ANN001, ANN201
 
 
 @pytest.fixture
-def guide(qapp):  # noqa: ANN001, ANN201
+def guide(qapp):
     engine, component, dialog, win = _open(_GUIDE_SITE, {})
     view = dialog.findChild(QQuickItem, "guideScroll")
     assert view is not None, "the guide scroll view was never created"
@@ -122,7 +122,7 @@ def guide(qapp):  # noqa: ANN001, ANN201
 
 
 @pytest.fixture
-def url_list(qapp):  # noqa: ANN001, ANN201
+def url_list(qapp):
     engine, component, dialog, win = _open(_URL_LIST_SITE, {"feedUrls": _URLS})
     surface = dialog.findChild(QQuickItem, "urlList")
     assert surface is not None, "the url list was never created"
@@ -134,8 +134,8 @@ def url_list(qapp):  # noqa: ANN001, ANN201
 
 def test_the_licence_dialog_holds_the_full_opening_hold(
     licence,
-) -> None:  # noqa: ANN001
-    """The dialog focuses its text on open, which is not a reader taking hold."""
+) -> None:
+    """Opening the dialog is not a reader taking hold of the page."""
     _, scroller, surface = licence
 
     assert scroller.property("active") is True
@@ -146,7 +146,7 @@ def test_the_licence_dialog_holds_the_full_opening_hold(
     assert surface.property("contentY") == 0
 
 
-def test_the_licence_dialog_then_reads_itself(licence) -> None:  # noqa: ANN001
+def test_the_licence_dialog_then_reads_itself(licence) -> None:
     _, scroller, surface = licence
 
     _tick(scroller, _START_HOLD_TICKS + 20 * _TICKS_PER_STEP)
@@ -154,7 +154,7 @@ def test_the_licence_dialog_then_reads_itself(licence) -> None:  # noqa: ANN001
     assert surface.property("contentY") == 20
 
 
-def test_closing_the_licence_dialog_freezes_it(licence) -> None:  # noqa: ANN001
+def test_closing_the_licence_dialog_freezes_it(licence) -> None:
     """Frozen rather than stopped, so nothing is spent while it is closed.
 
     The snapshot is taken after the close rather than before it, because a
@@ -178,7 +178,7 @@ def test_closing_the_licence_dialog_freezes_it(licence) -> None:  # noqa: ANN001
     assert scroller.property("wait") == wait
 
 
-def test_the_guide_holds_then_reads_itself(guide) -> None:  # noqa: ANN001
+def test_the_guide_holds_then_reads_itself(guide) -> None:
     """It opens on Close, which is not a reader taking hold of the page."""
     _, scroller, surface = guide
 
@@ -191,7 +191,7 @@ def test_the_guide_holds_then_reads_itself(guide) -> None:  # noqa: ANN001
     assert surface.property("contentY") == 20
 
 
-def test_the_url_list_reads_itself_when_it_overflows(url_list) -> None:  # noqa: ANN001
+def test_the_url_list_reads_itself_when_it_overflows(url_list) -> None:
     """Sixty URLs is more than the dialog shows, so the list takes itself down."""
     _, scroller, surface = url_list
     assert scroller.property("active") is True

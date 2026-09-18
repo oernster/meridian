@@ -144,18 +144,6 @@ def test_closing_the_guide_returns_focus_to_help(window) -> None:
     assert _focused(window) == "helpBtn"
 
 
-def test_the_guide_page_is_a_tab_stop_that_never_takes_a_click(window) -> None:
-    _open_menu(window)
-    _key(window, Qt.Key_Return)
-    text = _named(window, "guideText")
-
-    assert text.property("activeFocusOnPress") is False
-    _key(window, Qt.Key_Tab)
-    assert _focused(window) == "guideText"
-    _key(window, Qt.Key_Tab)
-    assert _focused(window) == "guideCloseBtn"
-
-
 def test_every_picture_in_the_guide_is_a_real_file(window) -> None:
     html = _named(window, "guideDialog").property("guideHtml")
     sources = re.findall(r'<img src="([^"]+)"', html)

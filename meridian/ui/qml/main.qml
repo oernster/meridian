@@ -343,6 +343,7 @@ ApplicationWindow {
 
     LicenceDialog {
         id: uiLicenceDialog
+        objectName: "uiLicenceDialog"
         theme: theme
         licenceTitle: "UI Licence - GNU Lesser General Public Licence v3.0"
         licenceBody: uiLicenceText
@@ -350,6 +351,7 @@ ApplicationWindow {
 
     LicenceDialog {
         id: modelLicenceDialog
+        objectName: "modelLicenceDialog"
         theme: theme
         licenceTitle: "Model Licence - Apache License 2.0"
         licenceBody: modelLicenceText

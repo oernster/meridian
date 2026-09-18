@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Layouts
 
 // The Guide: what the screen cannot say for itself.
 //
@@ -18,15 +17,20 @@ import QtQuick.Layouts
 //
 // It is deliberately short. A help screen nobody finishes explains nothing, so
 // anything a control says for itself (its tooltip) is left to the control.
-Dialog {
+//
+// The chrome, the self-reading page and the focus rules (opens on Close; the
+// page a Tab stop only while it overflows, never taking a click) are
+// ReadingDialog's.
+ReadingDialog {
     id: root
-    modal: true
     width: 640
     height: Math.min(640, Overlay.overlay ? Overlay.overlay.height - _margin * 2 : 640)
-
-    anchors.centerIn: Overlay.overlay
-
-    required property var theme
+    namePrefix: "guide"
+    heading: "Guide"
+    body: guideHtml
+    bodyFormat: TextEdit.RichText
+    bodyColor: theme.subtext
+    bodyPadding: 18
 
     readonly property int _margin: 20
 
@@ -34,11 +38,6 @@ Dialog {
     // purpose: this page is read to IDENTIFY a picture. ClearBudget's value,
     // for the same reason.
     readonly property int _markPx: 30
-
-    // The dialog opens on Close, never on the page: the page is words to read,
-    // not a control to act on. Opening with it focused would ring it before
-    // anyone had done anything.
-    onOpened: closeBtn.forceActiveFocus(Qt.TabFocusReason)
 
     function _mark(file) {
         return "<img src=\"" + Qt.resolvedUrl("art/" + file) + "\" width=\""
@@ -52,11 +51,11 @@ Dialog {
 
     // Built once per palette so the headings follow the theme.
     readonly property string guideHtml: {
-        var heading = "style=\"color: " + root.theme.text + "\""
+        var headStyle = "style=\"color: " + root.theme.text + "\""
         return ""
-        + "<h2 " + heading + ">How Meridian Works</h2>"
+        + "<h2 " + headStyle + ">How Meridian Works</h2>"
 
-        + "<h3 " + heading + ">Along the top</h3>"
+        + "<h3 " + headStyle + ">Along the top</h3>"
         + root._row("import.png", "Import",
                     "subscriptions from a Meridian JSON file.")
         + root._row("export.png", "Export",
@@ -83,7 +82,7 @@ Dialog {
                     + "manual check for updates.")
         + "<p>Hover any button (or reach it with Tab) to see its name.</p>"
 
-        + "<hr><h3 " + heading + ">Along the foot</h3>"
+        + "<hr><h3 " + headStyle + ">Along the foot</h3>"
         + root._row("donate.png", "Donate",
                     "buy the author a drink. It opens a donation page in your "
                     + "browser; Meridian opens no connection of its own for it "
@@ -93,7 +92,7 @@ Dialog {
         + root._row("model-licence.png", "Model licence",
                     "the model's licence, Apache-2.0.")
 
-        + "<hr><h3 " + heading + ">Reading</h3>"
+        + "<hr><h3 " + headStyle + ">Reading</h3>"
         + "<p>Feeds sit on the left, the chosen feed's items in the middle and "
         + "the item itself on the right. Opening an item marks it read; Mark "
         + "all read does the whole feed. The chips above each list sort it: "
@@ -106,7 +105,7 @@ Dialog {
         + "player, which Google can see exactly as it would in a browser "
         + "tab.</p>"
 
-        + "<hr><h3 " + heading + ">Three rules behind the lists</h3>"
+        + "<hr><h3 " + headStyle + ">Three rules behind the lists</h3>"
         + "<p><b>A feed is asked at most once every five minutes.</b> It is "
         + "asked less often if the feed wants that. A feed that says it is "
         + "busy is left alone for as long as it asks, five minutes at the "
@@ -121,134 +120,16 @@ Dialog {
         + "read state live in one local database. Meridian goes online only "
         + "to fetch your feeds and what they point at, to search when you "
         + "find feeds, to suggest topics as you type, to play a YouTube item "
-        + "and to ask GitHub once a day whether a newer Meridian exists. "
+        + "and to ask GitHub, just after launch and then once a day, whether "
+        + "a newer Meridian exists. "
         + "A feed you add by hand must be an https:// address.</p>"
 
-        + "<hr><h3 " + heading + ">Keyboard</h3>"
+        + "<hr><h3 " + headStyle + ">Keyboard</h3>"
         + "<p>Tab moves forward and Shift+Tab back through every control, "
         + "wrapping at both ends; along the top and the foot, Right and Left "
         + "do the same. Up and Down walk a list and the Help menu. Space "
         + "presses the focused control and Escape closes a drawer, a dialog "
         + "or a menu. Nothing is highlighted until your first keypress; a "
         + "dialog opens on its first control.</p>"
-    }
-
-    background: Rectangle {
-        color: theme.base
-        border.color: theme.surface0
-        border.width: 1
-        radius: 8
-    }
-
-    header: Rectangle {
-        width: parent.width
-        height: 46
-        color: theme.mantle
-        radius: 8
-        Rectangle {
-            anchors.bottom: parent.bottom
-            width: parent.width
-            height: 8
-            color: theme.mantle
-        }
-        Rectangle {
-            anchors.bottom: parent.bottom
-            width: parent.width
-            height: 1
-            color: theme.surface0
-        }
-        Label {
-            anchors.centerIn: parent
-            text: "Guide"
-            font.pixelSize: 15
-            font.bold: true
-            color: theme.text
-        }
-    }
-
-    footer: Rectangle {
-        width: parent.width
-        height: 52
-        color: theme.mantle
-        radius: 8
-        Rectangle {
-            anchors.top: parent.top
-            width: parent.width
-            height: 8
-            color: theme.mantle
-        }
-        Rectangle {
-            anchors.top: parent.top
-            width: parent.width
-            height: 1
-            color: theme.surface0
-        }
-        StyledButton {
-            id: closeBtn
-            objectName: "guideCloseBtn"
-            anchors.right: parent.right
-            anchors.rightMargin: 12
-            anchors.verticalCenter: parent.verticalCenter
-            text: "Close"
-            theme: root.theme
-            onClicked: root.close()
-            Keys.onReturnPressed: root.close()
-            Keys.onEscapePressed: root.close()
-            // The page is the only other stop, only while it overflows; with
-            // nothing to scroll, focus stays here.
-            Keys.onTabPressed:     { event.accepted = true; root._toPage(Qt.TabFocusReason) }
-            Keys.onRightPressed:   { event.accepted = true; root._toPage(Qt.TabFocusReason) }
-            Keys.onBacktabPressed: { event.accepted = true; root._toPage(Qt.BacktabFocusReason) }
-            Keys.onLeftPressed:    { event.accepted = true; root._toPage(Qt.BacktabFocusReason) }
-        }
-    }
-
-    function _toPage(reason) {
-        if (guideText.activeFocusOnTab)
-            guideText.forceActiveFocus(reason)
-    }
-
-    // The guide overflows at any size the window allows, so this is the
-    // surface the cycle was written for. It reads only while the dialog is
-    // open and freezes in place rather than restarting when it closes.
-    AutoScroller {
-        objectName: "guideScroller"
-        flick: guideScroll.contentItem
-        scrollBar: guideScroll.ScrollBar.vertical
-        active: root.visible
-    }
-
-    contentItem: ScrollView {
-        id: guideScroll
-        objectName: "guideScroll"
-        clip: true
-        contentWidth: availableWidth
-
-        TextArea {
-            id: guideText
-            objectName: "guideText"
-            readOnly: true
-            textFormat: TextEdit.RichText
-            wrapMode: Text.WordWrap
-            text: root.guideHtml
-            color: root.theme.subtext
-            // No ring in any state: this is words to read, not a control.
-            background: null
-            font.pixelSize: 13
-            leftPadding: 18
-            rightPadding: 18
-            topPadding: 12
-            bottomPadding: 12
-
-            // A stop only while there is something to scroll, reached by Tab
-            // alone; a click never takes focus from the reader.
-            activeFocusOnTab: guideScroll.contentHeight > guideScroll.height
-            activeFocusOnPress: false
-
-            Keys.onTabPressed:     { event.accepted = true; closeBtn.forceActiveFocus(Qt.TabFocusReason) }
-            Keys.onRightPressed:   { event.accepted = true; closeBtn.forceActiveFocus(Qt.TabFocusReason) }
-            Keys.onBacktabPressed: { event.accepted = true; closeBtn.forceActiveFocus(Qt.BacktabFocusReason) }
-            Keys.onLeftPressed:    { event.accepted = true; closeBtn.forceActiveFocus(Qt.BacktabFocusReason) }
-        }
     }
 }
