@@ -142,8 +142,10 @@ Never mock Qt. The UI tests use a real `QApplication` on the offscreen platform.
 Meridian is fully keyboard operable and every interactive control has to remain
 so. If you add or change a control in the QML layer, wire its focus and key
 handling to match the rest of the UI: every control reachable by Tab, an
-explicit focus ring, Space and Enter to activate, Left and Right to move between
-sort chips and dialog footer actions and Escape to close drawers and dialogs. A
+explicit focus ring, Space and Enter to activate, Left and Right to move along
+the two bands of buttons, between sort chips and between dialog footer actions,
+Up and Down to walk a list or a menu and Escape to close drawers, dialogs and
+menus. A
 Qt Quick Controls `Button` handles Space for you but never Enter, so a bare
 `Button` needs its own `Keys.onReturnPressed`. Two in the tree still lack one,
 the reader's Mark all read and the transport's play and pause, which is a defect

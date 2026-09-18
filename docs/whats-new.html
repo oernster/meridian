@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>What's new in Meridian: release history</title>
-  <meta name="description" content="Meridian's release history: the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta name="description" content="Meridian's release history: a Guide behind a Help menu, the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="apple-touch-icon" href="meridian-512.png">
@@ -13,7 +13,7 @@
   <meta property="og:site_name" content="Meridian">
   <meta property="og:url" content="https://ernster.dev/meridian/whats-new.html">
   <meta property="og:title" content="What's new in Meridian: release history">
-  <meta property="og:description" content="The in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta property="og:description" content="A Guide behind a Help menu, the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <meta property="og:image" content="https://ernster.dev/meridian/meridian-512.png">
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
@@ -21,7 +21,7 @@
   <meta property="og:locale" content="en_GB">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="What's new in Meridian: release history">
-  <meta name="twitter:description" content="The in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta name="twitter:description" content="A Guide behind a Help menu, the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <meta name="twitter:image" content="https://ernster.dev/meridian/meridian-512.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -51,12 +51,24 @@
 <section class="section" id="whats-new">
   <div class="section-label">Changelog</div>
   <h2 class="section-title">What's new</h2>
-  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. The last feature release turned the window itself into pictures; the newest makes the setup program's tooltips show when you hover it from another program.</p>
+  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the newest adds a Guide that names every one of them, reached from a Help menu on the header.</p>
 
   <div class="changelog-grid">
 
     <div class="cl-entry">
-      <div class="ver-tag">v<!--VERSION-->2.7.1<!--/VERSION--></div>
+      <div class="ver-tag">v<!--VERSION-->2.8.0<!--/VERSION--></div>
+      <h3>A Guide to every button, under a Help menu</h3>
+      <ul>
+        <li>Every control along the top and the foot of the window is a picture with no word beside it. The new Guide puts each one next to its name, drawn with the same picture the button carries, with a line on what it does</li>
+        <li>It then covers what no screen shows for itself: how often a feed is asked for news, that a filter hides items rather than deleting them, what leaves your machine and how the keyboard moves around the window. Like a licence, it reads itself down the page; touch it and it pauses, then carries on from where you left it</li>
+        <li>The help mark at the right of the header, which used to open About directly, now drops a small menu holding the Guide and About Meridian, since Meridian has no menu bar. Enter, Space or Down on it open the menu with the Guide already offered; Up and Down move between the two and wrap; Escape closes it back onto the button; Tab carries on round the window</li>
+        <li>A licence opened with its text focused rather than its Close button; clicking the text also took focus away from Close. Each licence now opens on Close like every other dialog, its text reached with Tab when it is long enough to scroll</li>
+        <li>The About dialog said both licences open from the header. They moved to the strip along the foot in an earlier release; About now says so</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.7.1</div>
       <h3>Setup program tooltips that show when you hover</h3>
       <ul>
         <li>The setup program's tooltips only appeared while its own window had focus. Hover over it while another program was in front and nothing showed, which is exactly when a hint is most useful. Every setup window, its dialogs included, now shows its tooltips whether it has focus or not</li>
