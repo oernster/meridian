@@ -17,6 +17,7 @@ These are the rules the codebase is not allowed to break. Each one names the tes
 | Clicking a row activates it: a feed row reaches `selectFeed` and an item row loads the detail pane and marks the item read, both with a real mouse press through a real window. The keyboard path into a list reports through the view's own `onCurrentIndexChanged` and never touches the delegate, so it cannot stand in for this. | `tests/ui/test_row_activation.py` |
 | Every installer operation reports its progress as a percentage, so the bar fills rather than standing empty for the duration. Install and upgrade always did; repair and uninstall reported their work in bare strings, which the window writes to the status line while leaving the bar untouched, so both ran behind an empty groove that read as a progress bar failing to appear. The bar is now also indeterminate from the moment work starts until the first percentage arrives, so a stage with nothing to measure shows movement rather than nothing. | `tests/test_installer_progress.py`, `tests/test_installer_repair_ops.py::test_repair_moves_the_progress_bar_rather_than_only_the_status_line` and `tests/test_installer_uninstall_ops.py::test_feedback_wrapper_reports_either_side_of_the_work` |
 | The installer starts the application when it has finished only if the user left the box ticked, only if the operation succeeded, only after an install, upgrade, reinstall or repair and only when the executable it recorded is still there. Uninstall is refused by operation rather than by what survives on disk, since a deletion still settling would otherwise read as something worth starting. The rule is a pure function inside the coverage gate precisely because the Qt slot calling it is outside one. | `tests/test_installer_launch_ops.py` |
+| The setup program's tooltips show while another program has focus. Qt Widgets shows no tooltip over an inactive window unless that window carries `WA_AlwaysShowToolTips`, so one application-wide event filter, installed in `installer/app.py`, sets it on every top-level window (dialogs and message boxes included) as it is shown and on nothing else. The application's own window needs no counterpart: it is QML, whose declared `ToolTip` opens on hover over an inactive window without one. | `tests/ui/test_installer_inactive_tooltips.py` |
 | The subscription manager's selection is keyed by feed and survives scrolling. Nothing may tie it to delegate lifetime: a `ListView` destroys delegates as they leave the viewport, so a `Component.onDestruction` hook that touched the selection deselected every row scrolled past; the bulk removal then deleted only the rows still realised while its confirmation counted those. A short list cannot observe this, so the test uses two hundred feeds and asserts the list is genuinely recycling before asserting anything else. | `tests/ui/test_subscription_selection.py` |
 | Removing a feed, singly or in bulk, asks before it acts. The sidebar and the context menu only report the request; the window is what opens the confirmation, so only its `accepted` reaches the controller. | `tests/ui/test_main_window_focus_ring.py::test_removing_the_selection_asks_first` |
 | The MMSP protocol version is stated once, in `infrastructure/fetching/mmsp.py`; both the User-Agent and the parser's version gate derive from it. A feed declaring any 1.MINOR is read and anything else is refused, per specification Section 5.7. Where the MMSP-Spec repository is checked out beside this one, that rule is asserted against the published feed schema, so the two expressions of it cannot drift apart. | `tests/infrastructure/test_mmsp_conformance.py` |
@@ -87,7 +88,8 @@ meridian/
 
   infrastructure/
     db/
-      orm_models.py         SQLAlchemy ORM: FeedRow, ItemRow, PollStateRow; session_factory()
+      orm_models.py         SQLAlchemy ORM: FeedRow, ItemRow, PollStateRow
+      session.py            build_engine and build_session_factory over `~/.meridian/meridian.db` (`_DEFAULT_DB_PATH`)
     repositories/
       sqlite_feed_repository.py
       sqlite_item_repository.py
@@ -164,7 +166,7 @@ installer/                  The bespoke per-user Windows installer, shipped as M
   constants.py              Install paths, the registry key and the application identity
   ops/                      Everything that touches the machine, free of Qt and inside the coverage gate: payload extraction, install, repair, uninstall, shortcut creation, running-app detection, whether to start the application once an operation has finished, the one progress reporter every operation shares, the typed error hierarchy
   state/                    The install state: the registry read and write, the model it produces and version comparison through `packaging`
-  ui/                       The PySide6 installer window, its themes, licence dialogs, worker thread, the sequencing that starts the application then closes the installer and the operation dispatch (the one Qt-free part, gated with `ops`)
+  ui/                       The PySide6 installer window, its themes, licence dialogs, worker thread, the sequencing that starts the application then closes the installer and the operation dispatch (the one Qt-free part, gated with `ops`). `inactive_tooltips.py` is the event filter that lets every installer window show its tooltips while another program has focus
   shared/                   Logging setup and resource resolution under PyInstaller's `sys._MEIPASS`
   payload/                  Where `build_payload.py` stages the zipped application and its manifest
 
@@ -194,7 +196,7 @@ tests/
     test_github_release_source.py  The update check's GitHub adapter: request shape, timeout and every malformed-payload path, with `respx`
     test_scheduler.py       The poll loop, its tick and per-feed backoff
     test_mmsp_conformance.py    The Section 5.7 version rule, asserted against the published schema where MMSP-Spec is checked out beside this repository
-  test_installer_*.py       The installer operations: install, deploy edges, repair, uninstall, shortcuts, running-app detection and the payload
+  test_installer_*.py       The installer operations: install and its flow, deploy edges, repair, uninstall, shortcuts, running-app detection, the launch decision, progress reporting, the remaining operation edges and the payload
   ui/
     conftest.py             The session QApplication; Qt is never mocked
     bridge_dtos.py          DTO builders and the service stand-ins the bridge tests share
@@ -211,10 +213,12 @@ tests/
     test_tray_marks.py      Every stop in both bands says what it does and its mark actually loaded, proved through the implicit size that stays zero until the source resolves. An unresolvable source is not an error in QML; it draws nothing
     test_qml_compiles.py    Every QML file compiles
     test_installer_dispatch.py  The installer's Qt-free operation dispatch
+    test_installer_inactive_tooltips.py  Every installer window, dialogs included, is marked to show tooltips while inactive as it is shown; its child widgets are not
     test_url_list_dialog.py, test_candidate_row.py, test_discovery_query_field.py
                             The extracted QML components, each built with no caller in scope
     test_discovery_focus_ring.py, test_main_window_focus_ring.py, test_subscription_manager.py, test_feed_reader.py
                             The keyboard rings and the panel joins, driven with real key events through a real window
+    test_subscription_selection.py  The manager's selection survives scrolling a list of two hundred feeds, asserted only once the list is proven to be recycling its delegates
     test_row_activation.py  Clicking a feed row and an item row with a real mouse press, which the keyboard tests cannot cover because they never enter the delegate
     test_auto_scroller.py   The self-reading cycle: its holds, its two paces, the manual suspend and the freeze, driven by calling the tick rather than waiting on the clock
     test_dialog_auto_scroll.py  That the licence dialog and the URL list actually wear it, since a component wired to nothing passes every test above

@@ -51,12 +51,22 @@
 <section class="section" id="whats-new">
   <div class="section-label">Changelog</div>
   <h2 class="section-title">What's new</h2>
-  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. The newest turns the window itself into pictures.</p>
+  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. The last feature release turned the window itself into pictures; the newest makes the setup program's tooltips show when you hover it from another program.</p>
 
   <div class="changelog-grid">
 
     <div class="cl-entry">
-      <div class="ver-tag">v<!--VERSION-->2.7.0<!--/VERSION--></div>
+      <div class="ver-tag">v<!--VERSION-->2.7.1<!--/VERSION--></div>
+      <h3>Setup program tooltips that show when you hover</h3>
+      <ul>
+        <li>The setup program's tooltips only appeared while its own window had focus. Hover over it while another program was in front and nothing showed, which is exactly when a hint is most useful. Every setup window, its dialogs included, now shows its tooltips whether it has focus or not</li>
+        <li>Meridian itself needed no change: its window already showed tooltips on hover with another program in front</li>
+        <li>A commercial licence for my own code is now available alongside the open-source licences, for anybody whose project those terms do not suit</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.7.0</div>
       <h3>A window of pictures, plus a way to buy the author a drink</h3>
       <ul>
         <li>Every control along the top of the window was an emoji beside a word. An emoji is drawn by whichever font the platform picks, so the row looked different on each of the three platforms Meridian ships to; at a word's height none of them carried much meaning either. They are pictures now, drawn at four times the height of the type the emoji were set in, with the words removed entirely</li>
