@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication
 
 from installer.cli import parse_args, wants_remove_user_data
 from installer.shared.logging_setup import setup_installer_logging
+from installer.ui import inactive_tooltips
 from installer.ui.icons import (
     build_installer_window_icon,
     set_windows_app_user_model_id,
@@ -27,7 +28,7 @@ def main(argv: list[str] | None = None) -> int:
 
     log_path = setup_installer_logging()
 
-    def _excepthook(exc_type, exc, tb):  # noqa: ANN001
+    def _excepthook(exc_type, exc, tb):
         with log_path.open("a", encoding="utf-8") as f:
             f.write("\n=== Unhandled exception ===\n")
             traceback.print_exception(exc_type, exc, tb, file=f)
@@ -39,6 +40,7 @@ def main(argv: list[str] | None = None) -> int:
     _ = wants_remove_user_data(args)
 
     app = QApplication([f"{APP_NAME} Setup"])
+    inactive_tooltips.install(app)
     app.setApplicationName(f"{APP_NAME} Setup")
     app.setApplicationVersion(__version__)
 
