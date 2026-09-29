@@ -35,6 +35,7 @@ Rectangle {
     signal manageRequested()
     signal specificationRequested()
     signal guideRequested()
+    signal checkUpdatesRequested()
     signal aboutRequested()
     signal themeToggleRequested()
 
@@ -149,7 +150,7 @@ Rectangle {
             objectName: "helpBtn"
             theme: bar.theme
             iconSource: "art/help.png"
-            tooltip: "Help: the Guide and About Meridian"
+            tooltip: "Help: the Guide, updates and About Meridian"
             previousItem: themeToggleBtn
             onActivated: helpMenu.openUnder(helpBtn)
             onForwardOverflow: bar.focusForwardRequested()
@@ -162,6 +163,7 @@ Rectangle {
         objectName: "helpMenu"
         theme: bar.theme
         onGuideRequested: bar.guideRequested()
+        onCheckUpdatesRequested: bar.checkUpdatesRequested()
         onAboutRequested: bar.aboutRequested()
         onFocusForwardRequested: bar.focusForwardRequested()
         onFocusBackwardRequested: themeToggleBtn.forceActiveFocus(Qt.BacktabFocusReason)

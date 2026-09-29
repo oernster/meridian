@@ -1,11 +1,14 @@
 """The window's update wiring: prompt, fallback, skip and the manual entry.
 
 Driven through the real `main.qml` against the stub controllers, the same way
-the removal dialogs are tested: the stub emits what the Python bridge would,
-and what is asserted is which dialog opened and which call reached the stub.
+the removal dialogs are tested: the stub emits what the Python bridge would;
+what is asserted is which dialog opened and which call reached the stub.
 """
 
-from PySide6.QtCore import QObject
+from PySide6.QtCore import QObject, Qt
+from PySide6.QtGui import QGuiApplication
+from PySide6.QtQuick import QQuickItem
+from PySide6.QtTest import QTest
 
 from tests.ui.window_stub import (
     StubController,
@@ -63,11 +66,21 @@ class TestUpdatePrompt:
 
 
 class TestManualEntry:
-    def test_about_dialog_button_triggers_the_manual_check(self, qapp):
+    def test_help_menu_entry_triggers_the_manual_check(self, qapp):
+        """Help, Down, Enter: the house Help > Check for Updates, by keys."""
         _engine, _component, window, update_stub = _load(qapp)
-        about = window.findChild(QObject, "aboutDialog")
-        about.metaObject().invokeMethod(about, "checkUpdatesRequested")
+        QTest.qWaitForWindowExposed(window)
+        button = window.findChild(QQuickItem, "helpBtn")
+        button.forceActiveFocus(Qt.TabFocusReason)
+        for key in (Qt.Key_Return, Qt.Key_Down, Qt.Key_Return):
+            QTest.keyClick(window, key)
+            QGuiApplication.processEvents()
         assert update_stub.called("checkManually") == [("checkManually",)]
+        assert window.findChild(QObject, "helpMenu").property("visible") is False
+
+    def test_about_no_longer_carries_the_check(self, qapp):
+        _engine, _component, window, _update_stub = _load(qapp)
+        assert window.findChild(QObject, "checkUpdatesBtn") is None
 
 
 class TestManualOutcomes:

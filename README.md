@@ -34,7 +34,7 @@ The YouTube embed is the one exception worth knowing about. It is Google's own p
 - Background polling with conditional GET (ETag and Last-Modified), rate-limit backoff and a 300 second poll floor.
 - Bulk feed management with select-all checkboxes; in-place list removal preserves scroll position.
 - Import and export subscriptions as JSON.
-- An update check against GitHub's releases API: a few seconds after launch and once a day while running, with Download, Skip This Version and Later on the prompt; a manual check lives on the About dialog and reports every outcome. Only a published release can prompt, a skipped version never prompts again and an unreachable network is silent.
+- An update check against GitHub's releases API: a few seconds after launch and once a day while running, with Download, Skip This Version and Later on the prompt; Help > Check for Updates asks on demand and reports every outcome. Only a published release can prompt, a skipped version never prompts again and an unreachable network is silent.
 - A button on the header opens the MMSP specification in your browser; one at the foot opens the donation page. Meridian fetches neither: each address is handed to the desktop.
 - Catppuccin Mocha and Latte themes with a single toggle; the preference persists across restarts.
 - Full-text `content:encoded` rendering for article feeds, plus a built-in media player for podcast and video items.

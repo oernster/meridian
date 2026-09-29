@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 
-// The Help button's menu: the Guide, then About.
+// The Help button's menu: the Guide, Check for Updates, then About.
 //
 // Meridian has no menu bar, so Help is a button on the header that drops this
 // open, the way Audio Deck's Help button does. It is a dropdown on the ring:
@@ -23,6 +23,7 @@ Popup {
     property Item opener: null
 
     signal guideRequested()
+    signal checkUpdatesRequested()
     signal aboutRequested()
 
     // Tab or Right off the menu; Shift+Tab or Left off it.
@@ -31,6 +32,7 @@ Popup {
 
     readonly property var _entries: [
         { key: "guide", label: "Guide" },
+        { key: "updates", label: "Check for Updates" },
         { key: "about", label: "About Meridian" }
     ]
     readonly property int _entryHeight: 36
@@ -70,6 +72,8 @@ Popup {
             menu.opener.forceActiveFocus(Qt.OtherFocusReason)
         if (key === "guide")
             menu.guideRequested()
+        else if (key === "updates")
+            menu.checkUpdatesRequested()
         else
             menu.aboutRequested()
     }

@@ -130,6 +130,7 @@ ApplicationWindow {
             onManageRequested: subManagerDrawer.open()
             onSpecificationRequested: linksController.openSpecification()
             onGuideRequested: guideDialog.open()
+            onCheckUpdatesRequested: updateController.checkManually()
             onAboutRequested: aboutDialog.open()
             onThemeToggleRequested: {
                 theme.isDark = !theme.isDark
@@ -291,7 +292,6 @@ ApplicationWindow {
         id: aboutDialog
         objectName: "aboutDialog"
         theme: theme
-        onCheckUpdatesRequested: updateController.checkManually()
     }
 
     Connections {

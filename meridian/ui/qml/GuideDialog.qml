@@ -78,8 +78,8 @@ ReadingDialog {
                     "switch palette. The mark shows the palette you would switch "
                     + "TO; the choice is kept for next time.")
         + root._row("help.png", "Help",
-                    "this Guide, then About Meridian, which also holds the "
-                    + "manual check for updates.")
+                    "this Guide, Check for Updates (which asks GitHub now and "
+                    + "reports every outcome), then About Meridian.")
         + "<p>Hover any button (or reach it with Tab) to see its name.</p>"
 
         + "<hr><h3 " + headStyle + ">Along the foot</h3>"

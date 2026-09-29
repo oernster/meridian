@@ -1,4 +1,7 @@
-"""Help drops a menu holding the Guide and About; the Guide reads itself.
+"""Help drops a menu holding the Guide, the update check and About.
+
+The Guide reads itself; the update check is proved in `test_update_flow.py`,
+whose window carries the update stub.
 
 Driven through the real `main.qml` with delivered key presses, like the
 window's focus ring, because every behaviour here is a `Keys` handler on
@@ -80,6 +83,8 @@ def test_up_and_down_walk_the_entries_and_wrap(window) -> None:
     _open_menu(window)
 
     _key(window, Qt.Key_Down)
+    assert _focused(window) == "helpMenu_updates"
+    _key(window, Qt.Key_Down)
     assert _focused(window) == "helpMenu_about"
     _key(window, Qt.Key_Down)
     assert _focused(window) == "helpMenu_guide"
@@ -126,7 +131,7 @@ def test_choosing_the_guide_opens_it_on_close(window) -> None:
 
 def test_choosing_about_opens_about(window) -> None:
     _open_menu(window)
-    _key(window, Qt.Key_Down)
+    _key(window, Qt.Key_Up)
 
     _key(window, Qt.Key_Space)
 
