@@ -54,21 +54,7 @@ QtWebEngine is not a separate line here because it ships inside the PySide6 whee
 
 ## Running Tests
 
-```bash
-pytest
-```
-
-Coverage is enforced at 100% (`--cov-fail-under=100` in `pyproject.toml`). A failing test or a missed branch is a build failure. `black` and `flake8` also run as in-suite assertions, so unformatted or lint-failing code fails the suite too.
-
-The gated run prints the coverage table last and emits no "N passed" line, so read the exit code rather than grepping the output: `0` means the suite passed and the gate was met.
-
-```bash
-# Run a specific test file
-pytest tests/ui/test_bridge_items.py -v
-
-# Run with coverage report
-pytest --cov-report=html
-```
+[TESTING.md](TESTING.md) is the home for this: what a first run needs, the one command that is the whole gate, how to read its exit code, the coverage floors, running part of the suite and what only a real machine can check.
 
 ## Formatting and Linting
 
@@ -83,8 +69,10 @@ flake8 meridian installer tests
 The root scripts are named individually because PowerShell does not expand a `*.py` glob for a native command. `tests/structural/test_boundaries.py` is the authority on the set; run it to confirm rather than trusting the list above:
 
 ```bash
-pytest tests/structural/test_boundaries.py
+pytest tests/structural/test_boundaries.py --no-cov
 ```
+
+`--no-cov` is needed because the coverage floor applies to every run, so a partial run fails on coverage alone.
 
 ## Running the App
 
@@ -121,3 +109,5 @@ python builddmg.py           # macOS: signed .app and DMG (needs Xcode command-l
 ```
 
 `create_icons.py` regenerates two sets: the application icons from `meridian.png`, plus every tray mark into `meridian/ui/qml/art/` (the header's from the masters in `assets/`, the foot's licence marks from the same place and its donate mark from `donate.png` at the repository root). The marks are cropped to their artwork and scaled by height, never squared, because they are pictures drawn at a button's height rather than icons. `create_splash.py` regenerates the splash screen; `buildexe.py` calls the latter for you.
+
+See also [ARCHITECTURE.md](ARCHITECTURE.md) and [TESTING.md](TESTING.md).

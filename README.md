@@ -94,12 +94,13 @@ The database is created automatically at first launch, at `~/.meridian/meridian.
 
 ## Tests
 
-```bash
+```powershell
 pip install -r requirements-dev.txt
+$env:QT_QPA_PLATFORM = 'offscreen'
 pytest
 ```
 
-Branch coverage is gated at 100%; `black` and `flake8` run as in-suite assertions, so a formatting or lint failure is a test failure. The gated run prints the coverage table last and emits no "N passed" line, so read the exit code: `0` means the suite passed and the gate was met.
+Branch coverage is gated at 100%; `black` and `flake8` run as in-suite assertions, so a formatting or lint failure is a test failure. Read the exit code, not the output: `0` means the suite passed and the gate was met. [TESTING.md](TESTING.md) has the rest.
 
 ## Build
 
@@ -124,6 +125,7 @@ The root `VERSION` file is the single source of truth for the version. `meridian
 
 - [DEVELOPMENT.md](DEVELOPMENT.md): Python version policy, dev tooling and how to run the suite.
 - [ARCHITECTURE.md](ARCHITECTURE.md): the invariants, the tests that enforce them and the full project structure.
+- [TESTING.md](TESTING.md): running the suite, reading its result, what the gate holds and what only a real machine can check.
 - [CONTRIBUTING.md](CONTRIBUTING.md): the standards and design boundaries a change has to meet.
 - [TECH_DEBT.md](TECH_DEBT.md): what is still open, what is deliberately left and what only looks like debt.
 

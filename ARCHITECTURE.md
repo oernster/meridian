@@ -332,3 +332,5 @@ SQLAlchemy: MIT.
 httpx: BSD-3-Clause.
 defusedxml: PSF.
 python-dateutil: Apache-2.0 / BSD-3-Clause.
+
+See also [TESTING.md](TESTING.md) and [DEVELOPMENT.md](DEVELOPMENT.md).

@@ -99,7 +99,7 @@ not a style note.
   ```bash
   black meridian installer tests
   flake8 meridian installer tests
-  pytest tests/structural/test_boundaries.py
+  pytest tests/structural/test_boundaries.py --no-cov
   ```
 
   The last command is the one that decides: it holds the root delivery scripts
@@ -132,10 +132,10 @@ Put each test at the layer it exercises:
 | domain | pure unit tests | none |
 | application | unit tests with the interfaces faked or mocked | none |
 | infrastructure | integration tests against a real SQLite tmpdir; `respx` for HTTP | yes (temp) |
-| ui | real QApplication from the session `qapp` fixture in `tests/ui/conftest.py`, offscreen platform | none |
+| ui | real QApplication from the session `qapp` fixture in `tests/ui/conftest.py` | none |
 | structural | AST and source scans (boundaries, module size, black, flake8) | file reads |
 
-Never mock Qt. The UI tests use a real `QApplication` on the offscreen platform.
+Never mock Qt. The UI tests use a real `QApplication`; set `QT_QPA_PLATFORM=offscreen` before running them, since nothing in the suite sets it for you. [TESTING.md](TESTING.md) covers running and reading the suite in full.
 
 ## Keyboard navigation
 
