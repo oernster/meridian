@@ -1,19 +1,28 @@
-"""UpdateController: cross-thread delivery and the three outcomes.
+"""UpdateController: delivery onto the UI thread and the three outcomes.
 
-The worker thread emits an internal signal connected to a bound method of the
-controller, so delivery is queued onto the UI thread. Each test therefore
-spins the event loop until the outcome lands; that spin is the offscreen probe
-proving the delivery, not just the logic.
+The worker fills a future and never touches the controller; the controller's
+own timer collects it on the UI thread. Each test therefore spins the event
+loop until the outcome lands; that spin is the offscreen probe proving the
+delivery, not just the logic. `TestWorkerHoldsNoController` holds the property
+the shape exists for.
 """
 
+import gc
+import threading
 import time
+import weakref
 
 from PySide6.QtCore import QObject, QUrl, Slot
 
 from meridian.application.dto.update_info import UpdateStatus
-from meridian.ui.update_bridge import UpdateController
+from meridian.ui.update_bridge import _POLL_INTERVAL_MS, UpdateController
 
 _PROBE_TIMEOUT_SECONDS = 3.0
+# Several poll intervals: long enough that the controller has looked for the
+# result more than once, so "nothing yet" is a reading rather than a race.
+_POLLS_TO_SETTLE = 6
+_MS_PER_SECOND = 1000
+_SETTLE_SECONDS = _POLL_INTERVAL_MS * _POLLS_TO_SETTLE / _MS_PER_SECOND
 
 
 def _status(available=True, download_url="https://x/setup.exe", page_url="https://x/r"):
@@ -59,11 +68,11 @@ class Recorder:
 
 
 class DeliveryProbe(QObject):
-    """Proves the queued delivery landed even when the outcome is silence.
+    """Proves the delivery landed even when the outcome is silence.
 
-    Connected to `_resultReady` after `_apply_result`, so its own queued event
-    is posted (and therefore processed) after the controller's: once this has
-    recorded, the silent path has definitely run.
+    Connected to `_resultReady` after `_apply_result`; both run on the UI
+    thread in connection order, so once this has recorded, the silent path
+    has definitely run.
     """
 
     def __init__(self):
@@ -78,15 +87,10 @@ class DeliveryProbe(QObject):
 def _probe(controller):
     """A probe on the controller's internal signal, for waiting on delivery.
 
-    A test must not end before the worker's delivery lands. Two tests used to
-    wait on the service call instead, which the worker makes before it emits.
-    Run alone, the file then died with an access violation in about one run
-    in four, inside the event pass after one of those tests; waiting on this
-    probe instead ran 80 times clean. Measured outside pytest: the worker's
-    closure holds the controller, so once the test lets go the worker drops
-    the last reference and the controller is destroyed on the worker thread
-    while the main thread is delivering the queued result to it. Production
-    never lets go mid-check; there the release was measured on the main thread.
+    A test waits on delivery, never on the service call, which comes first on
+    the worker thread. Waiting on the call is what exposed the old shape's
+    crash; `update_bridge.py` records that history and why the worker now
+    holds no controller.
     """
     probe = DeliveryProbe()
     controller._resultReady.connect(probe.record)
@@ -187,6 +191,78 @@ class TestManualCheck:
         controller.checkManually()
         _spin_until(qapp, lambda: recorder.outcomes() > 0)
         assert recorder.failed == 1
+
+
+class BlockingService:
+    """Holds the worker inside `check` until the test releases it."""
+
+    def __init__(self, status):
+        self._status = status
+        self.entered = threading.Event()
+        self.release = threading.Event()
+
+    def check(self, skipped_version=None):
+        self.entered.set()
+        self.release.wait(_PROBE_TIMEOUT_SECONDS)
+        return self._status
+
+
+def _spin_for(qapp, seconds):
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        qapp.processEvents()
+
+
+class TestWorkerHoldsNoController:
+    def test_dropping_the_controller_mid_check_frees_it(self, qapp):
+        """The worker must never own the controller.
+
+        If it did, a caller letting go mid-check would leave the worker to
+        destroy the controller on its own thread while the UI thread delivered
+        to it: the crash this shape exists to rule out.
+        """
+        service = BlockingService(_status())
+        controller = UpdateController(service)
+        alive = weakref.ref(controller)
+        controller.checkManually()
+        assert service.entered.wait(_PROBE_TIMEOUT_SECONDS)
+        del controller
+        gc.collect()
+        assert alive() is None, "the running worker still holds the controller"
+        service.release.set()
+        _spin_for(qapp, _SETTLE_SECONDS)
+
+    def test_an_unfinished_check_delivers_nothing_yet(self, qapp):
+        service = BlockingService(_status())
+        controller = UpdateController(service)
+        recorder = Recorder(controller)
+        controller.checkManually()
+        assert service.entered.wait(_PROBE_TIMEOUT_SECONDS)
+        _spin_for(qapp, _SETTLE_SECONDS)
+        assert recorder.outcomes() == 0
+        service.release.set()
+        _spin_until(qapp, lambda: recorder.outcomes() > 0)
+        assert len(recorder.available) == 1
+
+    def test_two_checks_in_flight_both_deliver(self, qapp):
+        service = FakeUpdateService(_status(available=False))
+        controller = UpdateController(service)
+        recorder = Recorder(controller)
+        probe = _probe(controller)
+        controller.checkManually()
+        controller.checkAutomatically("")
+        _spin_until(qapp, lambda: len(probe.delivered) == 2)
+        assert recorder.up_to_date == 1
+        assert sorted(manual for _, manual in probe.delivered) == [False, True]
+
+    def test_a_check_started_by_a_result_is_not_lost(self, qapp):
+        service = FakeUpdateService(_status(available=False))
+        controller = UpdateController(service)
+        probe = _probe(controller)
+        controller.upToDate.connect(lambda: controller.checkAutomatically(""))
+        controller.checkManually()
+        _spin_until(qapp, lambda: len(probe.delivered) == 2)
+        assert service.calls == [None, None]
 
 
 class TestOpenDownload:
