@@ -213,7 +213,7 @@ tests/
     test_bridge_sorting.py  AppController: the feed and item sort settings
     test_bridge_discovery.py      AppController: search lifecycle on the background loop
     test_update_bridge.py   UpdateController: the three outcomes, with the queued cross-thread delivery proven rather than assumed (a probe receiver whose own queued event lands after the controller's)
-    test_update_flow.py     The window's update wiring through the real main.qml: prompt, download fallback, skip persistence and the About entry point
+    test_update_flow.py     The window's update wiring through the real main.qml: prompt, download fallback, skip persistence and Help > Check for Updates driven by real key presses, plus the About dialog no longer carrying a check of its own
     test_external_links.py  The two buttons that open a browser: the controller asks for the right address against an injected opener, a refusal names which page it was, the foot holds donate then the two licences in that order and the ring closes back to the header
     test_tray_marks.py      Every stop in both bands says what it does and its mark actually loaded, proved through the implicit size that stays zero until the source resolves. An unresolvable source is not an error in QML; it draws nothing
     test_qml_compiles.py    Every QML file compiles
@@ -227,7 +227,7 @@ tests/
     test_row_activation.py  Clicking a feed row and an item row with a real mouse press, which the keyboard tests cannot cover because they never enter the delegate
     test_auto_scroller.py   The self-reading cycle: its holds, its two paces, the manual suspend and the freeze, driven by calling the tick rather than waiting on the clock
     test_dialog_auto_scroll.py  That the licence dialog, the Guide and the URL list actually wear it, since a component wired to nothing passes every test above
-    test_help_menu.py       The Help menu and the Guide through the real window with real key presses: the drop onto the first entry, the wrapping walk, Escape back to the button, the ring stepping out both ways, each choice opening its dialog, the Guide opening and returning focus to Help and every picture it shows a real file
+    test_help_menu.py       The Help menu and the Guide through the real window with real key presses: the drop onto the first entry, the wrapping walk, Escape back to the button, the ring stepping out both ways, the Guide and About each opening their dialog, the Guide opening and returning focus to Help and every picture it shows a real file
     test_reading_dialogs.py The licences and the Guide open on Close, a click on the page never takes focus and the page is a Tab stop only while it overflows, asserted with real key and mouse presses through the real window
   test_version.py           VERSION file resolution and fallback
 ```

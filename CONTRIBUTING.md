@@ -145,12 +145,10 @@ handling to match the rest of the UI: every control reachable by Tab, an
 explicit focus ring, Space and Enter to activate, Left and Right to move along
 the two bands of buttons, between sort chips and between dialog footer actions,
 Up and Down to walk a list or a menu and Escape to close drawers, dialogs and
-menus. A
-Qt Quick Controls `Button` handles Space for you but never Enter, so a bare
-`Button` needs its own `Keys.onReturnPressed`. Two in the tree still lack one,
-the reader's Mark all read and the transport's play and pause, which is a defect
-rather than a pattern to copy. See
-the keyboard-navigation notes in [ARCHITECTURE.md](ARCHITECTURE.md) for the
+menus. A Qt Quick Controls `Button` handles Space for you but never Enter, so a
+bare `Button` needs its own `Keys.onReturnPressed`. Two in the tree still lack
+one, the reader's Mark all read and the transport's play and pause, which is a
+defect rather than a pattern to copy. See the keyboard-navigation notes in [ARCHITECTURE.md](ARCHITECTURE.md) for the
 `forceActiveFocus` and `FocusScope` gotchas before you touch the tab chain.
 
 ## Design boundaries

@@ -51,12 +51,22 @@
 <section class="section" id="whats-new">
   <div class="section-label">Changelog</div>
   <h2 class="section-title">What's new</h2>
-  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the newest adds a Guide that names every one of them, reached from a Help menu on the header.</p>
+  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the next added a Guide that names every one of them, reached from a Help menu on the header, which the newest makes the home of Check for Updates.</p>
 
   <div class="changelog-grid">
 
     <div class="cl-entry">
-      <div class="ver-tag">v<!--VERSION-->2.8.1<!--/VERSION--></div>
+      <div class="ver-tag">v<!--VERSION-->2.9.0<!--/VERSION--></div>
+      <h3>Check for Updates moves to the Help menu</h3>
+      <ul>
+        <li>Asking whether a newer Meridian exists is now Help &gt; Check for Updates, where every other application of mine keeps it. It used to be a button on the About dialog, from before Meridian had a Help menu</li>
+        <li>The Help menu now reads Guide, Check for Updates, About Meridian. From the keyboard: Enter on the Help mark, Down once, Enter</li>
+        <li>The check itself is unchanged: once shortly after launch and once a day, Download, Skip This Version or Later when a newer release exists, silent when GitHub cannot be reached. Asking by hand still reports every outcome. About is now just About, with Close as its only button</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.8.1</div>
       <h3>A new donation page</h3>
       <ul>
         <li>The Donate button now opens a new PayPal page that suggests £5 and lets you give any amount you choose. Nothing else has changed</li>

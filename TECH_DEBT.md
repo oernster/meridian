@@ -2,7 +2,7 @@
 
 A standing reference to the project's outstanding technical debt. It records what is still open, weighs whether each item is worth doing and gives the rationale. Every item is a behaviour-preserving internal concern: nothing here proposes reverting a feature or changing any UI or UX behaviour. Scope is the whole repository (the `meridian` package, the QML front end, the bespoke installer and the delivery scripts) read against `ARCHITECTURE.md` and `tests/structural/test_boundaries.py`.
 
-**Nothing is open.** What follows is the standing decisions around the debt that was: what looks like debt and is deliberately left; what looks like debt and is correct as it stands.
+**There is no open technical debt.** What follows is the standing decisions around the debt that was: what looks like debt and is deliberately left; what looks like debt and is correct as it stands.
 
 ---
 
