@@ -82,8 +82,11 @@ def _probe(controller):
     wait on the service call instead, which the worker makes before it emits.
     Run alone, the file then died with an access violation in about one run
     in four, inside the event pass after one of those tests; waiting on this
-    probe instead ran 80 times clean. The likely mechanism, not proven, is the
-    worker emitting from a controller the finished test had already released.
+    probe instead ran 80 times clean. Measured outside pytest: the worker's
+    closure holds the controller, so once the test lets go the worker drops
+    the last reference and the controller is destroyed on the worker thread
+    while the main thread is delivering the queued result to it. Production
+    never lets go mid-check; there the release was measured on the main thread.
     """
     probe = DeliveryProbe()
     controller._resultReady.connect(probe.record)
