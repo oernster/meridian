@@ -75,6 +75,21 @@ class DeliveryProbe(QObject):
         self.delivered.append((status, manual))
 
 
+def _probe(controller):
+    """A probe on the controller's internal signal, for waiting on delivery.
+
+    A test must not end before the worker's delivery lands. Two tests used to
+    wait on the service call instead, which the worker makes before it emits.
+    Run alone, the file then died with an access violation in about one run
+    in four, inside the event pass after one of those tests; waiting on this
+    probe instead ran 80 times clean. The likely mechanism, not proven, is the
+    worker emitting from a controller the finished test had already released.
+    """
+    probe = DeliveryProbe()
+    controller._resultReady.connect(probe.record)
+    return probe
+
+
 def _spin_until(qapp, condition):
     deadline = time.monotonic() + _PROBE_TIMEOUT_SECONDS
     while not condition() and time.monotonic() < deadline:
@@ -97,16 +112,16 @@ class TestAutomaticCheck:
     def test_skipped_tag_is_passed_through(self, qapp):
         service = FakeUpdateService(_status(available=False))
         controller = UpdateController(service)
+        probe = _probe(controller)
         controller.checkAutomatically("v2.6.0")
-        _spin_until(qapp, lambda: bool(service.calls))
+        _spin_until(qapp, lambda: bool(probe.delivered))
         assert service.calls == ["v2.6.0"]
 
     def test_up_to_date_is_silent(self, qapp):
         service = FakeUpdateService(_status(available=False))
         controller = UpdateController(service)
         recorder = Recorder(controller)
-        probe = DeliveryProbe()
-        controller._resultReady.connect(probe.record)
+        probe = _probe(controller)
         controller.checkAutomatically("")
         _spin_until(qapp, lambda: bool(probe.delivered))
         assert recorder.outcomes() == 0
@@ -115,8 +130,7 @@ class TestAutomaticCheck:
         service = FakeUpdateService(None)
         controller = UpdateController(service)
         recorder = Recorder(controller)
-        probe = DeliveryProbe()
-        controller._resultReady.connect(probe.record)
+        probe = _probe(controller)
         controller.checkAutomatically("")
         _spin_until(qapp, lambda: bool(probe.delivered))
         assert recorder.outcomes() == 0
@@ -142,8 +156,9 @@ class TestManualCheck:
     def test_manual_ignores_the_skip_by_construction(self, qapp):
         service = FakeUpdateService(_status())
         controller = UpdateController(service)
+        probe = _probe(controller)
         controller.checkManually()
-        _spin_until(qapp, lambda: bool(service.calls))
+        _spin_until(qapp, lambda: bool(probe.delivered))
         assert service.calls == [None]
 
     def test_up_to_date_is_reported(self, qapp):
