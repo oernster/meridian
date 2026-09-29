@@ -23,7 +23,7 @@ _SITE_PAGE = _REPO / "docs" / "index.html"
 
 # The address as it must be. Written out rather than derived from the constant,
 # because a test that reads the value it is checking proves nothing.
-_EXPECTED = "https://www.paypal.com/ncp/payment/PHYDFMWLQ6CD4"
+_EXPECTED = "https://www.paypal.com/ncp/payment/89J6EEWMC9FSL"
 
 # Stops at whitespace or a quote, so an address in HTML markup comes back
 # without the attribute's closing quote attached to it.

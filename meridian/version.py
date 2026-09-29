@@ -25,7 +25,7 @@ APP_APPUSERMODELID: str = "com.oliverernster.meridian"
 # opens a connection of its own and the local-first guarantee is unchanged by
 # the button existing. Generated for Meridian: PigeonPost and ClearBudget carry
 # different paths and a copied one sends money against the wrong project.
-DONATE_URL: str = "https://www.paypal.com/ncp/payment/PHYDFMWLQ6CD4"
+DONATE_URL: str = "https://www.paypal.com/ncp/payment/89J6EEWMC9FSL"
 
 # The protocol Meridian is the reference client for. Opened the same way the
 # donation page is: handed to the desktop, never fetched here.

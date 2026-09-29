@@ -135,7 +135,7 @@ The root `VERSION` file is the single source of truth for the version. `meridian
 
 Meridian is free and stays free. There is no paid tier, no licence key and no feature held back behind a donation. A donate button sits at the left of the strip along the foot of the window, beside the two licences; pressing it hands the address to your desktop and your browser does the asking, so Meridian itself opens no connection of its own and the six places above are still the whole list. The same link is on the [project site](https://ernster.dev/meridian/#support).
 
-<a href="https://www.paypal.com/ncp/payment/PHYDFMWLQ6CD4"><img src="meridian/ui/qml/art/donate.png" alt="Donate to Meridian" width="120"></a>
+<a href="https://www.paypal.com/ncp/payment/89J6EEWMC9FSL"><img src="meridian/ui/qml/art/donate.png" alt="Donate to Meridian" width="120"></a>
 
 ## Licence
 
