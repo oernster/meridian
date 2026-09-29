@@ -214,7 +214,7 @@ tests/
     test_bridge_sorting.py  AppController: the feed and item sort settings
     test_bridge_discovery.py      AppController: search lifecycle on the background loop
     test_update_bridge.py   UpdateController: the three outcomes delivered on the UI thread, proven rather than assumed (a probe receiver connected after the controller's own slot); two checks in flight, a check started by a result, nothing delivered before the worker finishes and the worker holding no reference to the controller (dropped mid-check, it is freed at once)
-    test_update_flow.py     The window's update wiring through the real main.qml: prompt, download fallback, skip persistence and Help > Check for Updates driven by real key presses, plus the About dialog no longer carrying a check of its own
+    test_update_flow.py     The window's update wiring through the real main.qml: prompt, download fallback, skip persistence and Help > Check for Updates driven by real key presses, plus the About dialog no longer carrying a check of its own; one class joins the real `UpdateController` to the real window, so its worker, future and polling timer are proven to open the info dialog and the prompt
     test_external_links.py  The two buttons that open a browser: the controller asks for the right address against an injected opener, a refusal names which page it was, the foot holds donate then the two licences in that order and the ring closes back to the header
     test_tray_marks.py      Every stop in both bands says what it does and its mark actually loaded, proved through the implicit size that stays zero until the source resolves. An unresolvable source is not an error in QML; it draws nothing
     test_qml_compiles.py    Every QML file compiles

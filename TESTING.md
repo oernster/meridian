@@ -22,7 +22,7 @@ $LASTEXITCODE
 
 That one command is the whole gate. `pyproject.toml` adds the coverage measurement and its floor to every run; `black` and `flake8` run inside the suite as assertions (`tests/structural/test_boundaries.py`), so a formatting or lint failure is a test failure. There is no separate gate script.
 
-**A full run takes about thirty seconds.** 807 tests are collected: 291 interface, 212 infrastructure, 124 installer and version at the top of `tests/`, 89 application, 64 domain and 27 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
+**A full run takes about thirty seconds.** 813 tests are collected: 297 interface, 212 infrastructure, 124 installer and version at the top of `tests/`, 89 application, 64 domain and 27 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
 
 **Read the exit code, never the last line.** The suite is coverage gated, so it prints the coverage table last and no line of passed and failed; a coverage row such as `errors.py` also reads like a result to anybody searching the text. `0` means every test passed and the floor was met. Anything else means read the failures above the table. For a count without running anything, `python -m pytest --co -q --no-cov` ends with one.
 

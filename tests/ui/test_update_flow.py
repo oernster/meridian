@@ -3,18 +3,26 @@
 Driven through the real `main.qml` against the stub controllers, the same way
 the removal dialogs are tested: the stub emits what the Python bridge would;
 what is asserted is which dialog opened and which call reached the stub.
+`TestRealControllerInTheWindow` is the exception, joining the real
+`UpdateController` to the real window.
 """
+
+import time
 
 from PySide6.QtCore import QObject, Qt
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQuick import QQuickItem
 from PySide6.QtTest import QTest
 
+from meridian.application.dto.update_info import UpdateStatus
+from meridian.ui.update_bridge import UpdateController
 from tests.ui.window_stub import (
     StubController,
     StubUpdateController,
     load_main_window,
 )
+
+_ARRIVAL_TIMEOUT_SECONDS = 3.0
 
 
 def _load(qapp):
@@ -81,6 +89,55 @@ class TestManualEntry:
     def test_about_no_longer_carries_the_check(self, qapp):
         _engine, _component, window, _update_stub = _load(qapp)
         assert window.findChild(QObject, "checkUpdatesBtn") is None
+
+
+class _AnsweringService:
+    def __init__(self, status):
+        self._status = status
+
+    def check(self, skipped_version=None):
+        return self._status
+
+
+def _ask_through_help(qapp, status):
+    """The real UpdateController in the real window, asked by keys.
+
+    Every other test here stands a stub in for the controller; this is the one
+    place the real worker, its future and its polling timer drive the real
+    dialogs.
+    """
+    real = UpdateController(_AnsweringService(status))
+    engine, component, window = load_main_window(StubController(), real)
+    QTest.qWaitForWindowExposed(window)
+    window.findChild(QQuickItem, "helpBtn").forceActiveFocus(Qt.TabFocusReason)
+    for key in (Qt.Key_Return, Qt.Key_Down, Qt.Key_Return):
+        QTest.keyClick(window, key)
+        QGuiApplication.processEvents()
+    return engine, component, window
+
+
+def _spin_until_visible(qapp, item):
+    deadline = time.monotonic() + _ARRIVAL_TIMEOUT_SECONDS
+    while item.property("visible") is not True and time.monotonic() < deadline:
+        qapp.processEvents()
+    return item.property("visible") is True
+
+
+class TestRealControllerInTheWindow:
+    def test_up_to_date_opens_the_info_dialog(self, qapp):
+        status = UpdateStatus("2.9.0", "v2.9.0", False, None, "https://x/r")
+        _engine, _component, window = _ask_through_help(qapp, status)
+        info = window.findChild(QObject, "updateInfoDialog")
+        assert _spin_until_visible(qapp, info)
+        assert "latest version" in info.property("message")
+
+    def test_newer_release_opens_the_prompt(self, qapp):
+        status = UpdateStatus("2.9.0", "v3.0.0", True, "https://x/s.exe", "https://x/r")
+        _engine, _component, window = _ask_through_help(qapp, status)
+        prompt = window.findChild(QObject, "updateDialog")
+        assert _spin_until_visible(qapp, prompt)
+        assert prompt.property("latestVersion") == "v3.0.0"
+        assert prompt.property("downloadUrl") == "https://x/s.exe"
 
 
 class TestManualOutcomes:
