@@ -96,7 +96,6 @@ The database is created automatically at first launch, at `~/.meridian/meridian.
 
 ```powershell
 pip install -r requirements-dev.txt
-$env:QT_QPA_PLATFORM = 'offscreen'
 pytest
 ```
 

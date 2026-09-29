@@ -4,9 +4,8 @@ How Meridian is tested: running the suite, reading what it says, what the gate h
 
 ## Before the first run
 
-Three things a fresh machine needs, each of which fails quietly rather than loudly when missing:
+Two things a fresh machine needs, each of which fails quietly rather than loudly when missing:
 
-- **The offscreen platform.** Nothing in the suite sets it: `tests/ui/conftest.py` builds a real `QApplication` on whatever platform the environment names. Set `QT_QPA_PLATFORM=offscreen` for the run, as every command below does, so no window reaches the desktop.
 - **The dev requirements, all of them.** `pip install -r requirements-dev.txt`. The MMSP conformance test skips itself when `jsonschema` cannot be imported, so an environment missing it passes with one test fewer and says so only in the skip count.
 - **MMSP-Spec beside this repository**, for the same test. `tests/infrastructure/test_mmsp_conformance.py` reads the published feed schema from a sibling `MMSP-Spec` checkout and skips when there is none.
 
@@ -15,14 +14,15 @@ Three things a fresh machine needs, each of which fails quietly rather than loud
 From the repository root, in PowerShell:
 
 ```powershell
-$env:QT_QPA_PLATFORM = 'offscreen'
 .\venv\Scripts\python.exe -m pytest
 $LASTEXITCODE
 ```
 
+**No window appears.** `tests/conftest.py` forces `QT_QPA_PLATFORM=offscreen` before any test module imports Qt, overriding whatever the shell holds, so a bare run stays off the desktop. `tests/ui/test_offscreen_platform.py` fails if that line is ever lost or moved below a Qt import; it was proved by removing the line and running under `QT_QPA_PLATFORM=minimal`.
+
 That one command is the whole gate. `pyproject.toml` adds the coverage measurement and its floor to every run; `black` and `flake8` run inside the suite as assertions (`tests/structural/test_boundaries.py`), so a formatting or lint failure is a test failure. There is no separate gate script.
 
-**A full run takes about thirty seconds.** 806 tests are collected: 290 interface, 212 infrastructure, 124 installer and version at the top of `tests/`, 89 application, 64 domain and 27 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
+**A full run takes about thirty seconds.** 807 tests are collected: 291 interface, 212 infrastructure, 124 installer and version at the top of `tests/`, 89 application, 64 domain and 27 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
 
 **Read the exit code, never the last line.** The suite is coverage gated, so it prints the coverage table last and no line of passed and failed; a coverage row such as `errors.py` also reads like a result to anybody searching the text. `0` means every test passed and the floor was met. Anything else means read the failures above the table. For a count without running anything, `python -m pytest --co -q --no-cov` ends with one.
 

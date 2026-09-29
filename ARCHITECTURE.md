@@ -204,6 +204,7 @@ tests/
   test_installer_*.py       The installer operations: install and its flow, deploy edges, repair, uninstall, shortcuts, running-app detection, the launch decision, progress reporting, the remaining operation edges and the payload
   ui/
     conftest.py             The session QApplication; Qt is never mocked
+    test_offscreen_platform.py  The application is on the offscreen platform, which the root `tests/conftest.py` forces before any Qt import; fails if that line is lost, so a bare run never puts windows on the desktop
     bridge_dtos.py          DTO builders and the service stand-ins the bridge tests share
     window_stub.py          Hand-written controllers (app, update and external links) with exactly the surface main.qml reaches for, the feed and item builders that fill them, the palette a component under test takes as its theme, plus the loader that builds the real window against them
     test_bridge_models.py   The three QAbstractListModels, asserted by role number
