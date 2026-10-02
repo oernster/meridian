@@ -127,6 +127,7 @@ The root `VERSION` file is the single source of truth for the version. `meridian
 - [TESTING.md](TESTING.md): running the suite, reading its result, what the gate holds and what only a real machine can check.
 - [CONTRIBUTING.md](CONTRIBUTING.md): the standards and design boundaries a change has to meet.
 - [TECH_DEBT.md](TECH_DEBT.md): what is still open, what is deliberately left and what only looks like debt.
+- [DECISIONS-TRADEOFFS.md](DECISIONS-TRADEOFFS.md): the decisions Meridian rests on, with what each one gains and what it costs.
 
 <p align="center">
   <img src="docs/architecture.svg" alt="Meridian clean architecture: UI, Application, Domain, Infrastructure, with dependencies pointing inward to a pure Domain" width="860">
