@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>What's new in Meridian: release history</title>
-  <meta name="description" content="Meridian's release history: a Guide behind a Help menu, the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta name="description" content="Meridian's release history: HTTPS-only redirects, a Guide behind a Help menu, the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="apple-touch-icon" href="meridian-512.png">
@@ -13,7 +13,7 @@
   <meta property="og:site_name" content="Meridian">
   <meta property="og:url" content="https://ernster.dev/meridian/whats-new.html">
   <meta property="og:title" content="What's new in Meridian: release history">
-  <meta property="og:description" content="A Guide behind a Help menu, the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta property="og:description" content="HTTPS-only redirects, a Guide behind a Help menu, the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <meta property="og:image" content="https://ernster.dev/meridian/meridian-512.png">
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
@@ -21,7 +21,7 @@
   <meta property="og:locale" content="en_GB">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="What's new in Meridian: release history">
-  <meta name="twitter:description" content="A Guide behind a Help menu, the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta name="twitter:description" content="HTTPS-only redirects, a Guide behind a Help menu, the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <meta name="twitter:image" content="https://ernster.dev/meridian/meridian-512.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -51,12 +51,23 @@
 <section class="section" id="whats-new">
   <div class="section-label">Changelog</div>
   <h2 class="section-title">What's new</h2>
-  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the next added a Guide that names every one of them, reached from a Help menu on the header, which the newest makes the home of Check for Updates.</p>
+  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the next added a Guide that names every one of them, reached from a Help menu on the header, which a later one made the home of Check for Updates. The newest closes two gaps between what Meridian said and what it did: redirects to plain HTTP are refused before they are made and uninstalling removes the database it said it would.</p>
 
   <div class="changelog-grid">
 
     <div class="cl-entry">
-      <div class="ver-tag">v<!--VERSION-->2.9.0<!--/VERSION--></div>
+      <div class="ver-tag">v<!--VERSION-->2.10.0<!--/VERSION--></div>
+      <h3>Redirects to plain HTTP refused; uninstall takes the database with it</h3>
+      <ul>
+        <li>A feed or a discovery search that redirected to a plain-HTTP address was followed there, although Meridian said it would not be. Every step of a redirect is now checked before it is made and one pointing at plain HTTP is refused, so the plain-HTTP server is never contacted. A feed that redirects that way is treated as a failed poll and asked again an hour later</li>
+        <li>A redirect chain is capped at five steps. A feed that has moved permanently is read from its new address and the move is recorded; the subscription itself keeps the address you gave it</li>
+        <li>Uninstalling from the setup program said it would remove your data but left the database behind in the .meridian folder in your home folder. It now removes that folder too, so export your subscriptions first if you want to keep them</li>
+        <li>The site's stylesheet is linked by a hash of its content, so a browser never pairs a new page with an old cached stylesheet. Every page footer now links to the rest of my work</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.9.0</div>
       <h3>Check for Updates moves to the Help menu</h3>
       <ul>
         <li>Asking whether a newer Meridian exists is now Help &gt; Check for Updates, where every other application of mine keeps it. It used to be a button on the About dialog, from before Meridian had a Help menu</li>

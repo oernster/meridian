@@ -92,18 +92,6 @@ A structural test checks the source tree rather than behaviour, so a rule holds 
 
 ## What only a real machine settles
 
-The suite never starts the application, never opens a browser, never reaches the network and never touches the registry. Everything below is therefore outside what a green run proves; check it by hand before a release it could affect.
-
-| Check | Why the suite cannot |
-|---|---|
-| The update prompt against the live GitHub releases API | The adapter is tested against `respx`, never the real endpoint |
-| The update check inside the Flatpak | Only an installed bundle shows whether the sandbox grants the network |
-| Each packaged build starts: Windows setup, macOS DMG, Linux Flatpak | The suite runs from source; bundling, `VERSION` resolution and the licence texts in a frozen build are only real once built |
-| The installer's shortcut, deferred uninstall delete, launch on finish and window to front | The four installer functions excluded from coverage, because running them acts on the machine |
-| Installer tooltips over an inactive window | The offscreen platform does not model window activation faithfully |
-| Audio and video playback, the YouTube embed | Need a real audio device and a real network; the embed is Google's player |
-| Feed discovery and the topic suggestions | Feedly and Wikipedia are live services; the tests use recorded or stubbed answers |
-| The donate and specification buttons open the browser | The opener is injected in tests; only a desktop proves the hand-off |
-| The focus ring paints where focus is | The tests assert which item holds focus, not what is drawn |
+The suite never starts the application, never opens a browser, never reaches the network and never touches the registry. What depends on any of those (a packaged build starting, the live services, real playback, the installer functions excluded from coverage and what the focus ring actually paints) is outside what a green run proves; it is checked by hand in a real build before a release it could affect.
 
 See also [README.md](README.md), [ARCHITECTURE.md](ARCHITECTURE.md) and [DEVELOPMENT.md](DEVELOPMENT.md).

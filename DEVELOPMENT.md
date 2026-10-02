@@ -54,7 +54,7 @@ QtWebEngine is not a separate line here because it ships inside the PySide6 whee
 
 ## Running Tests
 
-[TESTING.md](TESTING.md) is the home for this: what a first run needs, the one command that is the whole gate, how to read its exit code, the coverage floors, running part of the suite and what only a real machine can check.
+[TESTING.md](TESTING.md) is the home for this: what a first run needs, the one command that is the whole gate, how to read its exit code, the coverage floors, running part of the suite and what a green run does not prove.
 
 ## Formatting and Linting
 

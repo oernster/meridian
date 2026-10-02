@@ -124,8 +124,7 @@ The addresses live in one place in Python; the interface never holds a copy.
 The repository ships a small list of institutional feeds as the worked example
 of the export format.
 
-- **Rather than:** a real export of the author's own subscriptions, which it
-  once was.
+- **Rather than:** a real export of somebody's own subscriptions.
 - **Gains:** discloses nothing about anyone; does not go stale with one
   person's tastes.
 - **Costs:** none recorded.
@@ -143,6 +142,22 @@ address that is not HTTPS.
 - **Gains:** an imported or discovered reading list keeps loading.
 - **Costs:** a plain HTTP feed is still fetched in the clear; one cannot be
   typed in by hand.
+
+### A redirect is followed only to HTTPS
+
+Every hop of a redirect is checked before it is made, for feeds and for
+discovery alike; one that points at plain HTTP is refused, so that server is
+never contacted. A chain is capped at five hops. A feed that has moved for
+good is read from its new address and the move is noted, while the
+subscription keeps the address it was given.
+
+- **Rather than:** following any redirect and judging only where it ended,
+  which would already have spoken to the plain HTTP server; re-pointing the
+  subscription automatically.
+- **Gains:** a feed cannot be quietly downgraded to an unencrypted connection;
+  a moved feed keeps working without the reader doing anything.
+- **Costs:** a feed whose publisher redirects it to plain HTTP stops updating.
+  It is retried hourly as a failed poll and the window does not say why.
 
 ### A five minute floor under every feed
 
@@ -253,12 +268,12 @@ An RSS item's full content is preferred over its summary.
 ### Feed HTML is not sanitised
 
 Article HTML is shown through Qt's rich-text engine, which accepts a small
-subset of HTML and runs no script. No sanitising pass runs. A sanitiser was
-once declared as a dependency, imported nowhere, then dropped.
+subset of HTML and runs no script. No sanitising pass runs and no sanitiser
+is shipped.
 
-- **Rather than:** a sanitising library carried for a pass never written.
-- **Gains:** no dependency shipped for nothing; the protection that exists is
-  the one stated.
+- **Rather than:** a sanitising pass over every article.
+- **Gains:** one dependency fewer; the protection that exists is the one
+  stated.
 - **Costs:** whatever the engine accepts is shown as the feed sent it. Adding
   a sanitiser is a decision still open.
 
@@ -289,10 +304,9 @@ header's own size.
 
 ### A Help menu rather than a menu bar
 
-Help drops a small menu: the Guide, Check for Updates and About Meridian. The
-manual update check moved here from the About dialog.
+Help drops a small menu: the Guide, Check for Updates and About Meridian.
 
-- **Rather than:** a full menu bar; the check inside About.
+- **Rather than:** a full menu bar; the update check inside About.
 - **Gains:** the check sits where the rest of the portfolio keeps it; the
   window stays uncluttered.
 - **Costs:** none recorded.
@@ -327,7 +341,7 @@ component carries the pace for the whole application.
 The Guide and the licences share one dialog. It opens with Close focused; the
 page is a Tab stop only while it overflows and never takes focus from a click.
 
-- **Rather than:** opening focused on the text, as the licences once did.
+- **Rather than:** opening focused on the text.
 - **Gains:** Enter or Escape closes at once; a click on the words leaves focus
   where it was.
 - **Costs:** none recorded.
@@ -393,6 +407,18 @@ coverage gate; the window around it is not.
 - **Rather than:** a generic installer.
 - **Gains:** the operations are tested like the application.
 - **Costs:** the setup program is Meridian's own to maintain.
+
+### Uninstalling removes the reader's data too
+
+Removing Meridian through the setup program takes the reading list with it:
+the database folder in the home folder goes along with the application and
+its per-user data and cache folders. The confirmation says so before anything is removed.
+
+- **Rather than:** leaving the database behind for a later reinstall to find.
+- **Gains:** an uninstall does not leave the reading list behind; the
+  confirmation's promise is kept.
+- **Costs:** subscriptions and read state are gone unless they were exported
+  first. The window offers no way to keep them.
 
 ### An upgrade never leaves the reader with nothing
 
@@ -518,8 +544,8 @@ lines; one in the last twentieth below the cap fails too, so a file near it is
 cut well below rather than shaved. The build scripts are exempt from length,
 never from the formatters.
 
-- **Rather than:** a cap on the package alone, which let four QML files grow
-  past eight hundred lines.
+- **Rather than:** a cap on the package alone, which left the QML and the
+  tests free to grow without limit.
 - **Gains:** modules split at real seams; splitting the large QML files
   turned up repetition that became shared components.
 - **Costs:** many small files and more wiring between them.

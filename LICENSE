@@ -15,7 +15,7 @@ USER INTERFACE  ->  GNU Lesser General Public License v3.0 (LGPL-3.0)
     LGPL to align with Qt's own licensing. Full text: LICENSE-LGPL-3.0.txt,
     which incorporates the terms of the GPL-3.0 in LICENSE-GPL-3.0.txt.
 
-The running application shows both under its header: "UI Licence" (LGPL-3.0)
-and "Model Licence" (Apache-2.0).
+The running application shows both from the strip along the foot of its
+window: "UI licence: LGPL-3.0" and "Model licence: Apache-2.0".
 
 Copyright (c) 2026 Oliver Ernster.

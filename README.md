@@ -23,7 +23,7 @@ The YouTube embed is the one exception worth knowing about. It is Google's own p
 
 - People who want their subscriptions and read state synchronised between machines or to a phone. Meridian is single-device by design; JSON export and import is the migration path, not live sync.
 - People who want a hosted or web-based reader. There is no server component and none is planned.
-- People who expect to type a plain-HTTP feed URL into the app. The Add Subscription field only accepts `https://`; redirect targets have to be HTTPS; parsers drop non-HTTPS media and thumbnail URLs.
+- People who expect to type a plain-HTTP feed URL into the app. The Add Subscription field only accepts `https://`; every hop of a redirect has to be HTTPS and one that is not is refused before it is made; parsers drop non-HTTPS media and thumbnail URLs.
 - People who want push notifications on new items. MMSP is pull-only, so the scheduler is silent and new items appear on the next poll tick or view.
 
 ## Capabilities
@@ -63,6 +63,8 @@ The YouTube embed is the one exception worth knowing about. It is Google's own p
 Download the installer for your platform from the [Releases page](https://github.com/oernster/meridian/releases).
 
 The Windows installer is per-user: it installs under `%LOCALAPPDATA%` and registers under `HKEY_CURRENT_USER`, so it never asks for administrator rights. It offers to launch Meridian when it has finished, ticked by default, after a repair or a reinstall as much as after a first install; untick the box and it just closes.
+
+Uninstalling through the setup program removes your data with the application, including the `~/.meridian` folder that holds the database. Export your subscriptions first if you want to keep them.
 
 ### Run from source
 
@@ -124,7 +126,7 @@ The root `VERSION` file is the single source of truth for the version. `meridian
 
 - [DEVELOPMENT.md](DEVELOPMENT.md): Python version policy, dev tooling and how to run the suite.
 - [ARCHITECTURE.md](ARCHITECTURE.md): the invariants, the tests that enforce them and the full project structure.
-- [TESTING.md](TESTING.md): running the suite, reading its result, what the gate holds and what only a real machine can check.
+- [TESTING.md](TESTING.md): running the suite, reading its result, what the gate holds and what a green run does not prove.
 - [CONTRIBUTING.md](CONTRIBUTING.md): the standards and design boundaries a change has to meet.
 - [TECH_DEBT.md](TECH_DEBT.md): what is still open, what is deliberately left and what only looks like debt.
 - [DECISIONS-TRADEOFFS.md](DECISIONS-TRADEOFFS.md): the decisions Meridian rests on, with what each one gains and what it costs.

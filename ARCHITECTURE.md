@@ -203,7 +203,7 @@ tests/
     test_github_release_source.py  The update check's GitHub adapter: request shape, timeout and every malformed-payload path, with `respx`
     test_scheduler.py       The poll loop, its tick and per-feed backoff
     test_mmsp_conformance.py    The Section 5.7 version rule, asserted against the published schema where MMSP-Spec is checked out beside this repository
-  test_installer_*.py       The installer operations: install and its flow, deploy edges, repair, uninstall, shortcuts, running-app detection, the launch decision, progress reporting, the remaining operation edges and the payload
+  test_installer_*.py       The installer operations: install and its flow, deploy edges, repair, uninstall (including the `~/.meridian` folder going only when the user-data option says so), shortcuts, running-app detection, the launch decision, progress reporting, the remaining operation edges and the payload
   ui/
     conftest.py             The session QApplication; Qt is never mocked
     test_offscreen_platform.py  The application is on the offscreen platform, which the root `tests/conftest.py` forces before any Qt import; fails if that line is lost, so a bare run never puts windows on the desktop
@@ -274,7 +274,7 @@ GitHubReleaseSource (Infrastructure)
 3. `AppController.loadFeeds()` on startup: `SubscriptionService.list_feeds()` then `FeedListModel.refresh()`
 4. User selects feed: `AppController.selectFeed(id)` then `ItemService.get_items(id)` (dedup + filter) then `ItemListModel.refresh()`
 5. User selects item: `ItemListPanel` reports it through `itemSelected`; `FeedReader` loads the detail pane with it and calls `AppController.markRead(id)`
-6. `PollScheduler` runs background asyncio tasks, ticks every 10s, polls each feed when its interval has elapsed
+6. `PollScheduler` runs one asyncio loop on its own daemon thread; every 10s it polls each feed concurrently and `PollOrchestrator` skips any feed whose interval or backoff has not elapsed
 7. On new items: `AppController.notify_new_items()` refreshes the relevant `ItemListModel` if that feed is selected
 8. Bulk feed removal: `bulkUnsubscribe()` calls `remove_rows_by_ids()` on `FeedListModel` (row-level removal, scroll position preserved)
 
@@ -296,7 +296,7 @@ GitHubReleaseSource (Infrastructure)
 
 **HTML rendering**: `TextArea { textFormat: Text.RichText }` in QML. Plain-text descriptions (no HTML tags) are escaped and converted to `<br/>`-separated HTML before display. Raw HTML from `content:encoded` is passed through directly. **Nothing sanitises it, deliberately.** What protects the reader is Qt's rich-text engine, which accepts only a small HTML subset and executes no script, rather than a sanitising pass. `bleach` sat in the dependency set for that pass and was imported nowhere, so it was dropped; adding a sanitiser back is a decision to make on its own terms, not a dependency to leave lying about.
 
-**Transport policy**: `Feed.__post_init__` accepts `http://` and `https://` and rejects every other scheme, so an imported or discovered plain-HTTP feed still loads. Everything downstream of that is stricter: the Add Subscription field in `SubscriptionManager.qml` only enables Subscribe for an `https://` URL, both fetchers refuse a non-HTTPS redirect hop before it is made; the parsers drop non-HTTPS media, enclosure and thumbnail URLs.
+**Transport policy**: `Feed.__post_init__` accepts `http://` and `https://` and rejects every other scheme, so an imported or discovered plain-HTTP feed still loads. Everything downstream of that is stricter: the Add Subscription field in `SubscriptionManager.qml` only enables Subscribe for an `https://` URL, both fetchers refuse a non-HTTPS redirect hop before it is made; the parsers drop non-HTTPS media, enclosure and thumbnail URLs. A refused hop, like a chain longer than `MAX_REDIRECT_HOPS`, reaches `PollScheduler` as an ordinary failure, so the feed backs off for an hour and nothing is shown in the window. A recorded `moved_to` is stored with the poll state and read by nothing else: the subscription keeps the address it was given.
 
 **QML component extraction**: the front end is decomposed the way QML itself offers, into sibling `.qml` files, with the composing file holding the shared state and every crossing between panels. Two things govern it, both learned the expensive way. An extracted component still resolves the ids of the file that created it, because the instance's context chains to its creation context, so an outer-scope read survives extraction silently and only fails once the component is used somewhere else: a new component declares every input it takes; its test builds it with no caller in scope. Separately, a `Repeater`'s delegates belong to its `QQmlDelegateModel` rather than to the item they are laid out in, so `findChild` cannot see them at all: a test that needs one walks the visual tree through `childItems()`, starting at the dialog's own `contentItem` where the content is in the overlay.
 
