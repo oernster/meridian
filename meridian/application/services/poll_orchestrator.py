@@ -37,15 +37,6 @@ class PollOrchestrator:
             last_modified=state.last_modified,
         )
         now = datetime.now(tz=timezone.utc)
-        if result.moved_to:
-            self._poll_state_repo.save(
-                PollState(
-                    feed_id=feed_id,
-                    last_polled=now,
-                    moved_to=result.moved_to,
-                )
-            )
-            return 0, False
         if result.not_modified:
             next_poll = now + timedelta(seconds=result.poll_config.effective_interval)
             self._poll_state_repo.save(
@@ -55,6 +46,7 @@ class PollOrchestrator:
                     next_poll=next_poll,
                     etag=state.etag,
                     last_modified=state.last_modified,
+                    moved_to=result.moved_to,
                 )
             )
             return 0, False
@@ -77,6 +69,7 @@ class PollOrchestrator:
                 next_poll=next_poll,
                 etag=result.etag,
                 last_modified=result.last_modified,
+                moved_to=result.moved_to,
             )
         )
         return len(new_items), title_updated

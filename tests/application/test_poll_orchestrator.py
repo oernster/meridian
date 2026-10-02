@@ -136,15 +136,27 @@ class TestPollOrchestrator:
         assert feeds_changed is False
         self.item_repo.save_many.assert_not_called()
 
-    async def test_poll_moved_to(self):
-        self.feed_repo.get_by_id.return_value = _make_feed()
+    async def test_poll_moved_to_keeps_items_and_records_move(self):
+        self.feed_repo.get_by_id.return_value = _make_feed(title="Existing")
         self.poll_state_repo.get.return_value = PollState(feed_id=1)
         self.fetcher.fetch.return_value = _make_result(
-            items=[], moved_to="https://new.example.com/feed"
+            moved_to="https://new.example.com/feed"
         )
+        self.item_repo.exists.return_value = False
         count, feeds_changed = await self.orch.poll_feed(1)
-        assert count == 0
+        assert count == 1
         assert feeds_changed is False
+        self.item_repo.save_many.assert_called_once()
+        saved_state = self.poll_state_repo.save.call_args[0][0]
+        assert saved_state.moved_to == "https://new.example.com/feed"
+
+    async def test_poll_not_modified_records_move(self):
+        self.feed_repo.get_by_id.return_value = _make_feed()
+        self.poll_state_repo.get.return_value = PollState(feed_id=1, etag='"abc"')
+        self.fetcher.fetch.return_value = _make_result(
+            items=[], not_modified=True, moved_to="https://new.example.com/feed"
+        )
+        await self.orch.poll_feed(1)
         saved_state = self.poll_state_repo.save.call_args[0][0]
         assert saved_state.moved_to == "https://new.example.com/feed"
 

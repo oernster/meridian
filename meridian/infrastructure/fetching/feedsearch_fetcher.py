@@ -18,6 +18,7 @@ from meridian.application.interfaces.discovery_fetcher import (
     DiscoveryFetcher,
 )
 from meridian.application.services.source_type_inference import infer_source_type
+from meridian.infrastructure.fetching.https_client import build_https_only_client
 
 _API_URL = "https://cloud.feedly.com/v3/search/feeds"
 _USER_AGENT = "Meridian/1.0"
@@ -25,11 +26,13 @@ _TIMEOUT = 15.0
 
 
 class FeedsearchFetcher(DiscoveryFetcher):
-    def __init__(self, client: httpx.AsyncClient | None = None) -> None:
-        self._client = client or httpx.AsyncClient(
-            follow_redirects=True,
-            headers={"User-Agent": _USER_AGENT},
-            timeout=_TIMEOUT,
+    def __init__(
+        self,
+        client: httpx.AsyncClient | None = None,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
+        self._client = client or build_https_only_client(
+            _USER_AGENT, _TIMEOUT, transport
         )
 
     async def search(

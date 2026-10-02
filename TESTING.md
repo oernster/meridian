@@ -22,7 +22,7 @@ $LASTEXITCODE
 
 That one command is the whole gate. `pyproject.toml` adds the coverage measurement and its floor to every run; `black` and `flake8` run inside the suite as assertions (`tests/structural/test_boundaries.py`), so a formatting or lint failure is a test failure. There is no separate gate script.
 
-**A full run takes about thirty seconds.** 813 tests are collected: 297 interface, 212 infrastructure, 124 installer and version at the top of `tests/`, 89 application, 64 domain and 27 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
+**A full run takes about thirty seconds.** 822 tests are collected: 297 interface, 219 infrastructure, 125 installer and version at the top of `tests/`, 90 application, 64 domain and 27 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
 
 **Read the exit code, never the last line.** The suite is coverage gated, so it prints the coverage table last and no line of passed and failed; a coverage row such as `errors.py` also reads like a result to anybody searching the text. `0` means every test passed and the floor was met. Anything else means read the failures above the table. For a count without running anything, `python -m pytest --co -q --no-cov` ends with one.
 
@@ -60,7 +60,7 @@ The last is the one to run after formatting: it holds the root delivery scripts,
 |---|---|---|
 | `domain/` | entities, value objects, the filter evaluator | values built in the test |
 | `application/` | the services and the update decision | the interfaces stood in for with `unittest.mock`; the update decision uses a small hand-written fake (`FakeSource`) |
-| `infrastructure/` | the repositories, parsers, fetcher, scheduler, discovery client and the GitHub adapter | a real SQLite file in a temporary folder; HTTP through `respx`, which answers the request inside the process |
+| `infrastructure/` | the repositories, parsers, fetcher, scheduler, discovery client and the GitHub adapter | a real SQLite file in a temporary folder; HTTP through `respx`, which answers the request inside the process, except redirects: those go through each fetcher's production client over an `httpx.MockTransport` (`redirect_transport.py`), because a bare client never follows a redirect and so cannot show what production does with one |
 | `ui/` | the bridge, the models and the real `main.qml` | a real `QApplication`; the window is built against hand-written stub controllers |
 | `test_installer_*.py` | the setup program's operations | real files in a temporary folder, with the registry and processes stood in for |
 | `structural/` | the rules no single test can see | the source tree itself |

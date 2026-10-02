@@ -6,8 +6,9 @@ and uninstalling while the application is still running. Both were previously
 unasserted anywhere.
 
 Every Windows side effect is replaced by a hand-written recorder. The one real
-filesystem action, clearing the user's data and cache directories, is pointed
-at `tmp_path` so the assertion is that the directories actually go.
+filesystem action, clearing the user's data and cache directories plus the
+database folder under the home folder, is pointed at `tmp_path` so the
+assertion is that the directories actually go.
 """
 
 from __future__ import annotations
@@ -73,8 +74,17 @@ def rig(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):  # noqa: ANN201
     monkeypatch.setattr(
         uninstall_ops, "user_cache_dir", lambda *a, **k: str(tmp_path / "cache")
     )
+    # The database folder hangs off the home folder, so every uninstall here
+    # would otherwise reach the developer's real one. Windows reads USERPROFILE
+    # and POSIX reads HOME; the assertion refuses to go on if neither took.
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    assert Path.home() == home, "the home folder was not redirected"
 
     rec.paths = paths
+    rec.home = home
     return rec
 
 
@@ -198,6 +208,25 @@ def test_user_data_goes_only_when_the_option_says_so(
 
     assert not (tmp_path / "data").exists()
     assert not (tmp_path / "cache").exists()
+
+
+def test_the_database_folder_goes_only_when_the_option_says_so(
+    rig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The subscriptions live under the home folder, not under platformdirs."""
+    install_dir = _installed(tmp_path)
+    _found(monkeypatch, _entry(install_dir))
+    db_folder = rig.home / ".meridian"
+    db_folder.mkdir()
+    (db_folder / "meridian.db").write_text("rows", encoding="utf-8")
+
+    uninstall(InstallerIdentity(), UninstallOptions(remove_user_data=False))
+
+    assert (db_folder / "meridian.db").exists()
+
+    uninstall(InstallerIdentity(), UninstallOptions(remove_user_data=True))
+
+    assert not db_folder.exists()
 
 
 def test_the_install_directory_is_scheduled_for_deletion_last(

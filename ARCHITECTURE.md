@@ -24,7 +24,7 @@ These are the rules the codebase is not allowed to break. Each one names the tes
 | The MMSP protocol version is stated once, in `infrastructure/fetching/mmsp.py`; both the User-Agent and the parser's version gate derive from it. A feed declaring any 1.MINOR is read and anything else is refused, per specification Section 5.7. Where the MMSP-Spec repository is checked out beside this one, that rule is asserted against the published feed schema, so the two expressions of it cannot drift apart. | `tests/infrastructure/test_mmsp_conformance.py` |
 | The version string is read from the root `VERSION` file and appears nowhere else in source. | `tests/test_version.py::test_version_matches_the_root_version_file` and `::test_candidates_cover_package_parent_then_package` |
 | A feed URL has to use `http://` or `https://`; anything else raises. | `tests/domain/test_entities.py::TestFeed::test_rejects_invalid_scheme` and `::test_accepts_http_url` |
-| A redirect is only followed to an HTTPS target; a plain-HTTP `Location` is discarded. | `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_301_http_location_rejected` |
+| A redirect is only followed to an HTTPS target. Both fetchers build their client through `infrastructure/fetching/https_client.py`, whose response hook refuses a non-HTTPS hop before httpx makes it (`InsecureRedirectError`), so the plain-HTTP host is never contacted. A chain is capped at `MAX_REDIRECT_HOPS`; a permanent first hop (301 or 308) is recorded as `moved_to` while the feed is still read from where it landed. The tests build each fetcher exactly as `main.py` does and swap only the transport. | `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_301_http_location_rejected`, `::test_http_hop_after_https_hop_rejected`, `::test_redirect_hops_capped`, `::test_301_moved` and `tests/infrastructure/test_feedsearch_fetcher.py::TestFeedsearchFetcher::test_production_client_refuses_http_redirect_hop` |
 | Non-HTTPS media, enclosure and transcript URLs are dropped during parsing. | `tests/infrastructure/parser/test_rss_parser.py::test_https_only_enclosure` and `::test_media_content_http_excluded`, `test_atom_parser.py::test_enclosure_http_url_excluded`, `test_podcast_parser.py::test_transcript_http_excluded` |
 | The poll interval can never fall below `POLL_FLOOR_SECONDS`; a 429 without `Retry-After` backs off to that floor. | `tests/domain/test_entities.py::TestPollConfig::test_floor_enforced_on_low_value` and `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_429_no_retry_after_uses_floor` |
 | A response larger than `_MAX_DOCUMENT_BYTES` is refused rather than parsed. | `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_document_too_large_raises` |
@@ -90,13 +90,14 @@ meridian/
   infrastructure/
     db/
       orm_models.py         SQLAlchemy ORM: FeedRow, ItemRow, PollStateRow
-      session.py            build_engine and build_session_factory over `~/.meridian/meridian.db` (`_DEFAULT_DB_PATH`)
+      session.py            build_engine and build_session_factory over `~/.meridian/meridian.db` (`_DEFAULT_DB_PATH`, under `version.data_folder()`)
     repositories/
       sqlite_feed_repository.py
       sqlite_item_repository.py
       sqlite_poll_state_repository.py
     fetching/
       mmsp.py               The MMSP protocol version and the Section 5.7 rule for which documents are readable
+      https_client.py       The one httpx client both fetchers build: every redirect hop must be HTTPS (refused before it is made), at most MAX_REDIRECT_HOPS hops, plus where a permanent move landed
       http_fetcher.py       HttpFetcher: httpx async client, User-Agent derived from the protocol version, conditional GET (ETag/Last-Modified), HTTPS-only redirects, 10 MB document cap, 300s poll floor
       scheduler.py          PollScheduler: one asyncio loop that polls every feed concurrently on each 10s tick, per-feed backoff state
       feedsearch_fetcher.py FeedsearchFetcher: implements DiscoveryFetcher against Feedly's public search API at cloud.feedly.com (httpx async). The name is a leftover from an earlier directory; Feedly indexes RSS, Atom and podcast sources only, so no MFEED feed is discoverable here
@@ -163,7 +164,7 @@ meridian/
       ReadingDialog.qml     The one home for a dialog of words to read, worn by the Guide and both licences: a title, a page that reads itself (an AutoScroller, since the page always overflows and nobody should have to wheel through it) and Close. The page is words, not a control, so the dialog opens on Close; the page is a Tab stop only while it overflows, never takes focus from a click and paints no ring in any state. Tab, Right, Shift+Tab and Left step between Close and the page; Enter or Escape on Close closes. The licences used to open focused on their text, which is how this became one component rather than two copies
 
   main.py                   Composition root (excluded from coverage)
-  version.py                Application identity; reads the root VERSION file with a 0.0.0-dev fallback
+  version.py                Application identity; reads the root VERSION file with a 0.0.0-dev fallback; `data_folder()`, the one home of `~/.meridian`, which the database lives in and the uninstaller removes with the user's data
 
 installer/                  The bespoke per-user Windows installer, shipped as MeridianSetup.exe. Decomposed the same way as the application, which is what let half of it join the coverage gate
   app.py, cli.py            Entry point and argument parsing
@@ -196,8 +197,9 @@ tests/
   infrastructure/
     parser/                 Parser tests for RSS, Atom, podcast, mfeed and the platform dispatcher
     test_repositories.py    SQLite repository integration tests
-    test_http_fetcher.py    Conditional GET, redirects, backoff and the document cap, with `respx`
-    test_feedsearch_fetcher.py  The discovery client against recorded Feedly responses
+    test_http_fetcher.py    Conditional GET, backoff and the document cap, with `respx`; redirects through the production client over `redirect_transport.py`
+    test_feedsearch_fetcher.py  The discovery client against recorded Feedly responses, plus its redirect policy through the production client
+    redirect_transport.py   The one redirecting `httpx.MockTransport` both fetcher suites build their production clients over
     test_github_release_source.py  The update check's GitHub adapter: request shape, timeout and every malformed-payload path, with `respx`
     test_scheduler.py       The poll loop, its tick and per-feed backoff
     test_mmsp_conformance.py    The Section 5.7 version rule, asserted against the published schema where MMSP-Spec is checked out beside this repository
@@ -294,7 +296,7 @@ GitHubReleaseSource (Infrastructure)
 
 **HTML rendering**: `TextArea { textFormat: Text.RichText }` in QML. Plain-text descriptions (no HTML tags) are escaped and converted to `<br/>`-separated HTML before display. Raw HTML from `content:encoded` is passed through directly. **Nothing sanitises it, deliberately.** What protects the reader is Qt's rich-text engine, which accepts only a small HTML subset and executes no script, rather than a sanitising pass. `bleach` sat in the dependency set for that pass and was imported nowhere, so it was dropped; adding a sanitiser back is a decision to make on its own terms, not a dependency to leave lying about.
 
-**Transport policy**: `Feed.__post_init__` accepts `http://` and `https://` and rejects every other scheme, so an imported or discovered plain-HTTP feed still loads. Everything downstream of that is stricter: the Add Subscription field in `SubscriptionManager.qml` only enables Subscribe for an `https://` URL, `HttpFetcher` discards a non-HTTPS redirect target; the parsers drop non-HTTPS media, enclosure and thumbnail URLs.
+**Transport policy**: `Feed.__post_init__` accepts `http://` and `https://` and rejects every other scheme, so an imported or discovered plain-HTTP feed still loads. Everything downstream of that is stricter: the Add Subscription field in `SubscriptionManager.qml` only enables Subscribe for an `https://` URL, both fetchers refuse a non-HTTPS redirect hop before it is made; the parsers drop non-HTTPS media, enclosure and thumbnail URLs.
 
 **QML component extraction**: the front end is decomposed the way QML itself offers, into sibling `.qml` files, with the composing file holding the shared state and every crossing between panels. Two things govern it, both learned the expensive way. An extracted component still resolves the ids of the file that created it, because the instance's context chains to its creation context, so an outer-scope read survives extraction silently and only fails once the component is used somewhere else: a new component declares every input it takes; its test builds it with no caller in scope. Separately, a `Repeater`'s delegates belong to its `QQmlDelegateModel` rather than to the item they are laid out in, so `findChild` cannot see them at all: a test that needs one walks the visual tree through `childItems()`, starting at the dialog's own `contentItem` where the content is in the overlay.
 

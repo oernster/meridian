@@ -1,4 +1,5 @@
 import asyncio
+import json
 from unittest.mock import AsyncMock, MagicMock
 
 import httpx
@@ -6,11 +7,16 @@ import pytest
 
 from meridian.application.interfaces.discovery_fetcher import DiscoveryError
 from meridian.infrastructure.fetching.feedsearch_fetcher import (
+    _API_URL,
     FeedsearchFetcher,
     _extract_url,
     _parse_candidate,
 )
 from meridian.domain.value_objects.source_type import SourceType
+from tests.infrastructure.redirect_transport import redirecting_transport
+
+_INSECURE = "http://insecure.example.com/search"
+_EMPTY_RESULTS = json.dumps({"results": []}).encode()
 
 
 def _run(coro):
@@ -160,6 +166,25 @@ class TestFeedsearchFetcher:
         fetcher = FeedsearchFetcher(client=client)
         with pytest.raises(DiscoveryError, match="Unexpected error"):
             _run(fetcher.search("python"))
+
+    def test_production_client_refuses_http_redirect_hop(self):
+        seen: list[str] = []
+        redirects = {_API_URL: (302, _INSECURE)}
+        transport = redirecting_transport(redirects, _EMPTY_RESULTS, seen)
+        fetcher = FeedsearchFetcher(transport=transport)
+        with pytest.raises(DiscoveryError, match=_INSECURE):
+            _run(fetcher.search("python"))
+        assert [url.split("?")[0] for url in seen] == [_API_URL]
+
+    def test_production_client_follows_https_redirect(self):
+        seen: list[str] = []
+        moved = "https://api.example.com/search"
+        transport = redirecting_transport(
+            {_API_URL: (302, moved)}, _EMPTY_RESULTS, seen
+        )
+        results = _run(FeedsearchFetcher(transport=transport).search("python"))
+        assert results == []
+        assert seen[-1] == moved
 
     def test_aclose(self):
         client = MagicMock(spec=httpx.AsyncClient)

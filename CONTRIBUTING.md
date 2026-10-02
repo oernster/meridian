@@ -165,9 +165,9 @@ these will be declined regardless of code quality, so check here first:
 - **Transport policy.** `Feed.__post_init__` accepts `http://` and `https://`
   and rejects every other scheme, so an imported or discovered plain-HTTP feed
   still loads. Everything downstream is stricter and stays that way: the Add
-  Subscription field only enables Subscribe for an `https://` URL, `HttpFetcher`
-  discards a non-HTTPS redirect target and the parsers drop non-HTTPS media,
-  enclosure and transcript URLs.
+  Subscription field only enables Subscribe for an `https://` URL, both fetchers
+  refuse a non-HTTPS redirect hop before it is made and the parsers drop
+  non-HTTPS media, enclosure and transcript URLs.
 - **No new heavy dependencies** without discussion. The runtime dependency set
   is intentionally small. Propose additions in an issue first.
 - **QtWebEngine is already in, for exactly one thing.** `MediaPlayerPanel.qml`

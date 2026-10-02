@@ -8,6 +8,10 @@ from meridian.application.interfaces.feed_fetcher import FeedFetcher, FetchResul
 from meridian.domain.entities.feed import Feed
 from meridian.domain.value_objects.poll_config import PollConfig, POLL_FLOOR_SECONDS
 from meridian.domain.value_objects.source_type import SourceType
+from meridian.infrastructure.fetching.https_client import (
+    build_https_only_client,
+    permanent_location,
+)
 from meridian.infrastructure.fetching.mmsp import PROTOCOL_VERSION
 from meridian.infrastructure.fetching.parser import (
     atom_parser,
@@ -19,14 +23,17 @@ from meridian.infrastructure.fetching.parser import (
 
 _USER_AGENT = f"MMSP/{PROTOCOL_VERSION}"
 _MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
+_TIMEOUT_SECONDS = 30.0
 
 
 class HttpFetcher(FeedFetcher):
-    def __init__(self, client: httpx.AsyncClient | None = None) -> None:
-        self._client = client or httpx.AsyncClient(
-            follow_redirects=True,
-            headers={"User-Agent": _USER_AGENT},
-            timeout=30.0,
+    def __init__(
+        self,
+        client: httpx.AsyncClient | None = None,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
+        self._client = client or build_https_only_client(
+            _USER_AGENT, _TIMEOUT_SECONDS, transport
         )
 
     async def fetch(
@@ -41,22 +48,14 @@ class HttpFetcher(FeedFetcher):
         if last_modified:
             headers["If-Modified-Since"] = last_modified
         response = await self._client.get(feed.url, headers=headers)
-        if response.status_code == 301:
-            location = response.headers.get("location", "")
-            return FetchResult(
-                items=[],
-                poll_config=PollConfig(),
-                etag=None,
-                last_modified=None,
-                moved_to=location if location.startswith("https://") else None,
-            )
+        moved_to = permanent_location(response)
         if response.status_code == 304:
             return FetchResult(
                 items=[],
                 poll_config=PollConfig(),
                 etag=etag,
                 last_modified=last_modified,
-                moved_to=None,
+                moved_to=moved_to,
                 not_modified=True,
             )
         if response.status_code == 429:
@@ -76,7 +75,7 @@ class HttpFetcher(FeedFetcher):
             poll_config=poll_config,
             etag=response.headers.get("etag"),
             last_modified=response.headers.get("last-modified"),
-            moved_to=None,
+            moved_to=moved_to,
         )
 
     def _parse(self, feed: Feed, raw: bytes) -> tuple[list, PollConfig]:

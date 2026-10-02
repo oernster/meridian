@@ -1,4 +1,5 @@
 import json
+from itertools import pairwise
 
 import httpx
 import pytest
@@ -7,6 +8,14 @@ import respx
 from meridian.domain.entities.feed import Feed
 from meridian.domain.value_objects.source_type import SourceType
 from meridian.infrastructure.fetching.http_fetcher import HttpFetcher, RateLimitedError
+from meridian.infrastructure.fetching.https_client import (
+    MAX_REDIRECT_HOPS,
+    InsecureRedirectError,
+)
+from tests.infrastructure.redirect_transport import redirecting_transport
+
+_MOVED = "https://new.example.com/feed"
+_INSECURE = "http://insecure.example.com/feed"
 
 _MFEED = json.dumps(
     {
@@ -19,6 +28,11 @@ _MFEED = json.dumps(
 ).encode()
 
 _FEED = Feed(id=1, url="https://example.com/feed", source_type=SourceType.MFEED)
+
+
+def _redirect(status: int, location: str, seen: list[str]) -> httpx.MockTransport:
+    """The feed URL answers with one redirect; every other URL serves the feed."""
+    return redirecting_transport({_FEED.url: (status, location)}, _MFEED, seen)
 
 
 class TestHttpFetcher:
@@ -41,27 +55,59 @@ class TestHttpFetcher:
         assert result.not_modified
         assert result.etag == '"abc"'
 
-    @respx.mock
     async def test_301_moved(self):
-        respx.get("https://example.com/feed").mock(
-            return_value=httpx.Response(
-                301, headers={"location": "https://new.example.com/feed"}
-            )
-        )
-        fetcher = HttpFetcher(httpx.AsyncClient())
+        seen: list[str] = []
+        fetcher = HttpFetcher(transport=_redirect(301, _MOVED, seen))
         result = await fetcher.fetch(_FEED)
-        assert result.moved_to == "https://new.example.com/feed"
+        assert seen == [_FEED.url, _MOVED]
+        assert result.moved_to == _MOVED
+        assert not result.not_modified
 
-    @respx.mock
-    async def test_301_http_location_rejected(self):
-        respx.get("https://example.com/feed").mock(
-            return_value=httpx.Response(
-                301, headers={"location": "http://insecure.example.com/feed"}
-            )
-        )
-        fetcher = HttpFetcher(httpx.AsyncClient())
+    async def test_308_moved(self):
+        fetcher = HttpFetcher(transport=_redirect(308, _MOVED, []))
         result = await fetcher.fetch(_FEED)
+        assert result.moved_to == _MOVED
+
+    async def test_temporary_https_redirect_followed_without_move(self):
+        seen: list[str] = []
+        fetcher = HttpFetcher(transport=_redirect(302, _MOVED, seen))
+        result = await fetcher.fetch(_FEED)
+        assert seen == [_FEED.url, _MOVED]
         assert result.moved_to is None
+
+    async def test_301_http_location_rejected(self):
+        seen: list[str] = []
+        fetcher = HttpFetcher(transport=_redirect(301, _INSECURE, seen))
+        with pytest.raises(InsecureRedirectError, match=_INSECURE):
+            await fetcher.fetch(_FEED)
+        assert seen == [_FEED.url]
+
+    async def test_http_hop_after_https_hop_rejected(self):
+        seen: list[str] = []
+        redirects = {_FEED.url: (302, _MOVED), _MOVED: (302, _INSECURE)}
+        transport = redirecting_transport(redirects, _MFEED, seen)
+        with pytest.raises(InsecureRedirectError):
+            await HttpFetcher(transport=transport).fetch(_FEED)
+        assert seen == [_FEED.url, _MOVED]
+
+    async def test_redirect_hops_capped(self):
+        hops = [f"https://example.com/{n}" for n in range(MAX_REDIRECT_HOPS + 2)]
+        chain = {here: (302, there) for here, there in pairwise(hops)}
+        feed = Feed(id=1, url=hops[0], source_type=SourceType.MFEED)
+        seen: list[str] = []
+        fetcher = HttpFetcher(transport=redirecting_transport(chain, _MFEED, seen))
+        with pytest.raises(httpx.TooManyRedirects):
+            await fetcher.fetch(feed)
+        assert len(seen) == MAX_REDIRECT_HOPS + 1
+
+    async def test_redirect_hops_up_to_cap_followed(self):
+        hops = [f"https://example.com/{n}" for n in range(MAX_REDIRECT_HOPS + 1)]
+        chain = {here: (302, there) for here, there in pairwise(hops)}
+        feed = Feed(id=1, url=hops[0], source_type=SourceType.MFEED)
+        seen: list[str] = []
+        fetcher = HttpFetcher(transport=redirecting_transport(chain, _MFEED, seen))
+        await fetcher.fetch(feed)
+        assert seen == hops
 
     @respx.mock
     async def test_429_raises_rate_limited(self):

@@ -31,6 +31,16 @@ DONATE_URL: str = "https://www.paypal.com/ncp/payment/89J6EEWMC9FSL"
 # donation page is: handed to the desktop, never fetched here.
 SPECIFICATION_URL: str = "https://ernster.dev/MMSP-Spec/"
 
+# The folder under the user's home that holds the database. The application
+# creates it and the uninstaller removes it, so both read it from here.
+DATA_FOLDER_NAME: str = ".meridian"
+
+
+def data_folder() -> Path:
+    """The user's Meridian data folder, resolved against the home folder now."""
+    return Path.home() / DATA_FOLDER_NAME
+
+
 FALLBACK_VERSION: str = "0.0.0-dev"
 
 _PACKAGE_DIR = Path(__file__).resolve().parent

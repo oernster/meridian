@@ -19,7 +19,7 @@ from installer.state.registry import (
     read_uninstall_entry,
     try_read_install_location,
 )
-from meridian.version import APP_AUTHOR, APP_NAME
+from meridian.version import APP_AUTHOR, APP_NAME, data_folder
 
 # An uninstall has two reportable moments and no measurable middle: the work
 # itself is one call that either completes or raises.
@@ -73,6 +73,7 @@ def uninstall(identity, opts: UninstallOptions) -> None:  # noqa: ANN001
         cache_root = Path(user_cache_dir(APP_NAME, APP_AUTHOR))
         shutil.rmtree(data_root, ignore_errors=True)
         shutil.rmtree(cache_root, ignore_errors=True)
+        shutil.rmtree(data_folder(), ignore_errors=True)
 
     _schedule_delete_after_exit(install_dir)
 
