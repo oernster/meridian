@@ -94,7 +94,7 @@ The root `VERSION` file holds the only copy of the version string. Nothing else 
 - `pyproject.toml` takes its dynamic version from the same file.
 - `builddmg.py` and `build_flatpak.sh` read it directly; every other consumer imports `__version__` from `meridian.version`.
 - `buildexe.py`, `buildinstaller.py`, `builddmg.py` and `build_flatpak.sh` all ship `VERSION` alongside the application so the frozen build resolves it at runtime.
-- `stamp_version.py` rewrites the `<!--VERSION-->` tokens in the `docs/` site, which cannot read the file at render time. It is idempotent and prints only the files it changed.
+- `stamp_version.py` rewrites the `<!--VERSION-->` tokens in the `docs/` site, which cannot read the file at render time. It is idempotent and prints only the files it changed. It also versions the site's stylesheet and script links by content (`styles.css?v=<hash>`), so a browser never pairs a new page with a cached old stylesheet.
 
 Bumping a release is therefore one edit to `VERSION` followed by `python stamp_version.py`.
 

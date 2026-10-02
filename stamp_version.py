@@ -13,15 +13,22 @@ touched by this script.
 The run is idempotent. A second run reports nothing because the first left
 nothing to change. Only files actually rewritten are printed.
 
+Every site page's local stylesheet and script links are also versioned by
+content: each carries ?v=<hash> of the file it names, so a deploy that changes
+the file changes its address and no browser pairs a new page with a cached old
+stylesheet. A link to a missing file is an error that names the path.
+
 Usage:
     python stamp_version.py
 """
 
 from __future__ import annotations
 
+import hashlib
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 REPO_ROOT = Path(__file__).resolve().parent
 VERSION_FILE = REPO_ROOT / "VERSION"
@@ -29,6 +36,14 @@ SITE_DIR = REPO_ROOT / "docs"
 SITE_SUFFIXES = (".html", ".css", ".js", ".json", ".svg", ".xml", ".webmanifest")
 
 TOKEN = re.compile(r"(<!--VERSION-->)(.*?)(<!--/VERSION-->)", re.DOTALL)
+
+# A local stylesheet or script link plus any query it already carries. A colon
+# in the path means a scheme, so absolute URLs never match; root-absolute and
+# protocol-relative paths are left alone by version_assets.
+ASSET_HASH_LENGTH = 10
+ASSET_LINK = re.compile(
+    r'\b(?P<attribute>href|src)="(?P<path>[^"?#:]+\.(?:css|js))(?:\?[^"#]*)?"'
+)
 
 
 def read_version() -> str:
@@ -63,6 +78,39 @@ def stamp_file(path: Path, version: str) -> int:
     return count
 
 
+def asset_hash(path: Path) -> str:
+    """Return the short content hash of one asset, with CRLF read as LF.
+
+    Folding the line endings means a Windows checkout and the LF blob GitHub
+    serves agree, so a run on another machine does not churn every page.
+    """
+    content = path.read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(content).hexdigest()[:ASSET_HASH_LENGTH]
+
+
+def version_assets(page: Path) -> bool:
+    """Set ?v=<hash> on every local asset link in page. Return True if changed.
+
+    The page is read and written as bytes so its line endings survive.
+    """
+    original = page.read_bytes().decode("utf-8")
+
+    def versioned(m: re.Match[str]) -> str:
+        link = m.group("path")
+        if link.startswith("/"):
+            return m.group(0)
+        asset = page.parent / unquote(link)
+        if not asset.is_file():
+            raise FileNotFoundError(f"{page} links {link}; {asset} does not exist")
+        return f'{m.group("attribute")}="{link}?v={asset_hash(asset)}"'
+
+    stamped = ASSET_LINK.sub(versioned, original)
+    if stamped == original:
+        return False
+    page.write_bytes(stamped.encode("utf-8"))
+    return True
+
+
 def main() -> int:
     if not VERSION_FILE.is_file():
         print(f"ERROR: no VERSION file at {VERSION_FILE}", file=sys.stderr)
@@ -84,6 +132,19 @@ def main() -> int:
         tokens += found
         if found and path.read_text(encoding="utf-8") != before:
             changed.append(path)
+
+    versioned: list[Path] = []
+    for path in site_files(SITE_DIR):
+        if path.suffix.lower() != ".html":
+            continue
+        try:
+            if version_assets(path):
+                versioned.append(path)
+        except FileNotFoundError as error:
+            print(f"ERROR: {error}", file=sys.stderr)
+            return 1
+    for path in versioned:
+        print(f"versioned assets: {path.relative_to(REPO_ROOT).as_posix()}")
 
     if tokens == 0:
         print(f"No <!--VERSION--> tokens found under {SITE_DIR.name}/")
