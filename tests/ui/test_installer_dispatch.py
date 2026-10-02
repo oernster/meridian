@@ -8,10 +8,10 @@ window and is otherwise a pure mapping from an `Operation` to the
 arguments.
 
 Nothing under `installer/` had a test before this file. These pin the mapping
-so the extraction is verifiable rather than merely plausible, and so a later
-change to the operation set fails here rather than in a user's install.
+so the extraction is verifiable rather than merely plausible; a later change
+to the operation set then fails here rather than in a user's install.
 
-The window stand-in is hand written rather than mocked, and the ops callables
+The window stand-in is hand written rather than mocked. The ops callables
 are compared by identity: the dispatch's job is choosing them, never running
 them, so none is invoked here.
 """
@@ -22,6 +22,7 @@ from pathlib import Path
 
 import pytest
 
+from installer.cli import parse_args
 from installer.constants import InstallerIdentity
 from installer.ops.errors import InstallerOperationError
 from installer.ops.install_ops import install_new, upgrade_or_reinstall
@@ -43,10 +44,13 @@ _SELECTIONS = UiSelections(
 
 
 class _StubWindow:
-    """Carries only the two attributes the dispatch reads off a window."""
+    """Carries only the attributes the dispatch reads off a window."""
 
-    def __init__(self, entry: UninstallEntry | None = None) -> None:
+    def __init__(
+        self, entry: UninstallEntry | None = None, argv: tuple[str, ...] = ()
+    ) -> None:
         self._identity = InstallerIdentity()
+        self._cli_args = parse_args(list(argv))
         self._entry = entry
         self.keys_read: list[str] = []
 
@@ -108,12 +112,22 @@ def test_repair_restores_whichever_shortcuts_are_selected() -> None:
     assert kwargs["opts"].restore_start_menu_shortcut is False
 
 
-def test_uninstall_always_removes_user_data() -> None:
-    window = _StubWindow(_installed())
+@pytest.mark.parametrize(
+    ("argv", "removes"),
+    [
+        ((), True),
+        (("--uninstall", "--remove-user-data"), True),
+        (("--uninstall", "--keep-user-data"), False),
+    ],
+)
+def test_uninstall_honours_the_user_data_flags(
+    argv: tuple[str, ...], removes: bool
+) -> None:
+    window = _StubWindow(_installed(), argv)
     fn, kwargs = operation_callable(window, Operation.UNINSTALL, _SELECTIONS)
 
     assert fn is uninstall_with_feedback
-    assert kwargs["opts"].remove_user_data is True
+    assert kwargs["opts"].remove_user_data is removes
 
 
 def test_an_unknown_operation_is_refused_rather_than_guessed() -> None:

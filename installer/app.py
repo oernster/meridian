@@ -10,7 +10,7 @@ from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
 
-from installer.cli import parse_args, wants_remove_user_data
+from installer.cli import parse_args
 from installer.shared.logging_setup import setup_installer_logging
 from installer.ui import inactive_tooltips
 from installer.ui.icons import (
@@ -37,7 +37,6 @@ def main(argv: list[str] | None = None) -> int:
     sys.excepthook = _excepthook
 
     args = parse_args(list(argv) if argv is not None else sys.argv[1:])
-    _ = wants_remove_user_data(args)
 
     app = QApplication([f"{APP_NAME} Setup"])
     inactive_tooltips.install(app)

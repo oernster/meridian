@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from installer.cli import wants_remove_user_data
 from installer.ops.errors import InstallerOperationError
 from installer.ops.install_ops import InstallOptions, install_new, upgrade_or_reinstall
 from installer.ops.repair_ops import RepairOptions, repair
@@ -84,7 +85,11 @@ def operation_callable(
             uninstall_with_feedback,
             {
                 "identity": window._identity,
-                "opts": UninstallOptions(remove_user_data=True),
+                # The command line decides: --keep-user-data keeps the data,
+                # otherwise an uninstall removes it, as it always has.
+                "opts": UninstallOptions(
+                    remove_user_data=wants_remove_user_data(window._cli_args)
+                ),
             },
         )
 
