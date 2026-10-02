@@ -66,11 +66,7 @@ def _generate_app_icon(root: Path) -> int:
 def _render_mark(
     master_path: Path, outputs: list[Path], draw_px: int, root: Path
 ) -> None:
-    """Crop one master to its artwork and write it to every destination.
-
-    One render, written in a loop, because a mark that appears in two places
-    drifts the moment the two are produced separately.
-    """
+    """Crop one master to its artwork and write one render to each output."""
     master = Image.open(master_path).convert("RGBA")
     mark = scale_to_height(crop_to_artwork(master), draw_px * ART_SUPERSAMPLE)
     for out in outputs:
@@ -99,8 +95,8 @@ def _generate_header_art(root: Path) -> int:
         )
 
     # The footer's mark, two thirds of the header's and from the master where
-    # it was delivered rather than from `assets/`. It goes to the site as well
-    # as to the application, from this one render.
+    # it was delivered rather than from `assets/`. It goes to the application
+    # only: the site keeps the donate mark every project site shares.
     print("Generating footer artwork...")
     _render_mark(
         root / DONATE_MASTER,

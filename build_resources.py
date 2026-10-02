@@ -72,14 +72,11 @@ ART_NAMES: tuple[str, ...] = (
 DONATE_NAME = "donate"
 DONATE_MASTER = "donate.png"
 
-# Every destination the donate render is written to. The site cannot import
-# anything from the application, so it necessarily holds its own copy of the
-# picture; writing both from one render in one loop is what stops the two
-# drifting into different artwork under the same name.
-DONATE_OUTPUTS: tuple[str, ...] = (
-    "meridian/ui/qml/art/donate.png",
-    "docs/donate.png",
-)
+# Where the donate render is written: the application's tray only. The site's
+# docs/donate.png is never derived from it: it is the small mark every project
+# site shares byte for byte, which the structural suite pins.
+DONATE_OUTPUTS: tuple[str, ...] = ("meridian/ui/qml/art/donate.png",)
+SITE_DONATE = "docs/donate.png"
 
 # The footer mark as a fraction of the header's, which is ClearBudget's rule
 # taken whole: the band at the foot is subordinate to the one at the top, so

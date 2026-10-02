@@ -21,6 +21,7 @@ same reason.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import re
 import struct
@@ -53,6 +54,13 @@ def _load_build_resources() -> ModuleType:
 _RESOURCES = _load_build_resources()
 ART_RENDER_DIR: str = _RESOURCES.ART_RENDER_DIR
 DONATE_OUTPUTS: tuple[str, ...] = _RESOURCES.DONATE_OUTPUTS
+SITE_DONATE: str = _RESOURCES.SITE_DONATE
+
+# The donate mark every project site carries (133 by 116 pixels), identified by
+# its content so a resized or regenerated copy cannot pass for it.
+SHARED_SITE_DONATE_SHA256 = (
+    "8267605178a5c35d727b1001af7ef4e54e777c4de36d28ce52d8dff41bebb675"
+)
 HEADER_DRAW_PX: int = _RESOURCES.ART_DRAW_PX
 DONATE_DRAW_PX: int = _RESOURCES.DONATE_DRAW_PX
 SUPERSAMPLE: int = _RESOURCES.ART_SUPERSAMPLE
@@ -186,20 +194,24 @@ def test_the_foot_takes_the_same_fraction_of_the_header_in_both_places() -> None
     )
 
 
-def test_the_site_and_the_application_carry_the_same_donate_mark() -> None:
-    """The site cannot import anything, so it holds its own copy of the picture.
-
-    The generator writes both from one render in one loop. Comparing the bytes
-    is what makes that hold: two copies produced separately drift into
-    different artwork under the same name, which nothing else would notice.
-    """
-    written = [(_ROOT / out) for out in DONATE_OUTPUTS]
-    missing = [str(path) for path in written if not path.is_file()]
+def test_the_application_carries_its_donate_render() -> None:
+    """The tray's donate mark exists wherever the generator writes it."""
+    missing = [out for out in DONATE_OUTPUTS if not (_ROOT / out).is_file()]
     assert not missing, "Donate marks absent: " + ", ".join(missing)
 
-    contents = {path.read_bytes() for path in written}
-    assert len(contents) == 1, (
-        "The donate mark differs between "
-        + " and ".join(DONATE_OUTPUTS)
-        + "; run create_icons.py rather than copying one over the other."
+
+def test_the_site_carries_the_donate_mark_every_project_site_shares() -> None:
+    """The site's donate mark is copied from the shared one, never generated.
+
+    Every project site carries the same small mark, byte for byte. A render
+    sized to this application's tray differs from it, so the generator must not
+    write the site's copy; the hash below is the shared mark's.
+    """
+    assert (
+        SITE_DONATE not in DONATE_OUTPUTS
+    ), f"build_resources writes {SITE_DONATE}; the site keeps the shared mark."
+    digest = hashlib.sha256((_ROOT / SITE_DONATE).read_bytes()).hexdigest()
+    assert digest == SHARED_SITE_DONATE_SHA256, (
+        f"{SITE_DONATE} is not the shared project-site donate mark; copy it "
+        "from another project site rather than generating it."
     )
