@@ -98,7 +98,7 @@ meridian/
     fetching/
       mmsp.py               The MMSP protocol version and the Section 5.7 rule for which documents are readable
       http_fetcher.py       HttpFetcher: httpx async client, User-Agent derived from the protocol version, conditional GET (ETag/Last-Modified), HTTPS-only redirects, 10 MB document cap, 300s poll floor
-      scheduler.py          PollScheduler: asyncio task per feed, 10s tick, per-feed backoff state
+      scheduler.py          PollScheduler: one asyncio loop that polls every feed concurrently on each 10s tick, per-feed backoff state
       feedsearch_fetcher.py FeedsearchFetcher: implements DiscoveryFetcher against Feedly's public search API at cloud.feedly.com (httpx async). The name is a leftover from an earlier directory; Feedly indexes RSS, Atom and podcast sources only, so no MFEED feed is discoverable here
       parser/
         platform_parser.py  Dispatcher: registered adapters first, RSS fallback

@@ -1,4 +1,4 @@
-"""Asyncio-based poll scheduler. One task per subscribed feed."""
+"""Asyncio poll scheduler: one loop polls every subscribed feed each tick."""
 
 from __future__ import annotations
 
