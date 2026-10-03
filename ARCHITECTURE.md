@@ -23,10 +23,15 @@ These are the rules the codebase is not allowed to break. Each one names the tes
 | Removing a feed, singly or in bulk, asks before it acts. The sidebar and the context menu only report the request; the window is what opens the confirmation, so only its `accepted` reaches the controller. | `tests/ui/test_main_window_focus_ring.py::test_removing_the_selection_asks_first` |
 | The MMSP protocol version is stated once, in `infrastructure/fetching/mmsp.py`; both the User-Agent and the parser's version gate derive from it. A feed declaring any 1.MINOR is read and anything else is refused, per specification Section 5.7. Where the MMSP-Spec repository is checked out beside this one, that rule is asserted against the published feed schema, so the two expressions of it cannot drift apart. | `tests/infrastructure/test_mmsp_conformance.py` |
 | The version string is read from the root `VERSION` file and appears nowhere else in source. | `tests/test_version.py::test_version_matches_the_root_version_file` and `::test_candidates_cover_package_parent_then_package` |
-| A feed URL has to use `http://` or `https://`; anything else raises. | `tests/domain/test_entities.py::TestFeed::test_rejects_invalid_scheme` and `::test_accepts_http_url` |
+| A feed URL has to use `http://` or `https://`; anything else raises. An address on its way in (subscribe, import, re-point) must also parse and name a host, so `https://` and `https://not a url at all` are refused rather than stored; one read back from the store is held only to the scheme, so an old row never stops the list loading. The rule is `domain/value_objects/feed_url.py`. | `tests/domain/test_entities.py::TestFeed::test_rejects_invalid_scheme`, `::test_accepts_http_url`, `tests/application/test_subscription_rules.py::TestAddresses` and `tests/application/test_feed_import.py::TestTally::test_an_address_that_does_not_parse_is_refused_unstored` |
 | A redirect is only followed to an HTTPS target. Both fetchers build their client through `infrastructure/fetching/https_client.py`, whose response hook refuses a non-HTTPS hop before httpx makes it (`InsecureRedirectError`), so the plain-HTTP host is never contacted. A chain is capped at `MAX_REDIRECT_HOPS`; a permanent first hop (301 or 308) is recorded as `moved_to` while the feed is still read from where it landed. The tests build each fetcher exactly as `main.py` does and swap only the transport. | `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_301_http_location_rejected`, `::test_http_hop_after_https_hop_rejected`, `::test_redirect_hops_capped`, `::test_301_moved` and `tests/infrastructure/test_feedsearch_fetcher.py::TestFeedsearchFetcher::test_production_client_refuses_http_redirect_hop` |
 | Non-HTTPS media, enclosure, thumbnail, transcript and caption URLs are dropped during parsing, in every format. The scheme test is stated once, in `parser/https_only.py`; every parser asks it. | `tests/infrastructure/parser/test_https_only.py`, `test_rss_parser.py::test_https_only_enclosure` and `::test_media_content_http_excluded`, `test_atom_parser.py::test_enclosure_http_url_excluded`, `test_podcast_parser.py::test_transcript_http_excluded` |
 | Every feed import ends in a report: each entry is added, already subscribed or named as skipped with its reason; the window shows it in a dialog that stays until dismissed. A file without the feed-list envelope is refused whole. | `tests/application/test_feed_import.py`, `tests/ui/test_bridge_import_export.py` and `tests/ui/test_import_report_window.py` |
+| An export carries every field a feed needs to come back as it was (address, type, title, filter, platform id and RSS fallback address); an export read back into another store yields the same feeds. A version 1 file written before those fields existed still imports; a file naming another version is refused by name. | `tests/application/test_feed_list.py` and `tests/ui/test_bridge_real_store.py::TestTheFeedListTravels` |
+| A filter is read whole or refused: text after a complete expression, an unknown word or a bound that is not a number or a time is a `FilterSyntaxError` when the filter is saved, never an error when the feed is opened. The filter dialog's rows are cut by the same parser. | `tests/domain/test_filter_grammar.py`, `tests/application/test_subscription_rules.py::TestFilters` and `tests/ui/test_subscription_manager.py::test_an_and_inside_quotes_stays_inside_its_term` |
+| Every stored time comes back as the instant it went in, marked UTC; newest first is by instant. | `tests/infrastructure/test_utc_storage.py` and `tests/ui/test_bridge_sorting.py::TestSorting::test_item_order_is_by_instant_not_by_text` |
+| One bad MFEED item costs that item, not the feed (MMSP 6.15 and 5.6). | `tests/infrastructure/test_mmsp_conformance.py` |
+| A feed that cannot be read never leaves another feed's items on screen; it leaves nothing selected for Mark all read. | `tests/ui/test_bridge_real_store.py::TestSelectingAFeed` |
 | Every way out of the machine has one home. Networking imports appear only in `infrastructure/fetching` (feeds, Feedly) and `infrastructure/update` (GitHub), plus the web engine `main.py` starts for the YouTube embed; in QML, `XMLHttpRequest` (Wikipedia's suggestions) only in `DiscoveryQueryField.qml` and the web engine only in `MediaPlayerPanel.qml`. Every grant is asserted to be still needed. An `Image` or `MediaPlayer` loading a feed's address is outside it, held to HTTPS by the parsers | `tests/structural/test_network.py` |
 | The poll interval can never fall below `POLL_FLOOR_SECONDS`; a 429 without `Retry-After` backs off to that floor. | `tests/domain/test_entities.py::TestPollConfig::test_floor_enforced_on_low_value` and `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_429_no_retry_after_uses_floor` |
 | A response larger than `_MAX_DOCUMENT_BYTES` is refused rather than parsed. | `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_document_too_large_raises` |
@@ -63,9 +68,13 @@ meridian/
       item_type.py          ItemType enum (article, video, audio, short, livestream, podcast)
       media.py              Media, Thumbnail, Author, ItemSource value objects
       poll_config.py        PollConfig (min_interval_seconds); POLL_FLOOR_SECONDS = 300
-      filter_expression.py  FilterExpression wrapper
+      filter_expression.py  FilterExpression wrapper; FilterSyntaxError, the ValueError a filter that breaks Appendix A raises, saying where
+      feed_url.py           require_feed_scheme (what a stored feed meets), check_feed_url (what an address on its way in must meet: parse and name a host), feed_identity (scheme and host without case, path exact) for the import's duplicate check
+      utc.py                as_utc: the one rule for turning a time into a comparable instant; a time with no zone is taken as UTC
     services/
-      filter_evaluator.py   ABNF filter evaluation against Item entities (pure, no I/O)
+      filter_grammar.py     The Appendix A grammar: tokeniser and parser (whole input or FilterSyntaxError; AND and OR left to right, no precedence) and conjunction_terms, the one place a filter is cut into its top-level AND terms
+      filter_atoms.py       Each atom read once into a test, its value checked as the filter is read. ATOM_READERS is the one list of what a filter can name; the tokeniser's pattern is built from its keys. An item with no duration matches no duration filter; a time bound with no offset is UTC and a date alone covers its whole day
+      filter_evaluator.py   FilterEvaluator, the face the application uses: building one reads the whole filter
       deduplication.py      Dedup logic (item_id uniqueness within a feed)
 
   application/
@@ -81,7 +90,9 @@ meridian/
       discovery_fetcher.py  DiscoveryFetcher ABC + DiscoveryError; DEFAULT_RESULT_CAP = 25
       release_source.py     ReleaseSource ABC (latest_release)
     services/
-      subscription_service.py   subscribe, unsubscribe, list_feeds, set_filter, get_feed
+      subscription_service.py   subscribe (checks the address; one save; the result built from the save alone, since a read after the commit used to report a stored feed as refused), unsubscribe, list_feeds, set_filter (refuses a filter that does not parse), update_url (checks the address), get_feed
+      feed_list.py              The exported feed list, both ways: build_feed_list (address, type and title, plus filter_expr, platform_id and rss_fallback_url when set; still version 1), decode_feed_list (UTF-8 with or without a byte order mark; UTF-16 with one), feed_list_entries (the envelope and its version: absent reads as 1, anything else is refused by name); NotAFeedList
+      filter_rules.py           check_filter and filter_terms: the filter dialog's rows are the parser's terms; a filter that cannot be read is one row, so nothing is dropped
       feed_import.py            import_feeds: every entry in an exported feed list is added, already subscribed or named as skipped with its reason; ImportReport.describe() is the sentence the window shows. A file without the envelope's shape raises NotAFeedList. The import used to log a refused feed and say nothing, so a partial import read as a whole one
       item_service.py           get_items (dedup + filter), mark_read, mark_all_read
       poll_orchestrator.py      poll_feed (HTTP fetch, parse, persist new items, auto-discover title)
@@ -92,7 +103,7 @@ meridian/
 
   infrastructure/
     db/
-      orm_models.py         SQLAlchemy ORM: FeedRow, ItemRow, PollStateRow
+      orm_models.py         SQLAlchemy ORM: FeedRow, ItemRow, PollStateRow. Every time column is UtcDateTime: converted to UTC on the way in, marked UTC on the way out, because SQLite has no zone type and used to drop the offset
       session.py            build_engine and build_session_factory over `~/.meridian/meridian.db` (`_DEFAULT_DB_PATH`, under `version.data_folder()`)
     repositories/
       sqlite_feed_repository.py
@@ -109,7 +120,9 @@ meridian/
         rss_parser.py       RSS 2.0 + RSS 1.0/RDF; content:encoded preferred over description
         atom_parser.py      Atom 1.0; content preferred over summary; media:group (YouTube)
         podcast_parser.py   RSS with <itunes:*> extensions
-        mfeed_parser.py     MMSP JSON feed format
+        mfeed_parser.py     MMSP JSON feed format. Rejects the manifest only where MMSP 5.6 says so (version, not an object, items not an array); skips a bad item alone and logs how many (6.15); a malformed poll object falls back to the defaults
+        mfeed_fields.py     The 6.15 readers: a REQUIRED item field missing or of the wrong JSON type raises InvalidItem; a malformed OPTIONAL field reads as absent; a malformed list entry is dropped alone
+        iso_time.py         parse_iso_time: the one reading of an ISO 8601 time in a feed (no zone means UTC), shared by the MFEED and Atom parsers
         https_only.py       is_https: the one scheme test every parser asks before keeping a media, thumbnail, transcript or caption address
     update/
       github_release_source.py  GitHubReleaseSource: one GET against the GitHub releases/latest endpoint (httpx sync, 5s timeout); every failure mode collapses to None. The endpoint returns only a published, non-draft, non-prerelease release, so a tag pushed mid-development can never prompt
@@ -120,13 +133,17 @@ meridian/
       ItemListModel         QAbstractListModel: every ItemDTO field as a QML role (UserRole+0..10)
       FeedCandidateModel    QAbstractListModel: the discovery results (UserRole+0..5); mark_subscribed() flips one row rather than resetting the model
     bridge.py
-      AppController         QObject: loadFeeds, selectFeed, subscribe, unsubscribe, bulkUnsubscribe, markRead, markAllRead, setFeedSort, setItemSort, setFilter (calls loadFeeds to refresh filter label), updateFeedUrl, importFeeds, exportFeeds, searchFeeds, cancelSearch, subscribeFromDiscovery, bulkSubscribeFromDiscovery, setResultCap; every import ends in importReported(message, complete)
+      AppController         QObject: loadFeeds, selectFeed, subscribe, unsubscribe, bulkUnsubscribe, markRead, markAllRead, setFeedSort, setItemSort, setFilter (refuses an invalid filter through errorOccurred; calls loadFeeds to refresh filter label), filterTerms (the dialog's rows), updateFeedUrl, importFeeds (on a worker), exportFeeds (atomic), searchFeeds, cancelSearch, subscribeFromDiscovery, bulkSubscribeFromDiscovery, setResultCap; every import ends in importReported(message, complete)
     links.py
       open_externally       One function: hands an address to whatever the desktop opens links with; reports False when it declined. Its own module so it is a seam a controller can be given instead of the real thing; calling Qt's opener straight from a bridge would leave no way to prove the right address is asked for without a browser opening mid-test. Nothing here fetches anything, which is what leaves the local-first guarantee untouched by the donate button existing
     external_links.py
       ExternalLinkController  QObject: openDonation, openSpecification; signal openFailed(str). Holds both addresses rather than exposing them, so QML never carries a second copy of a string that must be right; the opener is injected. One controller for both because they differ only in which constant they read. A desktop that refuses raises openFailed naming what could not be opened, which the window turns into the error dialog: silence would leave the user pressing a button that appears to do nothing, while a message naming no page is no use to someone who pressed one of two buttons
+    background.py
+      BackgroundJobs        QObject: the one shape for work off the UI thread, used by the update check and the import. The worker is handed only the job and a `Future`; a timer on the UI thread collects finished futures and emits finished(future, context) there
+    feed_transfer.py
+      write_feed_list (atomic: temporary file beside the target, fsync, replace), import_job (the import as a job holding only the path and the service) and import_failure (the plain sentence for an import that did not run; the detail goes to the log)
     update_bridge.py
-      UpdateController      QObject: checkAutomatically(skippedVersion), checkManually, openDownload; signals updateAvailable, upToDate, checkFailed. The check runs on a worker thread that holds only the service and a `Future`, never the controller; the controller collects finished futures with a timer it owns and delivers on the UI thread. An earlier shape emitted from the worker through a closure over the controller, which let a caller dropping the controller mid-check have it destroyed on the worker thread during delivery and crash. Stateless between checks: the skip and the timers live QML-side
+      UpdateController      QObject: checkAutomatically(skippedVersion), checkManually, openDownload; signals updateAvailable, upToDate, checkFailed. The check runs through `BackgroundJobs`, whose worker thread holds only the service call and a `Future`, never the controller; its timer collects finished futures and delivers on the UI thread. An earlier shape emitted from the worker through a closure over the controller, which let a caller dropping the controller mid-check have it destroyed on the worker thread during delivery and crash. Stateless between checks: the skip and the timers live QML-side
     qml/
       main.qml              Application window, composition only: owns the feed selection (which the sidebar shows, the context menu acts on and the removal confirmations consume), the palette, plus the wiring from each panel's signals to the controller. A 0x0 focus absorber holds focus at startup so nothing wears a border before the first Tab. Header, sidebar and reader name nothing outside themselves; the focus ring passes between them here. Also owns the update wiring: the 3s launch and 24h periodic timers that call the update controller, the skipped-version Settings (category "Updates") and the update dialogs
       Theme.qml             The palette: Catppuccin Mocha and Latte, with `isDark` choosing. A plain property, not a binding, so the toggle sticks and the window writes the new value back to Qt.labs.settings
@@ -151,7 +168,7 @@ meridian/
       RowActionButton.qml   A small flat row action (Filter, Edit, Remove). Neighbours are Items, as on the header bar, because all three sit in one row
       FormDialog.qml        A modal dialog with Cancel and OK, taking arbitrary content. The message-only sibling of ConfirmDialog; kept apart because a message sizes to its text while a form sizes to its fields
       EditUrlDialog.qml     Re-point a subscription at a different URL. Reports through urlAccepted rather than calling the controller
-      FilterDialog.qml      Set or clear a feed's filter. A filter is one string of terms joined by the AND operator; that is unreadable to edit as text, so it splits into a togglable row per term with a field for adding one more, then rejoins whatever is still active
+      FilterDialog.qml      Set or clear a feed's filter. A filter is one string of terms joined by the AND operator; that is unreadable to edit as text, so it shows a togglable row per term with a field for adding one more, then rejoins whatever is still active. The rows arrive as currentTerms, cut by the controller with the filter parser (`filterTerms`); the dialog used to split on the text " AND ", which cut a quoted term in two
       FeedDiscovery.qml     Feed discovery drawer, composition only: holds the search state, the selection and the error text, wires the search bar to the results and both to the controller, then owns the bulk-subscribe confirmations. The two halves name nothing outside themselves, so every crossing (focus handover, search, cap, subscribe) passes through here as a signal
       DiscoverySearchBar.qml   Heading, query field, result cap and the Search/Cancel button, with the busy row underneath. Owns the first half of the panel's focus ring; focusFirst() and focusLast() are the entry points and focusForwardRequested is the exit, because the Search button is only a tab stop while there is something to search for
       DiscoveryQueryField.qml  The query field with its topic autocomplete: popup, debounce timer and the suggestion fetch as one unit. The suggestions are Wikipedia's OpenSearch endpoint, asked over XHR from two characters, debounced at 250ms and capped at ten, with the previous request aborted. This is one of the two outbound calls the UI layer makes for itself; the other is `MediaPlayerPanel`'s YouTube embed. Dismisses its own popup before emitting searchRequested, so no caller knows the popup exists. Escape closes the popup, then cancels a running search, then closes the panel
@@ -202,6 +219,7 @@ tests/
   infrastructure/
     parser/                 Parser tests for RSS, Atom, podcast, mfeed and the platform dispatcher
     test_repositories.py    SQLite repository integration tests
+    test_utc_storage.py     Every stored time comes back as the instant it went in, marked UTC, including a row written before the change
     test_http_fetcher.py    Conditional GET, backoff and the document cap, with `respx`; redirects through the production client over `redirect_transport.py`
     test_feedsearch_fetcher.py  The discovery client against recorded Feedly responses, plus its redirect policy through the production client
     redirect_transport.py   The one redirecting `httpx.MockTransport` both fetcher suites build their production clients over
@@ -217,6 +235,7 @@ tests/
     test_bridge_models.py   The three QAbstractListModels, asserted by role number
     test_bridge_subscriptions.py  AppController: add, remove, re-point, filter
     test_bridge_import_export.py  AppController: the JSON round trip of the feed list, the report every import emits and a file without the envelope's shape refused whole
+    test_bridge_real_store.py     AppController over the real services and a real SQLite file: the specification's own filter example, a feed that cannot be read, order by instant, an export imported into a second store field for field, an atomic export, byte order marks, the version key and the import running off the UI thread
     test_import_report_window.py  The import report through the real main.qml: a whole import and a partial one each open the dialog under their own title
     test_bridge_items.py    AppController: read state and new-item arrival
     test_bridge_sorting.py  AppController: the feed and item sort settings
@@ -280,12 +299,12 @@ GitHubReleaseSource (Infrastructure)
 1. `main.py` wires all dependencies and calls `QQmlApplicationEngine.load("main.qml")`
 2. `controller` injected as QML context property
 3. `AppController.loadFeeds()` on startup: `SubscriptionService.list_feeds()` then `FeedListModel.refresh()`
-4. User selects feed: `AppController.selectFeed(id)` then `ItemService.get_items(id)` (dedup + filter) then `ItemListModel.refresh()`
+4. User selects feed: `AppController.selectFeed(id)` then `ItemService.get_items(id)` (dedup + filter) then `ItemListModel.refresh()`. The selection changes only once the items are read; a read that fails (a stored filter that no longer parses, a store error) clears the list, leaves nothing selected so Mark all read has nothing to act on and emits `errorOccurred` with a plain sentence
 5. User selects item: `ItemListPanel` reports it through `itemSelected`; `FeedReader` loads the detail pane with it and calls `AppController.markRead(id)`
 6. `PollScheduler` runs one asyncio loop on its own daemon thread; every 10s it polls each feed concurrently and `PollOrchestrator` skips any feed whose interval or backoff has not elapsed
 7. On new items: `AppController.notify_new_items()` refreshes the relevant `ItemListModel` if that feed is selected
 8. Bulk feed removal: `bulkUnsubscribe()` calls `remove_rows_by_ids()` on `FeedListModel` (row-level removal, scroll position preserved)
-9. Import: `AppController.importFeeds(file)` hands the parsed file to `import_feeds`, refreshes the feed list and emits `importReported(message, complete)`; `FeedTransfer.qml` shows it under "Import Feeds" or "Import Incomplete"
+9. Import: `AppController.importFeeds(file)` starts a `BackgroundJobs` job (`ui/feed_transfer.py`) that reads the file, decodes it and hands it to `import_feeds` off the UI thread; back on the UI thread the controller refreshes the feed list and emits `importReported(message, complete)`; a failed import emits `errorOccurred` with a plain sentence instead. `FeedTransfer.qml` shows the report under "Import Feeds" or "Import Incomplete". Export writes the file atomically: a temporary file beside the target, flushed to disk, then swapped in
 
 ## Key Design Decisions
 

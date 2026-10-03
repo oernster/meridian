@@ -11,7 +11,34 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy.types import JSON
+from sqlalchemy.types import JSON, TypeDecorator
+
+from meridian.domain.value_objects.utc import as_utc
+
+
+class UtcDateTime(TypeDecorator):
+    """A moment in time, stored as UTC and handed back marked as UTC.
+
+    SQLite has no zone type: a plain `DateTime(timezone=True)` wrote the wall
+    clock digits, dropped the offset and read them back with no zone at all.
+    Converting on the way in makes the stored text sort in instant order;
+    marking on the way out lets a stored time meet an offset filter bound. A
+    time with no zone is taken as UTC, which is also how a row written before
+    this type existed is read: its offset is gone and cannot be recovered.
+    """
+
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        return as_utc(value).replace(tzinfo=None)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return as_utc(value)
 
 
 class Base(DeclarativeBase):
@@ -46,17 +73,11 @@ class PollStateRow(Base):
     feed_id: Mapped[int] = mapped_column(
         ForeignKey("feeds.id"), primary_key=True, nullable=False
     )
-    last_polled: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    next_poll: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    last_polled: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
+    next_poll: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
     etag: Mapped[str | None] = mapped_column(String, nullable=True)
     last_modified: Mapped[str | None] = mapped_column(String, nullable=True)
-    backoff_until: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    backoff_until: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
     moved_to: Mapped[str | None] = mapped_column(String, nullable=True)
     deprecated: Mapped[bool] = mapped_column(Boolean, default=False)
     deprecated_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -73,10 +94,8 @@ class ItemRow(Base):
     type: Mapped[str] = mapped_column(String, nullable=False)
     title: Mapped[str] = mapped_column(String, nullable=False)
     url: Mapped[str] = mapped_column(String, nullable=False)
-    published: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    updated: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    published: Mapped[datetime] = mapped_column(UtcDateTime(), nullable=False)
+    updated: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     language: Mapped[str | None] = mapped_column(String, nullable=True)
     duration: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -85,15 +104,11 @@ class ItemRow(Base):
     license_id: Mapped[str | None] = mapped_column(String, nullable=True)
     live_status: Mapped[str | None] = mapped_column(String, nullable=True)
     scheduled_start: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
+        UtcDateTime(), nullable=True
     )
-    expires: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    expires: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
-    read_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    read_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
 
     authors: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     tags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)

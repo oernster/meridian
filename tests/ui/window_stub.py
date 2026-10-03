@@ -18,6 +18,7 @@ from PySide6.QtQml import QQmlComponent, QQmlEngine
 
 from meridian.application.dto.feed_dto import FeedDTO
 from meridian.application.dto.item_dto import ItemDTO, MediaDTO
+from meridian.application.services.filter_rules import filter_terms
 from meridian.ui.models import FeedCandidateModel, FeedListModel, ItemListModel
 from meridian.version import APP_COPYRIGHT
 
@@ -181,6 +182,11 @@ class StubController(QObject):
     @Slot(int, str)
     def setFilter(self, feed_id: int, expr: str) -> None:
         self._record("setFilter", feed_id, expr)
+
+    @Slot(str, result="QVariantList")
+    def filterTerms(self, expr: str) -> list:
+        # The real rule, not a stand-in: the dialog's rows are the parser's.
+        return filter_terms(expr)
 
     @Slot(int, str)
     def updateFeedUrl(self, feed_id: int, url: str) -> None:

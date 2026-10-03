@@ -11,6 +11,7 @@ from meridian.domain.value_objects.item_type import ItemType
 from meridian.domain.value_objects.media import Author, ItemSource, Media, Thumbnail
 from meridian.domain.value_objects.poll_config import PollConfig, POLL_FLOOR_SECONDS
 from meridian.infrastructure.fetching.parser.https_only import is_https
+from meridian.infrastructure.fetching.parser.iso_time import parse_iso_time
 
 _ATOM_NS = "http://www.w3.org/2005/Atom"
 _MEDIA_NS = "http://search.yahoo.com/mrss/"
@@ -60,12 +61,12 @@ def _parse_entry(
     published_el = el.find(f"{ns}published")
     updated_el = el.find(f"{ns}updated")
     published = (
-        _parse_dt(published_el.text)
+        parse_iso_time(published_el.text)
         if published_el is not None and published_el.text
         else datetime.now(tz=timezone.utc)
     )
     updated = (
-        _parse_dt(updated_el.text)
+        parse_iso_time(updated_el.text)
         if updated_el is not None and updated_el.text
         else None
     )
@@ -155,10 +156,3 @@ def _infer_type(media: list[Media], feed_url: str = "") -> ItemType:
 def _text(el, tag: str) -> str | None:
     child = el.find(tag)
     return child.text.strip() if child is not None and child.text else None
-
-
-def _parse_dt(value: str) -> datetime:
-    dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt

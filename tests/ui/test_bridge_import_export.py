@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
-from tests.ui.bridge_dtos import feed_dto, make_controller
+from tests.ui.bridge_dtos import feed_dto, make_controller, settle
 
 
 class TestImportExport:
@@ -69,6 +69,7 @@ class TestImportExport:
         reports = []
         controller.importReported.connect(lambda *args: reports.append(args))
         controller.importFeeds(tmp.as_uri())
+        settle(qapp, lambda: reports)
         assert self.sub_svc.subscribe.call_count == 2
         assert reports == [("Imported 2 feeds.", True)]
         tmp.unlink()
@@ -89,6 +90,7 @@ class TestImportExport:
         reports = []
         controller.importReported.connect(lambda *args: reports.append(args))
         controller.importFeeds(tmp.as_uri())
+        settle(qapp, lambda: reports)
         [(message, complete)] = reports
         assert "https://example.com/feed: bad url" in message
         assert complete is False
@@ -105,6 +107,7 @@ class TestImportExport:
         controller.errorOccurred.connect(errors.append)
         controller.importReported.connect(lambda *args: reports.append(args))
         controller.importFeeds(tmp.as_uri())
+        settle(qapp, lambda: errors)
         assert errors == ["Import failed: the file is not a Meridian feed list"]
         assert reports == []
         self.sub_svc.subscribe.assert_not_called()
@@ -125,6 +128,7 @@ class TestImportExport:
         reports = []
         controller.importReported.connect(lambda *args: reports.append(args))
         controller.importFeeds(tmp.as_uri())
+        settle(qapp, lambda: reports)
         self.sub_svc.subscribe.assert_not_called()
         [(message, complete)] = reports
         assert "Entry 1: no address" in message
@@ -139,4 +143,21 @@ class TestImportExport:
         errors = []
         controller.errorOccurred.connect(errors.append)
         controller.importFeeds("file:///nonexistent/path.json")
+        settle(qapp, lambda: errors)
         assert len(errors) == 1
+
+    def test_a_store_that_cannot_be_read_is_said_plainly(self, qapp, caplog):
+        self.sub_svc.list_feeds.side_effect = RuntimeError("SELECT url FROM feeds")
+        controller = make_controller(
+            qapp, self.sub_svc, self.item_svc, self.discovery_svc
+        )
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
+            json.dump({"version": 1, "feeds": []}, f)
+            tmp = Path(f.name)
+        errors = []
+        controller.errorOccurred.connect(errors.append)
+        controller.importFeeds(tmp.as_uri())
+        settle(qapp, lambda: errors)
+        assert errors == ["Import failed: the feed store could not be read."]
+        assert "SELECT url FROM feeds" in caplog.text
+        tmp.unlink()

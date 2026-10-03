@@ -1,9 +1,16 @@
-"""Parser for native MMSP feed manifests (mfeed source type)."""
+"""Parser for native MMSP feed manifests (mfeed source type).
+
+The manifest is rejected whole only where MMSP 5.6 says so: an unsupported
+version, a document that is not a JSON object or an `items` member that is
+not an array. An item is skipped alone where MMSP 6.15 says so; a
+malformed optional field is dropped from an item that is kept; the readers in
+`mfeed_fields` carry both rules. One bad item used to discard the whole feed.
+"""
 
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+import logging
 
 from meridian.domain.entities.item import Item
 from meridian.domain.value_objects.item_type import ItemType
@@ -27,12 +34,27 @@ from meridian.infrastructure.fetching.mmsp import (
     accepts_document_version,
 )
 from meridian.infrastructure.fetching.parser.https_only import is_https
+from meridian.infrastructure.fetching.parser.mfeed_fields import (
+    InvalidItem,
+    entries,
+    optional_int,
+    optional_object,
+    optional_text,
+    optional_time,
+    required_text,
+    required_time,
+    texts,
+)
+
+_LOG = logging.getLogger(__name__)
 
 
 def parse(
     feed_id: int, feed_url: str, raw_bytes: bytes
 ) -> tuple[list[Item], PollConfig]:
     data = json.loads(raw_bytes)
+    if not isinstance(data, dict):
+        raise ValueError("The document is not an MMSP feed: it is not a JSON object")
 
     declared = data.get("mmsp")
     if not accepts_document_version(declared):
@@ -40,80 +62,79 @@ def parse(
             f"Unsupported MMSP document version {declared!r}: this client "
             f"speaks {PROTOCOL_VERSION} and reads any {PROTOCOL_MAJOR}.x feed"
         )
+    raw_items = data.get("items")
+    if not isinstance(raw_items, list):
+        raise ValueError("The feed's REQUIRED items member is not an array")
 
-    poll_data = data.get("poll", {})
-    min_interval = max(
-        poll_data.get("min_interval_seconds", POLL_FLOOR_SECONDS),
-        POLL_FLOOR_SECONDS,
+    feed_title = optional_text(data, "title")
+    items: list[Item] = []
+    for raw in raw_items:
+        try:
+            items.append(_parse_item(feed_id, feed_url, feed_title, raw))
+        except InvalidItem:
+            continue
+    skipped = len(raw_items) - len(items)
+    if skipped:
+        _LOG.warning(
+            "Feed %d (%s): skipped %d of %d items that break MMSP 6.1",
+            feed_id,
+            feed_url,
+            skipped,
+            len(raw_items),
+        )
+    return items, _poll_config(data.get("poll"))
+
+
+def _poll_config(raw: object) -> PollConfig:
+    poll = raw if isinstance(raw, dict) else {}
+    return PollConfig(
+        min_interval_seconds=optional_int(poll, "min_interval_seconds")
+        or POLL_FLOOR_SECONDS,
+        recommended_interval_seconds=optional_int(poll, "recommended_interval_seconds"),
+        ttl_seconds=optional_int(poll, "ttl_seconds"),
     )
-    poll_config = PollConfig(
-        min_interval_seconds=min_interval,
-        recommended_interval_seconds=poll_data.get("recommended_interval_seconds"),
-        ttl_seconds=poll_data.get("ttl_seconds"),
-    )
-    feed_title = data.get("title")
-    items = [
-        _parse_item(feed_id, feed_url, feed_title, raw_item)
-        for raw_item in data.get("items", [])
-    ]
-    return items, poll_config
 
 
-def _parse_item(feed_id: int, feed_url: str, feed_title: str | None, raw: dict) -> Item:
+def _parse_item(
+    feed_id: int, feed_url: str, feed_title: str | None, raw: object
+) -> Item:
+    if not isinstance(raw, dict):
+        raise InvalidItem("the item is not an object")
     return Item(
         feed_id=feed_id,
-        item_id=raw["id"],
-        type=ItemType.from_str(raw.get("type", "article")),
-        title=raw["title"],
-        url=raw["url"],
-        published=_parse_dt(raw["published"]),
-        updated=_parse_dt(raw["updated"]) if raw.get("updated") else None,
-        description=raw.get("description"),
-        language=raw.get("language"),
-        duration=raw.get("duration"),
-        canonical_url=raw.get("canonical_url"),
-        preview_url=raw.get("preview_url"),
-        license=raw.get("license"),
-        live_status=raw.get("live_status"),
-        scheduled_start=(
-            _parse_dt(raw["scheduled_start"]) if raw.get("scheduled_start") else None
-        ),
-        expires=_parse_dt(raw["expires"]) if raw.get("expires") else None,
-        authors=tuple(_parse_author(a) for a in raw.get("authors", [])),
-        tags=tuple(raw.get("tags", [])),
-        media=tuple(_parse_media(m) for m in _secure(raw.get("media", []))),
-        thumbnail=tuple(_parse_thumbnail(t) for t in _secure(raw.get("thumbnail", []))),
-        chapters=tuple(_parse_chapter(c) for c in raw.get("chapters", [])),
-        captions=tuple(_parse_caption(c) for c in _secure(raw.get("captions", []))),
-        transcript=(
-            _parse_transcript(raw["transcript"])
-            if raw.get("transcript") and is_https(raw["transcript"].get("url"))
-            else None
-        ),
-        series=_parse_series(raw["series"]) if raw.get("series") else None,
-        content_rating=(
-            _parse_content_rating(raw["content_rating"])
-            if raw.get("content_rating")
-            else None
-        ),
-        geo_restriction=(
-            _parse_geo(raw["geo_restriction"]) if raw.get("geo_restriction") else None
-        ),
-        paywall=_parse_paywall(raw["paywall"]) if raw.get("paywall") else None,
+        item_id=required_text(raw, "id"),
+        type=ItemType.from_str(required_text(raw, "type")),
+        title=required_text(raw, "title"),
+        url=required_text(raw, "url"),
+        published=required_time(raw, "published"),
+        updated=optional_time(raw, "updated"),
+        description=optional_text(raw, "description"),
+        language=optional_text(raw, "language"),
+        duration=optional_int(raw, "duration"),
+        canonical_url=optional_text(raw, "canonical_url"),
+        preview_url=optional_text(raw, "preview_url"),
+        license=optional_text(raw, "license"),
+        live_status=optional_text(raw, "live_status"),
+        scheduled_start=optional_time(raw, "scheduled_start"),
+        expires=optional_time(raw, "expires"),
+        authors=entries(raw, "authors", _parse_author),
+        tags=texts(raw, "tags"),
+        media=entries(raw, "media", _parse_media, keep=_secure),
+        thumbnail=entries(raw, "thumbnail", _parse_thumbnail, keep=_secure),
+        chapters=entries(raw, "chapters", _parse_chapter),
+        captions=entries(raw, "captions", _parse_caption, keep=_secure),
+        transcript=optional_object(raw, "transcript", _parse_transcript),
+        series=optional_object(raw, "series", _parse_series),
+        content_rating=optional_object(raw, "content_rating", _parse_content_rating),
+        geo_restriction=optional_object(raw, "geo_restriction", _parse_geo),
+        paywall=optional_object(raw, "paywall", _parse_paywall),
         source=ItemSource(type="mfeed", feed_url=feed_url, feed_title=feed_title),
     )
 
 
-def _secure(entries: list[dict]) -> list[dict]:
-    """The entries whose address Meridian may fetch: HTTPS only."""
-    return [entry for entry in entries if is_https(entry.get("url"))]
-
-
-def _parse_dt(value: str) -> datetime:
-    dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt
+def _secure(entry: dict) -> bool:
+    """Whether Meridian may fetch the entry's address: HTTPS only."""
+    return is_https(entry.get("url"))
 
 
 def _parse_author(raw: dict) -> Author:
@@ -148,6 +169,8 @@ def _parse_chapter(raw: dict) -> Chapter:
 
 
 def _parse_transcript(raw: dict) -> Transcript:
+    if not is_https(raw.get("url")):
+        raise ValueError("a transcript is only fetched over HTTPS")
     return Transcript(
         url=raw["url"], mime_type=raw["mime_type"], language=raw.get("language")
     )
@@ -182,7 +205,10 @@ def _parse_content_rating(raw: dict) -> ContentRating:
 
 
 def _parse_geo(raw: dict) -> GeoRestriction:
-    return GeoRestriction(type=raw["type"], regions=tuple(raw["regions"]))
+    regions = raw["regions"]
+    if not isinstance(regions, list):
+        raise TypeError("regions is not an array")
+    return GeoRestriction(type=raw["type"], regions=tuple(regions))
 
 
 def _parse_paywall(raw: dict) -> Paywall:

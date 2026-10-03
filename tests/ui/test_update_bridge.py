@@ -15,7 +15,8 @@ import weakref
 from PySide6.QtCore import QObject, QUrl, Slot
 
 from meridian.application.dto.update_info import UpdateStatus
-from meridian.ui.update_bridge import _POLL_INTERVAL_MS, UpdateController
+from meridian.ui.background import POLL_INTERVAL_MS as _POLL_INTERVAL_MS
+from meridian.ui.update_bridge import UpdateController
 
 _PROBE_TIMEOUT_SECONDS = 3.0
 # Several poll intervals: long enough that the controller has looked for the

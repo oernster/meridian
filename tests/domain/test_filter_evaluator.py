@@ -156,34 +156,17 @@ class TestInvalidTokens:
         with pytest.raises((ValueError, Exception)):
             FilterEvaluator(FilterExpression("(type:video"))
 
-    def test_unexpected_token_at_term(self):
-        from meridian.domain.services.filter_evaluator import (
-            _Parser,
-            _Token,
-            _TokenKind,
-        )
+    def test_an_operator_where_a_term_belongs_is_refused(self):
+        with pytest.raises(ValueError, match="Expected a filter term"):
+            FilterEvaluator(FilterExpression("AND type:video"))
 
-        tokens = [_Token(_TokenKind.AND, "AND"), _Token(_TokenKind.EOF)]
-        parser = _Parser(tokens)
-        with pytest.raises(ValueError, match="Unexpected token"):
-            parser.parse_expr()
+    def test_an_unknown_field_is_refused(self):
+        with pytest.raises(ValueError, match="Unrecognised text"):
+            FilterEvaluator(FilterExpression("unknown:value"))
 
-    def test_node_base_not_implemented(self):
-        from meridian.domain.services.filter_evaluator import _Node
-
-        with pytest.raises(NotImplementedError):
-            _Node().evaluate(_item())
-
-    def test_atom_node_unknown_field(self):
-        from meridian.domain.services.filter_evaluator import _AtomNode
-
-        node = _AtomNode("unknown:value")
-        assert not node.evaluate(_item())
-
-    def test_eval_range_no_match(self):
-        from meridian.domain.services.filter_evaluator import _eval_range
-
-        assert not _eval_range(100, "100")
+    def test_a_bare_number_is_not_a_duration_range(self):
+        with pytest.raises(ValueError, match="not a valid duration filter"):
+            FilterEvaluator(FilterExpression("duration:100"))
 
     def test_eval_date_range_lte(self):
         item = _item(published=datetime(2026, 1, 1, tzinfo=timezone.utc))
@@ -195,11 +178,9 @@ class TestInvalidTokens:
             "published:[2026-01-01T00:00:00+00:00,2026-12-31T00:00:00+00:00]", item
         )
 
-    def test_eval_date_range_no_match(self):
-        from meridian.domain.services.filter_evaluator import _eval_date_range
-
-        actual = datetime(2026, 1, 1, tzinfo=timezone.utc)
-        assert not _eval_date_range(actual, "100")
+    def test_a_bare_time_is_not_a_date_range(self):
+        with pytest.raises(ValueError, match="not a valid date filter"):
+            FilterEvaluator(FilterExpression("published:2026-01-01"))
 
 
 class TestDeduplication:

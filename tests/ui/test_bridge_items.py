@@ -62,3 +62,17 @@ class TestItems:
         controller._selected_feed_id = 1
         controller.notify_new_items(1, 2)
         self.item_svc.get_items.assert_called_with(1)
+
+    def test_a_store_failure_on_select_is_said_plainly(self, qapp, caplog):
+        """The store's text carries SQL; the window gets a sentence, the log it."""
+        self.item_svc.get_items.side_effect = RuntimeError("SELECT * FROM items")
+        controller = make_controller(
+            qapp, self.sub_svc, self.item_svc, self.discovery_svc
+        )
+        errors = []
+        controller.errorOccurred.connect(errors.append)
+        controller._selected_feed_id = 1
+        controller.selectFeed(2)
+        assert errors == ["This feed's items could not be read."]
+        assert controller.selectedFeedId == 0
+        assert "SELECT * FROM items" in caplog.text

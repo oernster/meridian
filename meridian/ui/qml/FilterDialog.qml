@@ -5,9 +5,14 @@ import QtQuick.Layouts
 // Set or clear a feed's filter expression.
 //
 // Extracted from SubscriptionManager.qml. A filter is a single string of terms
-// joined by AND, which is unreadable to edit as text, so the dialog splits it
-// into a row per term that can be toggled off, with a field for adding one
-// more. What comes back out is the join of whatever is still active.
+// joined by the AND operator, which is unreadable to edit as text, so the
+// dialog shows a row
+// per term that can be toggled off, with a field for adding one more. What
+// comes back out is the join of whatever is still active.
+//
+// The rows are handed in as currentTerms, cut by the controller with the
+// filter parser itself. The dialog used to split on the text " AND ", which cut
+// a quoted keyword:"salt AND pepper" in two and broke parentheses apart.
 //
 // It reports through `filterAccepted` rather than calling the controller. An
 // empty result is meaningful: it clears the filter.
@@ -16,7 +21,7 @@ FormDialog {
 
     property int feedId: 0
     property string feedTitle: ""
-    property string currentFilter: ""
+    property var currentTerms: []
 
     signal filterAccepted(int feedId, string expression)
 
@@ -171,13 +176,8 @@ FormDialog {
 
     onOpened: {
         terms.clear()
-        if (dialog.currentFilter) {
-            var parts = dialog.currentFilter.split(dialog._separator)
-            for (var i = 0; i < parts.length; i++) {
-                var term = parts[i].trim()
-                if (term) terms.append({ "term": term, "active": true })
-            }
-        }
+        for (var i = 0; i < dialog.currentTerms.length; i++)
+            terms.append({ "term": dialog.currentTerms[i], "active": true })
         expressionField.text = ""
         if (terms.count > 0) termRepeater.itemAt(0).forceActiveFocus()
         else expressionField.forceActiveFocus()

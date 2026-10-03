@@ -1,6 +1,10 @@
 from dataclasses import dataclass
 
 
+class FilterSyntaxError(ValueError):
+    """A filter that does not follow MMSP Appendix A; the message says where."""
+
+
 @dataclass(frozen=True, slots=True)
 class FilterExpression:
     expr: str

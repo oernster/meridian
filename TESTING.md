@@ -22,7 +22,7 @@ $LASTEXITCODE
 
 That one command is the whole gate. `pyproject.toml` adds the coverage measurement and its floor to every run; `black` and `flake8` run inside the suite as assertions (`tests/structural/test_boundaries.py`), so a formatting or lint failure is a test failure. There is no separate gate script.
 
-**A full run takes about half a minute.** 885 tests are collected: 303 interface, 241 infrastructure, 127 installer and version at the top of `tests/`, 113 application, 64 domain and 37 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
+**A full run takes about half a minute.** 1044 tests are collected: 317 interface, 292 infrastructure, 163 application, 127 installer and version at the top of `tests/`, 108 domain and 37 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
 
 **Read the exit code, never the last line.** A run ends with the coverage table, the gate's verdict and a passed count. A passing count does not mean the coverage floor was met; a coverage row such as `errors.py` also reads like a result to anybody searching the text. `0` means every test passed and the floor was met. Anything else means read the failures above the table. For a count without running anything, `python -m pytest --co -q --no-cov` ends with one.
 
@@ -59,9 +59,9 @@ The last is the one to run after formatting: it holds the root delivery scripts,
 | Directory | What it tests | Against |
 |---|---|---|
 | `domain/` | entities, value objects, the filter evaluator | values built in the test |
-| `application/` | the services, the update decision and the import tally | the interfaces stood in for with `unittest.mock`; the update decision and the import tally use small hand-written fakes (`FakeSource`, `FakeSubscriptions`) |
+| `application/` | the services, the update decision, the feed list format and the import tally | the interfaces stood in for with `unittest.mock`; the update decision and the import tally use small hand-written fakes (`FakeSource`, `FakeSubscriptions`); `test_subscription_rules.py` runs the subscription service over a real SQLite file in a temporary folder |
 | `infrastructure/` | the repositories, parsers, fetcher, scheduler, discovery client and the GitHub adapter | a real SQLite file in a temporary folder; HTTP through `respx`, which answers the request inside the process, except redirects: those go through each fetcher's production client over an `httpx.MockTransport` (`redirect_transport.py`), because a bare client never follows a redirect and so cannot show what production does with one |
-| `ui/` | the bridge, the models and the real `main.qml` | a real `QApplication`; the window is built against hand-written stub controllers |
+| `ui/` | the bridge, the models and the real `main.qml` | a real `QApplication`; the window is built against hand-written stub controllers. `test_bridge_real_store.py` builds the controller over the real services and a real SQLite file instead, because export, filters and stored times only went wrong against a real store: an export written by one store is imported into a second and every field compared |
 | `test_installer_*.py` | the setup program's operations | real files in a temporary folder, with the registry and processes stood in for |
 | `structural/` | the rules no single test can see | the source tree itself |
 
@@ -70,9 +70,9 @@ The last is the one to run after formatting: it holds the root delivery scripts,
 - **Qt is never mocked.** `tests/ui/conftest.py` provides one session `qapp` fixture; a second `QApplication` aborts the process, so no suite builds its own.
 - **The window.** `tests/ui/window_stub.py` loads the real `main.qml` with `load_main_window(controller, update_controller, link_controller)`. `StubController`, `StubUpdateController` and `StubLinkController` carry exactly the surface the QML reaches for and record every call, so a test asserts which call reached the controller. Keep a Python reference to any stub handed to QML; one the garbage collector takes leaves QML calling nothing.
 - **Keys, not inspection.** Focus and keyboard behaviour are driven with `QTest.keyClick` through the real window, because every handover is a signal the composing file connects and a missed connection compiles cleanly. `tests/ui/test_help_menu.py` is the nearest example to copy.
-- **Cross-thread delivery is proved, not assumed.** `tests/ui/test_update_bridge.py` connects a probe to the controller's internal signal after the controller's own slot, so spinning until the probe fires guarantees the slot ran first. A test waits on that delivery, never on the service call the worker makes before it; ending a test early is how the old update bridge crashed. The same file proves the worker holds no reference to the controller: dropping it mid-check frees it at once.
+- **Cross-thread delivery is proved, not assumed.** `tests/ui/test_update_bridge.py` connects a probe to the controller's internal signal after the controller's own slot, so spinning until the probe fires guarantees the slot ran first. A test waits on that delivery, never on the service call the worker makes before it; ending a test early is how the old update bridge crashed. The same file proves the worker holds no reference to the controller: dropping it mid-check frees it at once. The import runs through the same `BackgroundJobs` helper, so its tests wait the same way, with `settle` from `tests/ui/bridge_dtos.py`.
 - **Lists that recycle.** A test about anything a delegate does needs a list long enough to recycle its delegates and should assert that it is recycling before asserting anything else (`tests/ui/test_subscription_selection.py`, two hundred feeds).
-- **No real network, browser or database.** HTTP goes through `respx`; the browser opener is injected into `ExternalLinkController`, with `QDesktopServices.openUrl` patched where the update bridge calls it; the session database is a temporary file from `tests/conftest.py`, never `~/.meridian/meridian.db`.
+- **No real network, browser or database.** HTTP goes through `respx`; the browser opener is injected into `ExternalLinkController`, with `QDesktopServices.openUrl` patched where the update bridge calls it; every database is a temporary file, the session one from `tests/conftest.py` and the per-test ones from `tmp_path`, never `~/.meridian/meridian.db`.
 
 ## Guards
 

@@ -8,6 +8,7 @@ from meridian.application.interfaces.poll_state_repository import (
     PollStateRepository,
 )
 from meridian.domain.value_objects.poll_config import POLL_FLOOR_SECONDS
+from meridian.domain.value_objects.utc import as_utc
 
 
 class PollOrchestrator:
@@ -74,24 +75,20 @@ class PollOrchestrator:
         )
         return len(new_items), title_updated
 
-    @staticmethod
-    def _ensure_utc(dt: datetime) -> datetime:
-        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
-
     def _is_due(self, state: PollState) -> bool:
         now = datetime.now(tz=timezone.utc)
         if state.backoff_until:
-            return now >= self._ensure_utc(state.backoff_until)
+            return now >= as_utc(state.backoff_until)
         if state.next_poll is None:
             return True
-        return now >= self._ensure_utc(state.next_poll)
+        return now >= as_utc(state.next_poll)
 
     def seconds_until_next_poll(self, feed_id: int) -> int:
         state = self._poll_state_repo.get(feed_id)
         if state.next_poll is None:
             return 0
         delta = (
-            self._ensure_utc(state.next_poll) - datetime.now(tz=timezone.utc)
+            as_utc(state.next_poll) - datetime.now(tz=timezone.utc)
         ).total_seconds()
         return max(0, int(delta))
 

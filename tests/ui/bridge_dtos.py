@@ -5,6 +5,7 @@ bridge surface left every group needing the same handful, so they live here
 rather than being copied four ways.
 """
 
+import time
 from unittest.mock import AsyncMock, MagicMock
 
 from meridian.application.dto.feed_candidate_dto import FeedCandidateDTO
@@ -54,6 +55,22 @@ def candidate_dto(
         source_type="rss",
         is_subscribed=subscribed,
     )
+
+
+# Long enough for a worker on a loaded machine, short enough to fail fast.
+SETTLE_TIMEOUT_SECONDS = 5.0
+
+
+def settle(qapp, condition) -> None:
+    """Spin the event loop until `condition()`; fail if it never holds.
+
+    The import runs on a worker and reports on the UI thread, so a test waits
+    for the report the way the window does: by letting the loop run.
+    """
+    deadline = time.monotonic() + SETTLE_TIMEOUT_SECONDS
+    while not condition() and time.monotonic() < deadline:
+        qapp.processEvents()
+    assert condition(), "the result never arrived on the UI thread"
 
 
 def make_controller(qapp, sub_svc, item_svc, discovery_svc=None):

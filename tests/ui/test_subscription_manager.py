@@ -292,6 +292,25 @@ def test_accepting_rejoins_the_active_terms(manager) -> None:  # noqa: ANN001
     assert controller.called("setFilter") == [("setFilter", 1, "type:video")]
 
 
+def test_an_and_inside_quotes_stays_inside_its_term(manager) -> None:  # noqa: ANN001
+    """The dialog used to split on the text " AND ", quotes or not."""
+    item, _, controller = manager
+    dialog = _child(item, "filterDialog")
+    quoted = 'keyword:"salt AND pepper" AND lang:en'
+
+    dialog.setProperty("feedId", 1)
+    dialog.setProperty("currentTerms", controller.filterTerms(quoted))
+    dialog.open()
+    QGuiApplication.processEvents()
+
+    assert _in_dialog(dialog, "termRow1") is not None
+    assert _in_dialog(dialog, "termRow2") is None, "the quoted AND was split"
+    dialog.accept()
+    QGuiApplication.processEvents()
+
+    assert controller.called("setFilter") == [("setFilter", 1, quoted)]
+
+
 def test_editing_the_url_reaches_the_controller(manager) -> None:  # noqa: ANN001
     item, _, controller = manager
     row = _first_row(item)

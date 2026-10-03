@@ -186,3 +186,22 @@ class TestSorting:
         )
         controller.setItemSort("newest")
         self.item_svc.get_items.assert_not_called()
+
+    def test_item_order_is_by_instant_not_by_text(self, qapp):
+        """10:00+05:00 is 05:00Z: earlier than 06:00Z though its text sorts later."""
+        from dataclasses import replace
+
+        from PySide6.QtCore import Qt
+
+        five = replace(item_dto(1), published_iso="2026-01-01T10:00:00+05:00")
+        six = replace(item_dto(2), published_iso="2026-01-01T06:00:00+00:00")
+        self.item_svc.get_items.return_value = [five, six]
+        controller = make_controller(
+            qapp, self.sub_svc, self.item_svc, self.discovery_svc
+        )
+        controller._selected_feed_id = 1
+        model = controller.itemModel
+        for key, expected in (("newest", [2, 1]), ("oldest", [1, 2])):
+            controller.setItemSort(key)
+            shown = [model.data(model.index(r, 0), Qt.UserRole) for r in range(2)]
+            assert shown == expected, key

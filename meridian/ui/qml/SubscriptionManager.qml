@@ -145,7 +145,7 @@ Rectangle {
                     Label {
                         anchors.centerIn: parent
                         text: root.selectedCount === 0 ? ""
-                            : root.selectedCount === controller.feedModel.rowCount() ? "✓" : "–"
+                            : root.selectedCount === controller.feedModel.rowCount() ? "✓" : "−"
                         color: theme.isDark ? "#1e1e2e" : "#ffffff"
                         font.pixelSize: 12; font.bold: true
                     }
@@ -229,7 +229,7 @@ Rectangle {
                 onFilterRequested: {
                     filterDialog.feedId = feedId
                     filterDialog.feedTitle = feedTitle || feedUrl
-                    filterDialog.currentFilter = feedFilter
+                    filterDialog.currentTerms = controller.filterTerms(feedFilter)
                     filterDialog.open()
                 }
                 onEditRequested: {

@@ -1,9 +1,14 @@
 from meridian.application.dto.feed_dto import FeedDTO
 from meridian.application.interfaces.feed_repository import FeedRepository
 from meridian.application.interfaces.item_repository import ItemRepository
+from meridian.application.services.filter_rules import check_filter
 from meridian.application.services.source_type_inference import infer_source_type
 from meridian.domain.entities.feed import Feed
+from meridian.domain.value_objects.feed_url import check_feed_url
 from meridian.domain.value_objects.source_type import SourceType
+
+# A feed saved a moment ago has had no poll, so nothing in it can be unread.
+_NEW_FEED_UNREAD = 0
 
 
 class SubscriptionService:
@@ -22,7 +27,15 @@ class SubscriptionService:
         platform_id: str | None = None,
         rss_fallback_url: str | None = None,
         title: str | None = None,
+        filter_expr: str | None = None,
     ) -> FeedDTO:
+        """Store a new feed in one save; a feed held at `url` is returned as it is.
+
+        The new feed's result is built from the save alone. It used to be
+        followed by a read of the unread count, so a read failing after the
+        commit reported a stored feed as refused.
+        """
+        check_feed_url(url)
         resolved = SourceType(source_type) if source_type else infer_source_type(url)
         existing = self._feed_repo.get_by_url(url)
         if existing is not None:
@@ -32,10 +45,11 @@ class SubscriptionService:
             source_type=resolved,
             platform_id=platform_id,
             rss_fallback_url=rss_fallback_url,
+            filter_expr=filter_expr,
             title=title,
         )
         saved = self._feed_repo.save(feed)
-        return self._to_dto(saved)
+        return self._dto(saved, _NEW_FEED_UNREAD)
 
     def unsubscribe(self, feed_id: int) -> None:
         self._feed_repo.delete(feed_id)
@@ -49,13 +63,20 @@ class SubscriptionService:
         return self._to_dto(feed) if feed else None
 
     def set_filter(self, feed_id: int, filter_expr: str | None) -> None:
+        """Store a filter (None clears it); FilterSyntaxError refuses one."""
+        if filter_expr is not None:
+            check_filter(filter_expr)
         self._feed_repo.update_filter(feed_id, filter_expr)
 
     def update_url(self, feed_id: int, new_url: str) -> None:
-        self._feed_repo.update_url(feed_id, new_url.strip())
+        url = new_url.strip()
+        check_feed_url(url)
+        self._feed_repo.update_url(feed_id, url)
 
     def _to_dto(self, feed: Feed) -> FeedDTO:
-        unread = self._item_repo.unread_count(feed.id) if feed.is_saved() else 0
+        return self._dto(feed, self._item_repo.unread_count(feed.id))
+
+    def _dto(self, feed: Feed, unread: int) -> FeedDTO:
         return FeedDTO(
             id=feed.id,
             url=feed.url,

@@ -30,10 +30,10 @@ The YouTube embed is the one exception worth knowing about. It is Google's own p
 
 - Subscribe to MFEED, RSS 2.0 and 1.0, Atom 1.0, podcast RSS and YouTube channel feeds.
 - Feed discovery by topic through Feedly's public search API: search, preview candidates and subscribe individually or in bulk, with a result-cap selector. The field suggests topics as you type from Wikipedia's OpenSearch endpoint. Feedly indexes RSS, Atom and podcast sources, so MFEED feeds are added by URL rather than found here.
-- Per-feed filter expressions using the MMSP Appendix A ABNF grammar. The filter dialog shows existing terms as toggleable rows, so common cases need no syntax knowledge.
+- Per-feed filter expressions using the MMSP Appendix A ABNF grammar. A filter is checked when it is saved and refused with a message saying what is wrong. The filter dialog shows existing terms as toggleable rows, so common cases need no syntax knowledge.
 - Background polling with conditional GET (ETag and Last-Modified), rate-limit backoff and a 300 second poll floor.
 - Bulk feed management with select-all checkboxes; in-place list removal preserves scroll position.
-- Import and export subscriptions as JSON. Every import ends in a report: how many feeds were added, how many you already had and each feed it could not add, with the reason.
+- Import and export subscriptions as JSON. The export keeps each feed's filter and platform settings as well as its address, type and title; read state is not exported. Every import ends in a report: how many feeds were added, how many you already had and each feed it could not add, with the reason.
 - An update check against GitHub's releases API: a few seconds after launch and once a day while running, with Download, Skip This Version and Later on the prompt; Help > Check for Updates asks on demand and reports every outcome. Only a published release can prompt, a skipped version never prompts again and an unreachable network is silent.
 - A button on the header opens the MMSP specification in your browser; one at the foot opens the donation page. Meridian fetches neither: each address is handed to the desktop.
 - Catppuccin Mocha and Latte themes with a single toggle; the preference persists across restarts.
@@ -64,7 +64,7 @@ Download the installer for your platform from the [Releases page](https://github
 
 The Windows installer is per-user: it installs under `%LOCALAPPDATA%` and registers under `HKEY_CURRENT_USER`, so it never asks for administrator rights. It offers to launch Meridian when it has finished, ticked by default, after a repair or a reinstall as much as after a first install; untick the box and it just closes.
 
-Uninstalling through the setup program removes your data with the application, including the `~/.meridian` folder that holds the database. Export your subscriptions first if you want to keep them; started with `--keep-user-data`, the setup program removes the application and leaves the data in place.
+Uninstalling through the setup program removes your data with the application, including the `~/.meridian` folder that holds the database. Export your subscriptions first if you want to keep them (the export holds every feed and its filter, not what you have read); started with `--keep-user-data`, the setup program removes the application and leaves the data in place.
 
 ### Run from source
 

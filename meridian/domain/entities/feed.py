@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from meridian.domain.value_objects.feed_url import require_feed_scheme
 from meridian.domain.value_objects.source_type import SourceType
 
 UNSET_ID = 0
@@ -19,8 +20,7 @@ class Feed:
     language: str | None = None
 
     def __post_init__(self) -> None:
-        if not (self.url.startswith("https://") or self.url.startswith("http://")):
-            raise ValueError(f"Feed URL must use http:// or https://: {self.url}")
+        require_feed_scheme(self.url)
         if self.source_type == SourceType.PLATFORM and self.platform_id is None:
             raise ValueError("Platform source type requires platform_id")
 

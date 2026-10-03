@@ -24,11 +24,14 @@ also reads RSS, Atom, podcast feeds and YouTube channel feeds.
 
 Subscriptions, items and read state live in a SQLite database in the user's
 home folder. There is no account, no sync and no server. Moving to another
-machine is an export to JSON and an import on the other side.
+machine is an export to JSON and an import on the other side. The export
+carries each feed's address, type, title, filter and platform fields, so a
+feed comes back as it was; until this was corrected it carried the first three
+only; every filter was lost on the way.
 
 - **Rather than:** synchronised reading lists; a hosted or web reader.
-- **Gains:** nothing to sign in to and nothing held elsewhere; the reading list
-  is a file the reader owns.
+- **Gains:** nothing to sign in to and nothing held elsewhere; the reading list,
+  filters included, is a file the reader owns.
 - **Costs:** read state does not travel; a phone and a desktop cannot share a
   list.
 
@@ -243,15 +246,27 @@ Every XML feed is read through a parser hardened against hostile documents.
 ### Filters hide; they never delete
 
 A filter is an expression in the MMSP grammar, applied each time a feed's list
-is read. Every item is still stored. The filter dialog splits an expression
-into a row per term that can be switched off; what is left is joined with AND.
+is read. Every item is still stored. The filter dialog shows a row per term that
+a top-level AND joins, cut by the filter parser itself, so an AND inside quotes or
+parentheses stays inside its term; a filter with a top-level OR is one row.
+What is left is joined with AND.
+
+A filter is checked when it is saved and refused with a message saying where
+it goes wrong, text left over after a complete expression included. The
+grammar is silent on three things and Meridian reads them this way: AND and OR
+apply left to right with no precedence; an item with no duration matches no
+duration filter (the specification's own conformance suite agrees); a time
+bound with no offset is UTC and a bound that is a date alone covers that whole
+day.
 
 - **Rather than:** discarding filtered items as they arrive; a text field of
   raw syntax.
 - **Gains:** changing or clearing a filter brings items back; common cases
   need no knowledge of the grammar.
 - **Costs:** filtered items still take space; anything beyond AND has to be
-  typed as text.
+  typed as text. A filter an older version stored that no longer parses is
+  reported when its feed is opened, which then shows nothing until the filter
+  is edited.
 
 ### Duplicates removed as the list is read
 
@@ -378,13 +393,52 @@ selection is keyed by feed, never by the row on screen.
 Every import ends in a dialog: how many feeds were added, how many were
 already there and each entry that could not be added, with the reason. A
 partial import is titled as incomplete. A file that is not a feed list is
-refused whole.
+refused whole, as is a feed list of a version other than 1; a file with no
+version is read as version 1. A UTF-8 file is read with or without a byte
+order mark; a UTF-16 file needs one. A feed already held is the same address with the scheme
+and host compared without case; it is left exactly as it is. An entry that
+repeats one earlier in the file is counted as a repeat. An address that does
+not parse or names no host is refused before anything is stored. A store that
+refuses an entry is reported in plain words, its own text kept to the log. The
+import runs on a worker thread, so a long list does not freeze the window.
 
 - **Rather than:** logging refusals where nobody reads them; a toast that fades
   before a list of failures can be read.
 - **Gains:** a partial import is never mistaken for a whole one.
 - **Costs:** one more dialog to dismiss, even after an import that went
   perfectly.
+
+### An address keeps its path exactly
+
+Two addresses differing only in a trailing slash are two feeds.
+
+- **Rather than:** merging `/rss` and `/rss/` as one feed.
+- **Gains:** a server that answers the two differently is followed as given.
+- **Costs:** a list holding both shows the feed twice until one is removed.
+
+### Times are stored as UTC
+
+SQLite has no time zone type. Every stored time is converted to UTC on the
+way in and marked as UTC on the way out, so stored items sort by the instant
+they were published and compare with a filter's time bounds. Before this, the
+offset was dropped and the wall clock digits kept.
+
+- **Rather than:** keeping each time in the zone the feed wrote it in.
+- **Gains:** ordering and filtering by the instant, across feeds in any zone.
+- **Costs:** a row stored before the change has lost its offset for good and is
+  read as UTC; the list shows times in UTC rather than the reader's own zone.
+
+### One bad item costs that item, not the feed
+
+An MFEED item that lacks a required field or carries one of the wrong type is
+skipped and the rest of the feed is read; a malformed optional field is
+dropped from an item that is kept (MMSP 6.15 and 5.6). The number skipped is
+written to the log. A malformed poll object falls back to the defaults.
+
+- **Rather than:** refusing the whole document, which left a feed silent until
+  its publisher fixed one item.
+- **Gains:** a feed keeps arriving despite an occasional bad item.
+- **Costs:** a skipped item is only visible in the log.
 
 ### Removal keeps the place in the list
 

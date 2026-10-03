@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
-import json
 import logging
 import threading
+from concurrent.futures import Future
+from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
@@ -14,9 +15,13 @@ from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
 from meridian.application.dto.feed_candidate_dto import FeedCandidateDTO
 from meridian.application.interfaces.discovery_fetcher import DEFAULT_RESULT_CAP
 from meridian.application.services.discovery_service import DiscoveryService
-from meridian.application.services.feed_import import import_feeds
+from meridian.application.services.feed_list import build_feed_list
+from meridian.application.services.filter_rules import filter_terms
 from meridian.application.services.item_service import ItemService
 from meridian.application.services.subscription_service import SubscriptionService
+from meridian.domain.value_objects.filter_expression import FilterSyntaxError
+from meridian.ui.background import BackgroundJobs
+from meridian.ui.feed_transfer import import_failure, import_job, write_feed_list
 from meridian.ui.models import FeedCandidateModel, FeedListModel, ItemListModel
 
 _LOG = logging.getLogger(__name__)
@@ -62,6 +67,8 @@ class AppController(QObject):
         self._last_query: str = ""
         self._search_generation: int = 0
         self._current_search_future: concurrent.futures.Future | None = None
+        self._imports = BackgroundJobs("meridian-import", self)
+        self._imports.finished.connect(self._on_import_finished)
 
         self._discovery_loop = asyncio.new_event_loop()
 
@@ -113,11 +120,30 @@ class AppController(QObject):
 
     @Slot(int)
     def selectFeed(self, feed_id: int) -> None:
+        """Show a feed's items; failing that, none and why. Never another feed's.
+
+        The selection changes only once the items are read. It used to change
+        first, so a read that failed left the previous feed's items on screen
+        while Mark all read acted on the new, unseen feed.
+        """
+        try:
+            items = self._item_svc.get_items(feed_id)
+        except FilterSyntaxError as exc:
+            self._show_nothing(f"This feed's filter cannot be used: {exc}")
+            return
+        except Exception:  # noqa: BLE001 (the store's text is for the log)
+            _LOG.exception("Reading the items of feed %d failed", feed_id)
+            self._show_nothing("This feed's items could not be read.")
+            return
         self._selected_feed_id = feed_id
-        items = self._item_svc.get_items(feed_id)
-        items = self._sort_items(items)
-        self._item_model.refresh(items)
+        self._item_model.refresh(self._sort_items(items))
         self.itemsChanged.emit()
+
+    def _show_nothing(self, reason: str) -> None:
+        self._selected_feed_id = 0
+        self._item_model.refresh([])
+        self.itemsChanged.emit()
+        self.errorOccurred.emit(reason)
 
     @Slot(str)
     def setFeedSort(self, key: str) -> None:
@@ -128,10 +154,7 @@ class AppController(QObject):
     def setItemSort(self, key: str) -> None:
         self._item_sort = key
         if self._selected_feed_id:
-            items = self._item_svc.get_items(self._selected_feed_id)
-            items = self._sort_items(items)
-            self._item_model.refresh(items)
-            self.itemsChanged.emit()
+            self.selectFeed(self._selected_feed_id)
 
     @Slot(str)
     def subscribe(self, url: str) -> None:
@@ -164,10 +187,18 @@ class AppController(QObject):
 
     @Slot(int, str)
     def setFilter(self, feed_id: int, filter_expr: str) -> None:
-        self._sub_svc.set_filter(feed_id, filter_expr.strip() or None)
+        try:
+            self._sub_svc.set_filter(feed_id, filter_expr.strip() or None)
+        except FilterSyntaxError as exc:
+            self.errorOccurred.emit(f"The filter was not saved: {exc}")
+            return
         self.loadFeeds()
         if self._selected_feed_id == feed_id:
             self.selectFeed(feed_id)
+
+    @Slot(str, result="QVariantList")
+    def filterTerms(self, filter_expr: str) -> list:
+        return filter_terms(filter_expr)
 
     @Slot(int, str)
     def updateFeedUrl(self, feed_id: int, new_url: str) -> None:
@@ -192,33 +223,25 @@ class AppController(QObject):
     @Slot(str)
     def exportFeeds(self, file_url: str) -> None:
         path = Path(QUrl(file_url).toLocalFile())
-        feeds = self._sub_svc.list_feeds()
-        data = {
-            "version": 1,
-            "feeds": [
-                {"url": f.url, "source_type": f.source_type, "title": f.title}
-                for f in feeds
-            ],
-        }
+        data = build_feed_list(self._sub_svc.list_feeds())
         try:
-            path.write_text(
-                json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
-            )
-        except Exception as exc:
+            write_feed_list(path, data)
+        except OSError as exc:
             _LOG.error("Export failed: %s", exc)
             self.errorOccurred.emit(f"Export failed: {exc}")
 
     @Slot(str)
     def importFeeds(self, file_url: str) -> None:
+        """Import on a worker; the report arrives as importReported."""
         path = Path(QUrl(file_url).toLocalFile())
-        try:
-            report = import_feeds(
-                json.loads(path.read_text(encoding="utf-8")), self._sub_svc
-            )
-        except Exception as exc:
-            _LOG.error("Import read failed: %s", exc)
-            self.errorOccurred.emit(f"Import failed: {exc}")
+        self._imports.start(import_job(path, self._sub_svc), path)
+
+    @Slot(object, object)
+    def _on_import_finished(self, outcome: Future, path: object) -> None:
+        if outcome.exception() is not None:
+            self.errorOccurred.emit(import_failure(outcome.exception()))
             return
+        report = outcome.result()
         for skipped in report.skipped:
             _LOG.warning("Skipping %s: %s", skipped.entry, skipped.reason)
         self.loadFeeds()
@@ -311,11 +334,11 @@ class AppController(QObject):
     def _sort_items(self, items: list) -> list:
         match self._item_sort:
             case "oldest":
-                return sorted(items, key=lambda i: i.published_iso)
+                return sorted(items, key=_published)
             case "alpha":
                 return sorted(items, key=lambda i: i.title.lower())
             case _:  # newest
-                return sorted(items, key=lambda i: i.published_iso, reverse=True)
+                return sorted(items, key=_published, reverse=True)
 
     def notify_new_items(self, feed_id: int, count: int) -> None:
         # Thread-safe: signal only.
@@ -333,3 +356,8 @@ class AppController(QObject):
         self.loadFeeds()
         if self._selected_feed_id == feed_id:
             self.selectFeed(feed_id)
+
+
+def _published(item) -> datetime:
+    """The instant an item was published, for ordering: never its text."""
+    return datetime.fromisoformat(item.published_iso)

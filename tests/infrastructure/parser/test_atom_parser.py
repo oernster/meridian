@@ -261,10 +261,10 @@ class TestAtomParser:
         assert items[0].type == ItemType.VIDEO
 
     def test_datetime_no_timezone(self):
-        from meridian.infrastructure.fetching.parser.atom_parser import _parse_dt
+        from meridian.infrastructure.fetching.parser.iso_time import parse_iso_time
         from datetime import timezone
 
-        dt = _parse_dt("2026-01-01T00:00:00")
+        dt = parse_iso_time("2026-01-01T00:00:00")
         assert dt.tzinfo == timezone.utc
 
     def test_author_without_uri(self):
