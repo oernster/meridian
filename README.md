@@ -23,7 +23,7 @@ The YouTube embed is the one exception worth knowing about. It is Google's own p
 
 - People who want their subscriptions and read state synchronised between machines or to a phone. Meridian is single-device by design; JSON export and import is the migration path, not live sync.
 - People who want a hosted or web-based reader. There is no server component and none is planned.
-- People who expect to type a plain-HTTP feed URL into the app. The Add Subscription field only accepts `https://`; every hop of a redirect has to be HTTPS and one that is not is refused before it is made; parsers drop non-HTTPS media and thumbnail URLs.
+- People who expect to type a plain-HTTP feed URL into the app. The Add Subscription field only accepts `https://`; every hop of a redirect has to be HTTPS and one that is not is refused before it is made; every parser drops a non-HTTPS media, thumbnail, transcript or caption address.
 - People who want push notifications on new items. MMSP is pull-only, so the scheduler is silent and new items appear on the next poll tick or view.
 
 ## Capabilities
@@ -33,7 +33,7 @@ The YouTube embed is the one exception worth knowing about. It is Google's own p
 - Per-feed filter expressions using the MMSP Appendix A ABNF grammar. The filter dialog shows existing terms as toggleable rows, so common cases need no syntax knowledge.
 - Background polling with conditional GET (ETag and Last-Modified), rate-limit backoff and a 300 second poll floor.
 - Bulk feed management with select-all checkboxes; in-place list removal preserves scroll position.
-- Import and export subscriptions as JSON.
+- Import and export subscriptions as JSON. Every import ends in a report: how many feeds were added, how many you already had and each feed it could not add, with the reason.
 - An update check against GitHub's releases API: a few seconds after launch and once a day while running, with Download, Skip This Version and Later on the prompt; Help > Check for Updates asks on demand and reports every outcome. Only a published release can prompt, a skipped version never prompts again and an unreachable network is silent.
 - A button on the header opens the MMSP specification in your browser; one at the foot opens the donation page. Meridian fetches neither: each address is handed to the desktop.
 - Catppuccin Mocha and Latte themes with a single toggle; the preference persists across restarts.
@@ -92,7 +92,7 @@ The database is created automatically at first launch, at `~/.meridian/meridian.
 
 ## Sample feeds
 
-`examples/feeds_sample.json` holds a small neutral set of RSS, Atom and MFEED subscriptions ready to import. To load them, launch Meridian, press the Import mark on the header bar (the leftmost, an arrow into a tray) and select `feeds_sample.json` from the `examples/` directory. All feeds are added and begin polling immediately.
+`examples/feeds_sample.json` holds a small neutral set of RSS, Atom and MFEED subscriptions ready to import. To load them, launch Meridian, press the Import mark on the header bar (the leftmost, an arrow into a tray) and select `feeds_sample.json` from the `examples/` directory. A report says how many feeds were added; each is first polled on the scheduler's next pass, within ten seconds.
 
 ## Tests
 

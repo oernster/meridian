@@ -135,13 +135,15 @@ of the export format.
 
 A feed address may be HTTP or HTTPS; any other scheme is refused. Everything
 downstream is stricter: the add field enables Subscribe only for an HTTPS
-address and the parsers drop any media, enclosure, thumbnail or transcript
-address that is not HTTPS.
+address and every parser drops any media, enclosure, thumbnail, transcript or
+caption address that is not HTTPS, whatever the feed's format.
 
 - **Rather than:** refusing plain HTTP at the feed itself.
-- **Gains:** an imported or discovered reading list keeps loading.
+- **Gains:** an imported or discovered reading list keeps loading; nothing it
+  points at is fetched in the clear.
 - **Costs:** a plain HTTP feed is still fetched in the clear; one cannot be
-  typed in by hand.
+  typed in by hand. A publisher serving pictures or media over plain HTTP
+  shows no picture and offers nothing to play.
 
 ### A redirect is followed only to HTTPS
 
@@ -221,8 +223,9 @@ built in, so RSS is always the fallback.
 
 - **Rather than:** one parser for every format.
 - **Gains:** each parser mirrors one specification, with one test module each.
-- **Costs:** shared behaviour (such as dropping insecure media) is written in
-  each.
+- **Costs:** five modules to keep in step; a rule they all share, such as
+  dropping insecure addresses, has to live in a module of its own so that no
+  parser carries a copy.
 
 ### XML parsed defensively
 
@@ -367,6 +370,19 @@ selection is keyed by feed, never by the row on screen.
   dialog said 113 and deleted 113.
 - **Gains:** what the confirmation counts is what the reader chose.
 - **Costs:** none recorded.
+
+### An import always reports what it did
+
+Every import ends in a dialog: how many feeds were added, how many were
+already there and each entry that could not be added, with the reason. A
+partial import is titled as incomplete. A file that is not a feed list is
+refused whole.
+
+- **Rather than:** logging refusals where nobody reads them; a toast that fades
+  before a list of failures can be read.
+- **Gains:** a partial import is never mistaken for a whole one.
+- **Costs:** one more dialog to dismiss, even after an import that went
+  perfectly.
 
 ### Removal keeps the place in the list
 

@@ -121,9 +121,9 @@ pytest tests/ui/test_bridge_items.py -v   # a single file
 pytest --cov-report=html             # an HTML coverage report
 ```
 
-The coverage-gated run prints the coverage table last and emits no "N passed"
-line, so trust the exit code rather than grepping the output: `0` means all
-tests passed and the gate was met.
+A run ends with a passed count. A passing count does not mean the coverage
+floor was met, so trust the exit code rather than grepping the output: `0`
+means all tests passed and the gate was met.
 
 Put each test at the layer it exercises:
 
@@ -166,8 +166,9 @@ these will be declined regardless of code quality, so check here first:
   and rejects every other scheme, so an imported or discovered plain-HTTP feed
   still loads. Everything downstream is stricter and stays that way: the Add
   Subscription field only enables Subscribe for an `https://` URL, both fetchers
-  refuse a non-HTTPS redirect hop before it is made and the parsers drop
-  non-HTTPS media, enclosure and transcript URLs.
+  refuse a non-HTTPS redirect hop before it is made; every parser drops a
+  non-HTTPS media, enclosure, thumbnail, transcript or caption URL through the
+  one check in `parser/https_only.py`.
 - **No new heavy dependencies** without discussion. The runtime dependency set
   is intentionally small. Propose additions in an issue first.
 - **QtWebEngine is already in, for exactly one thing.** `MediaPlayerPanel.qml`

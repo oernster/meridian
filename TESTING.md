@@ -22,9 +22,9 @@ $LASTEXITCODE
 
 That one command is the whole gate. `pyproject.toml` adds the coverage measurement and its floor to every run; `black` and `flake8` run inside the suite as assertions (`tests/structural/test_boundaries.py`), so a formatting or lint failure is a test failure. There is no separate gate script.
 
-**A full run takes about a minute.** 827 tests are collected: 299 interface, 219 infrastructure, 127 installer and version at the top of `tests/`, 90 application, 64 domain and 28 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
+**A full run takes about half a minute.** 876 tests are collected: 303 interface, 241 infrastructure, 127 installer and version at the top of `tests/`, 113 application, 64 domain and 28 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
 
-**Read the exit code, never the last line.** The suite is coverage gated, so it prints the coverage table last and no line of passed and failed; a coverage row such as `errors.py` also reads like a result to anybody searching the text. `0` means every test passed and the floor was met. Anything else means read the failures above the table. For a count without running anything, `python -m pytest --co -q --no-cov` ends with one.
+**Read the exit code, never the last line.** A run ends with the coverage table, the gate's verdict and a passed count. A passing count does not mean the coverage floor was met; a coverage row such as `errors.py` also reads like a result to anybody searching the text. `0` means every test passed and the floor was met. Anything else means read the failures above the table. For a count without running anything, `python -m pytest --co -q --no-cov` ends with one.
 
 ## What the gate holds
 
@@ -59,7 +59,7 @@ The last is the one to run after formatting: it holds the root delivery scripts,
 | Directory | What it tests | Against |
 |---|---|---|
 | `domain/` | entities, value objects, the filter evaluator | values built in the test |
-| `application/` | the services and the update decision | the interfaces stood in for with `unittest.mock`; the update decision uses a small hand-written fake (`FakeSource`) |
+| `application/` | the services, the update decision and the import tally | the interfaces stood in for with `unittest.mock`; the update decision and the import tally use small hand-written fakes (`FakeSource`, `FakeSubscriptions`) |
 | `infrastructure/` | the repositories, parsers, fetcher, scheduler, discovery client and the GitHub adapter | a real SQLite file in a temporary folder; HTTP through `respx`, which answers the request inside the process, except redirects: those go through each fetcher's production client over an `httpx.MockTransport` (`redirect_transport.py`), because a bare client never follows a redirect and so cannot show what production does with one |
 | `ui/` | the bridge, the models and the real `main.qml` | a real `QApplication`; the window is built against hand-written stub controllers |
 | `test_installer_*.py` | the setup program's operations | real files in a temporary folder, with the registry and processes stood in for |

@@ -25,7 +25,8 @@ These are the rules the codebase is not allowed to break. Each one names the tes
 | The version string is read from the root `VERSION` file and appears nowhere else in source. | `tests/test_version.py::test_version_matches_the_root_version_file` and `::test_candidates_cover_package_parent_then_package` |
 | A feed URL has to use `http://` or `https://`; anything else raises. | `tests/domain/test_entities.py::TestFeed::test_rejects_invalid_scheme` and `::test_accepts_http_url` |
 | A redirect is only followed to an HTTPS target. Both fetchers build their client through `infrastructure/fetching/https_client.py`, whose response hook refuses a non-HTTPS hop before httpx makes it (`InsecureRedirectError`), so the plain-HTTP host is never contacted. A chain is capped at `MAX_REDIRECT_HOPS`; a permanent first hop (301 or 308) is recorded as `moved_to` while the feed is still read from where it landed. The tests build each fetcher exactly as `main.py` does and swap only the transport. | `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_301_http_location_rejected`, `::test_http_hop_after_https_hop_rejected`, `::test_redirect_hops_capped`, `::test_301_moved` and `tests/infrastructure/test_feedsearch_fetcher.py::TestFeedsearchFetcher::test_production_client_refuses_http_redirect_hop` |
-| Non-HTTPS media, enclosure and transcript URLs are dropped during parsing. | `tests/infrastructure/parser/test_rss_parser.py::test_https_only_enclosure` and `::test_media_content_http_excluded`, `test_atom_parser.py::test_enclosure_http_url_excluded`, `test_podcast_parser.py::test_transcript_http_excluded` |
+| Non-HTTPS media, enclosure, thumbnail, transcript and caption URLs are dropped during parsing, in every format. The scheme test is stated once, in `parser/https_only.py`; every parser asks it. | `tests/infrastructure/parser/test_https_only.py`, `test_rss_parser.py::test_https_only_enclosure` and `::test_media_content_http_excluded`, `test_atom_parser.py::test_enclosure_http_url_excluded`, `test_podcast_parser.py::test_transcript_http_excluded` |
+| Every feed import ends in a report: each entry is added, already subscribed or named as skipped with its reason; the window shows it in a dialog that stays until dismissed. A file without the feed-list envelope is refused whole. | `tests/application/test_feed_import.py`, `tests/ui/test_bridge_import_export.py` and `tests/ui/test_import_report_window.py` |
 | The poll interval can never fall below `POLL_FLOOR_SECONDS`; a 429 without `Retry-After` backs off to that floor. | `tests/domain/test_entities.py::TestPollConfig::test_floor_enforced_on_low_value` and `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_429_no_retry_after_uses_floor` |
 | A response larger than `_MAX_DOCUMENT_BYTES` is refused rather than parsed. | `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_document_too_large_raises` |
 | Polling is conditional: `ETag` and `Last-Modified` are sent and a 304 short-circuits. | `tests/infrastructure/test_http_fetcher.py::TestHttpFetcher::test_304_not_modified` and `::test_last_modified_header_sent` |
@@ -108,6 +109,7 @@ meridian/
         atom_parser.py      Atom 1.0; content preferred over summary; media:group (YouTube)
         podcast_parser.py   RSS with <itunes:*> extensions
         mfeed_parser.py     MMSP JSON feed format
+        https_only.py       is_https: the one scheme test every parser asks before keeping a media, thumbnail, transcript or caption address
     update/
       github_release_source.py  GitHubReleaseSource: one GET against the GitHub releases/latest endpoint (httpx sync, 5s timeout); every failure mode collapses to None. The endpoint returns only a published, non-draft, non-prerelease release, so a tag pushed mid-development can never prompt
 
@@ -247,6 +249,8 @@ main.py
 AppController (UI)
   <- SubscriptionService
   <- ItemService
+  <- DiscoveryService
+  <- import_feeds (feed_import, over SubscriptionService)
 
 SubscriptionService / ItemService / PollOrchestrator (Application)
   <- FeedRepository, ItemRepository, PollStateRepository (interfaces)
@@ -280,6 +284,7 @@ GitHubReleaseSource (Infrastructure)
 6. `PollScheduler` runs one asyncio loop on its own daemon thread; every 10s it polls each feed concurrently and `PollOrchestrator` skips any feed whose interval or backoff has not elapsed
 7. On new items: `AppController.notify_new_items()` refreshes the relevant `ItemListModel` if that feed is selected
 8. Bulk feed removal: `bulkUnsubscribe()` calls `remove_rows_by_ids()` on `FeedListModel` (row-level removal, scroll position preserved)
+9. Import: `AppController.importFeeds(file)` hands the parsed file to `import_feeds`, refreshes the feed list and emits `importReported(message, complete)`; `FeedTransfer.qml` shows it under "Import Feeds" or "Import Incomplete"
 
 ## Key Design Decisions
 
@@ -299,7 +304,7 @@ GitHubReleaseSource (Infrastructure)
 
 **HTML rendering**: `TextArea { textFormat: Text.RichText }` in QML. Plain-text descriptions (no HTML tags) are escaped and converted to `<br/>`-separated HTML before display. Raw HTML from `content:encoded` is passed through directly. **Nothing sanitises it, deliberately.** What protects the reader is Qt's rich-text engine, which accepts only a small HTML subset and executes no script, rather than a sanitising pass. `bleach` sat in the dependency set for that pass and was imported nowhere, so it was dropped; adding a sanitiser back is a decision to make on its own terms, not a dependency to leave lying about.
 
-**Transport policy**: `Feed.__post_init__` accepts `http://` and `https://` and rejects every other scheme, so an imported or discovered plain-HTTP feed still loads. Everything downstream of that is stricter: the Add Subscription field in `SubscriptionManager.qml` only enables Subscribe for an `https://` URL, both fetchers refuse a non-HTTPS redirect hop before it is made; the parsers drop non-HTTPS media, enclosure and thumbnail URLs. A refused hop, like a chain longer than `MAX_REDIRECT_HOPS`, reaches `PollScheduler` as an ordinary failure, so the feed backs off for an hour and nothing is shown in the window. A recorded `moved_to` is stored with the poll state and read by nothing else: the subscription keeps the address it was given.
+**Transport policy**: `Feed.__post_init__` accepts `http://` and `https://` and rejects every other scheme, so an imported or discovered plain-HTTP feed still loads. Everything downstream of that is stricter: the Add Subscription field in `SubscriptionManager.qml` only enables Subscribe for an `https://` URL, both fetchers refuse a non-HTTPS redirect hop before it is made; every parser drops a non-HTTPS media, enclosure, thumbnail, transcript or caption URL. A refused hop, like a chain longer than `MAX_REDIRECT_HOPS`, reaches `PollScheduler` as an ordinary failure, so the feed backs off for an hour and nothing is shown in the window. A recorded `moved_to` is stored with the poll state and read by nothing else: the subscription keeps the address it was given.
 
 **QML component extraction**: the front end is decomposed the way QML itself offers, into sibling `.qml` files, with the composing file holding the shared state and every crossing between panels. Two things govern it, both learned the expensive way. An extracted component still resolves the ids of the file that created it, because the instance's context chains to its creation context, so an outer-scope read survives extraction silently and only fails once the component is used somewhere else: a new component declares every input it takes; its test builds it with no caller in scope. Separately, a `Repeater`'s delegates belong to its `QQmlDelegateModel` rather than to the item they are laid out in, so `findChild` cannot see them at all: a test that needs one walks the visual tree through `childItems()`, starting at the dialog's own `contentItem` where the content is in the overlay.
 

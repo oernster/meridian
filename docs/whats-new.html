@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>What's new in Meridian: release history</title>
-  <meta name="description" content="Meridian's release history: HTTPS-only redirects, a Guide behind a Help menu, the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
+  <meta name="description" content="Meridian's release history: import reports, HTTPS-only pictures and media, HTTPS-only redirects, a Guide behind a Help menu, the in-app update check, neutral sample feeds, component-split licensing, cross-platform installers, the UI/UX overhaul, full keyboard navigation and feed discovery from the app itself.">
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="apple-touch-icon" href="meridian-512.png">
@@ -51,12 +51,23 @@
 <section class="section" id="whats-new">
   <div class="section-label">Changelog</div>
   <h2 class="section-title">What's new</h2>
-  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the next added a Guide that names every one of them, reached from a Help menu on the header, which a later one made the home of Check for Updates. The newest closes gaps between what Meridian said and what it did: redirects to plain HTTP are refused before they are made, uninstalling removes the database it said it would and the setup program honours its option to keep your data.</p>
+  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the next added a Guide that names every one of them, reached from a Help menu on the header, which a later one made the home of Check for Updates. The two newest close gaps between what Meridian said and what it did: redirects to plain HTTP are refused before they are made, uninstalling removes the database it said it would, an import reports every feed it could not add and no picture or media file is fetched over plain HTTP.</p>
 
   <div class="changelog-grid">
 
     <div class="cl-entry">
-      <div class="ver-tag">v<!--VERSION-->2.10.0<!--/VERSION--></div>
+      <div class="ver-tag">v<!--VERSION-->2.11.0<!--/VERSION--></div>
+      <h3>Imports that say what they did; no picture fetched over plain HTTP</h3>
+      <ul>
+        <li>Every import now ends in a report that stays until you dismiss it: how many feeds were added, how many you already had and each entry that could not be added, with the reason. When anything was left out, the dialog is titled Import Incomplete. A feed that could not be added used to be written to the log and nothing else, so an import that half worked looked like one that worked</li>
+        <li>A file that is not a Meridian feed list is refused whole, with nothing imported, instead of failing partway through</li>
+        <li>A thumbnail in an RSS or Atom feed was drawn from whatever address the feed gave, plain HTTP included; an MFEED document's media, thumbnails, transcripts and captions were not checked at all. Every parser now drops a plain-HTTP media, thumbnail, transcript or caption address, by one rule written once</li>
+        <li>A long address in one of the window's message dialogs now wraps inside the dialog instead of running past its edge</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.10.0</div>
       <h3>Redirects to plain HTTP refused; uninstall takes the database with it</h3>
       <ul>
         <li>A feed or a discovery search that redirected to a plain-HTTP address was followed there, although Meridian said it would not be. Every step of a redirect is now checked before it is made and one pointing at plain HTTP is refused, so the plain-HTTP server is never contacted. A feed that redirects that way is treated as a failed poll and asked again an hour later</li>
