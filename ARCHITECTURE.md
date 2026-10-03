@@ -80,6 +80,7 @@ meridian/
       release_source.py     ReleaseSource ABC (latest_release)
     services/
       subscription_service.py   subscribe, unsubscribe, list_feeds, set_filter, get_feed
+      feed_import.py            import_feeds: every entry in an exported feed list is added, already subscribed or named as skipped with its reason; ImportReport.describe() is the sentence the window shows. A file without the envelope's shape raises NotAFeedList. The import used to log a refused feed and say nothing, so a partial import read as a whole one
       item_service.py           get_items (dedup + filter), mark_read, mark_all_read
       poll_orchestrator.py      poll_feed (HTTP fetch, parse, persist new items, auto-discover title)
       discovery_service.py      search_feeds (delegates to DiscoveryFetcher, enriches with is_subscribed flag)
@@ -116,7 +117,7 @@ meridian/
       ItemListModel         QAbstractListModel: every ItemDTO field as a QML role (UserRole+0..10)
       FeedCandidateModel    QAbstractListModel: the discovery results (UserRole+0..5); mark_subscribed() flips one row rather than resetting the model
     bridge.py
-      AppController         QObject: loadFeeds, selectFeed, subscribe, unsubscribe, bulkUnsubscribe, markRead, markAllRead, setFeedSort, setItemSort, setFilter (calls loadFeeds to refresh filter label), updateFeedUrl, importFeeds, exportFeeds, searchFeeds, cancelSearch, subscribeFromDiscovery, bulkSubscribeFromDiscovery, setResultCap
+      AppController         QObject: loadFeeds, selectFeed, subscribe, unsubscribe, bulkUnsubscribe, markRead, markAllRead, setFeedSort, setItemSort, setFilter (calls loadFeeds to refresh filter label), updateFeedUrl, importFeeds, exportFeeds, searchFeeds, cancelSearch, subscribeFromDiscovery, bulkSubscribeFromDiscovery, setResultCap; every import ends in importReported(message, complete)
     links.py
       open_externally       One function: hands an address to whatever the desktop opens links with; reports False when it declined. Its own module so it is a seam a controller can be given instead of the real thing; calling Qt's opener straight from a bridge would leave no way to prove the right address is asked for without a browser opening mid-test. Nothing here fetches anything, which is what leaves the local-first guarantee untouched by the donate button existing
     external_links.py
@@ -134,6 +135,7 @@ meridian/
       FeedRow.qml           One feed in the sidebar list, used as its delegate. Six `required` properties named for FeedListModel's roles, so the view binds them by name. Current-row styling comes from the attached ListView property, so the row never needs its own index
       FeedContextMenu.qml   The sidebar's right-click menu. Closes itself before reporting, since both entries lead to a confirmation that would otherwise open underneath it
       ConfirmDialog.qml     A modal message with Cancel and OK; or OK alone (okOnly). Carries the chrome the single removal, the bulk removal and the error report each wrote out in full
+      FeedTransfer.qml      The feed list leaving and re-entering: the export and import file pickers plus the import report, a ConfirmDialog titled "Import Feeds" or "Import Incomplete" that stays until dismissed. A size-less Item, so it takes no focus and paints nothing; chooseImport() and chooseExport() are what the header's buttons call
       FeedReader.qml        Two-panel reader, composition only: the join between the list and the pane, the stored playback volume and the wiring to the controller. Selecting a row reports outwards from the list; loading the pane and marking the item read happen here, so neither panel knows the other exists. Exposes wrapForwardItem (set by the window to the tray's donate button) and lastFocusItem (the pane's openButton) for cross-component Tab wrap
       ItemListPanel.qml     The reader's left panel: sort chips, mark-all-read and the item list. Reads the model directly through one map of role offsets, because a delegate for an unrealised row does not exist, so currentItem cannot answer what the current row holds
       ItemRow.qml           One item in the reader list, used as its delegate. Eight `required` properties named for ItemListModel's roles, so the view binds them by name; the duration caption is formatted by the panel and handed in
@@ -193,7 +195,7 @@ tests/
     test_tray_art.py        The marks, the generator and the wheel name the same files: every sourced mark is one the generator derives, every name has a render, every render is a height the generator would have produced, the package-data glob carries them into the Linux wheel; the site's donate mark is the one every project site shares, checked by its hash, which the generator must not write
     test_donation_address.py    The payment address is the one generated for Meridian, is `https://`, appears exactly once in the package and nowhere in the QML; the landing page links the same one. A typo here fails nothing at run time: a browser opens and a supporter's money goes somewhere that is not Oliver's
   domain/                   Unit tests for domain services and entities
-  application/              Unit tests for application services (fakes for infrastructure), version comparison and the update offer decision
+  application/              Unit tests for application services (fakes for infrastructure), version comparison, the update offer decision and the import tally
   infrastructure/
     parser/                 Parser tests for RSS, Atom, podcast, mfeed and the platform dispatcher
     test_repositories.py    SQLite repository integration tests
@@ -211,7 +213,8 @@ tests/
     window_stub.py          Hand-written controllers (app, update and external links) with exactly the surface main.qml reaches for, the feed and item builders that fill them, the palette a component under test takes as its theme, plus the loader that builds the real window against them
     test_bridge_models.py   The three QAbstractListModels, asserted by role number
     test_bridge_subscriptions.py  AppController: add, remove, re-point, filter
-    test_bridge_import_export.py  AppController: the JSON round trip of the feed list
+    test_bridge_import_export.py  AppController: the JSON round trip of the feed list, the report every import emits and a file without the envelope's shape refused whole
+    test_import_report_window.py  The import report through the real main.qml: a whole import and a partial one each open the dialog under their own title
     test_bridge_items.py    AppController: read state and new-item arrival
     test_bridge_sorting.py  AppController: the feed and item sort settings
     test_bridge_discovery.py      AppController: search lifecycle on the background loop

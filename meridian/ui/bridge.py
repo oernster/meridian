@@ -14,6 +14,7 @@ from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
 from meridian.application.dto.feed_candidate_dto import FeedCandidateDTO
 from meridian.application.interfaces.discovery_fetcher import DEFAULT_RESULT_CAP
 from meridian.application.services.discovery_service import DiscoveryService
+from meridian.application.services.feed_import import import_feeds
 from meridian.application.services.item_service import ItemService
 from meridian.application.services.subscription_service import SubscriptionService
 from meridian.ui.models import FeedCandidateModel, FeedListModel, ItemListModel
@@ -28,6 +29,9 @@ class AppController(QObject):
     itemsChanged = Signal()
     errorOccurred = Signal(str)
     newItemsAvailable = Signal(int, int)
+    # Every import ends in a report: the sentence to show and whether every
+    # entry made it, so a partial import is never mistaken for a whole one.
+    importReported = Signal(str, bool)
 
     searchStarted = Signal()
     searchFinished = Signal()
@@ -208,25 +212,18 @@ class AppController(QObject):
     def importFeeds(self, file_url: str) -> None:
         path = Path(QUrl(file_url).toLocalFile())
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
+            report = import_feeds(
+                json.loads(path.read_text(encoding="utf-8")), self._sub_svc
+            )
         except Exception as exc:
             _LOG.error("Import read failed: %s", exc)
             self.errorOccurred.emit(f"Import failed: {exc}")
             return
-        imported = 0
-        for entry in data.get("feeds", []):
-            url = (entry.get("url") or "").strip()
-            if not url:
-                continue
-            source_type = entry.get("source_type")
-            title = (entry.get("title") or "").strip() or None
-            try:
-                self._sub_svc.subscribe(url, source_type=source_type, title=title)
-                imported += 1
-            except Exception as exc:
-                _LOG.warning("Skipping %s: %s", url, exc)
+        for skipped in report.skipped:
+            _LOG.warning("Skipping %s: %s", skipped.entry, skipped.reason)
         self.loadFeeds()
-        _LOG.info("Imported %d feeds from %s", imported, path)
+        _LOG.info("Imported %d feeds from %s", report.added, path)
+        self.importReported.emit(report.describe(), report.complete)
 
     @Slot(str)
     def searchFeeds(self, query: str) -> None:

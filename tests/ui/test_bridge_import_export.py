@@ -66,11 +66,14 @@ class TestImportExport:
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
             json.dump(data, f)
             tmp = Path(f.name)
+        reports = []
+        controller.importReported.connect(lambda *args: reports.append(args))
         controller.importFeeds(tmp.as_uri())
         assert self.sub_svc.subscribe.call_count == 2
+        assert reports == [("Imported 2 feeds.", True)]
         tmp.unlink()
 
-    def test_import_feeds_skips_bad_url(self, qapp):
+    def test_import_feeds_reports_a_refused_feed(self, qapp):
         self.sub_svc.list_feeds.return_value = []
         self.sub_svc.subscribe.side_effect = ValueError("bad url")
         controller = make_controller(
@@ -83,7 +86,28 @@ class TestImportExport:
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
             json.dump(data, f)
             tmp = Path(f.name)
+        reports = []
+        controller.importReported.connect(lambda *args: reports.append(args))
         controller.importFeeds(tmp.as_uri())
+        [(message, complete)] = reports
+        assert "https://example.com/feed: bad url" in message
+        assert complete is False
+        tmp.unlink()
+
+    def test_import_feeds_refuses_a_file_that_is_not_a_feed_list(self, qapp):
+        controller = make_controller(
+            qapp, self.sub_svc, self.item_svc, self.discovery_svc
+        )
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
+            json.dump(["https://example.com/feed"], f)
+            tmp = Path(f.name)
+        errors, reports = [], []
+        controller.errorOccurred.connect(errors.append)
+        controller.importReported.connect(lambda *args: reports.append(args))
+        controller.importFeeds(tmp.as_uri())
+        assert errors == ["Import failed: the file is not a Meridian feed list"]
+        assert reports == []
+        self.sub_svc.subscribe.assert_not_called()
         tmp.unlink()
 
     def test_import_feeds_skips_empty_url(self, qapp):
@@ -98,8 +122,14 @@ class TestImportExport:
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
             json.dump(data, f)
             tmp = Path(f.name)
+        reports = []
+        controller.importReported.connect(lambda *args: reports.append(args))
         controller.importFeeds(tmp.as_uri())
         self.sub_svc.subscribe.assert_not_called()
+        [(message, complete)] = reports
+        assert "Entry 1: no address" in message
+        assert "Entry 2: no address" in message
+        assert complete is False
         tmp.unlink()
 
     def test_import_feeds_bad_file_emits_error(self, qapp):

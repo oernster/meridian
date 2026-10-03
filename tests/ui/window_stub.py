@@ -95,6 +95,7 @@ class StubController(QObject):
     feedsChanged = Signal()
     errorOccurred = Signal(str)
     newItemsAvailable = Signal(int, int)
+    importReported = Signal(str, bool)
     itemsChanged = Signal()
     searchStarted = Signal()
     searchFinished = Signal()

@@ -79,7 +79,10 @@ Dialog {
         objectName: "messageLabel"
         text: control.message
         color: theme.text
-        wrapMode: Text.WordWrap
+        // Wrap, not WordWrap: an import report names feed addresses, which
+        // have no spaces to break at and would run out past the dialog's edge.
+        // Wrap still breaks at words wherever a word fits.
+        wrapMode: Text.Wrap
         width: control.bodyWidth
         lineHeight: control.bodyLineHeight
     }

@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Dialogs
 import Qt.labs.settings
 
 // The application window: composition, shared state and the things that belong
@@ -124,8 +123,8 @@ ApplicationWindow {
             Layout.fillWidth: true
             theme: theme
 
-            onImportRequested: importDialog.open()
-            onExportRequested: exportDialog.open()
+            onImportRequested: feedTransfer.chooseImport()
+            onExportRequested: feedTransfer.chooseExport()
             onSearchRequested: feedDiscoveryDrawer.open()
             onManageRequested: subManagerDrawer.open()
             onSpecificationRequested: linksController.openSpecification()
@@ -357,18 +356,8 @@ ApplicationWindow {
         licenceBody: modelLicenceText
     }
 
-    FileDialog {
-        id: exportDialog
-        fileMode: FileDialog.SaveFile
-        nameFilters: ["Meridian feeds (*.json)"]
-        defaultSuffix: "json"
-        onAccepted: controller.exportFeeds(selectedFile)
-    }
-
-    FileDialog {
-        id: importDialog
-        fileMode: FileDialog.OpenFile
-        nameFilters: ["Meridian feeds (*.json)", "All files (*)"]
-        onAccepted: controller.importFeeds(selectedFile)
+    FeedTransfer {
+        id: feedTransfer
+        theme: theme
     }
 }
