@@ -64,7 +64,7 @@ Download the installer for your platform from the [Releases page](https://github
 
 The Windows installer is per-user: it installs under `%LOCALAPPDATA%` and registers under `HKEY_CURRENT_USER`, so it never asks for administrator rights. It offers to launch Meridian when it has finished, ticked by default, after a repair or a reinstall as much as after a first install; untick the box and it just closes.
 
-Uninstalling through the setup program removes your data with the application, including the `~/.meridian` folder that holds the database. Export your subscriptions first if you want to keep them.
+Uninstalling through the setup program removes your data with the application, including the `~/.meridian` folder that holds the database. Export your subscriptions first if you want to keep them; started with `--keep-user-data`, the setup program removes the application and leaves the data in place.
 
 ### Run from source
 

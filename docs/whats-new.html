@@ -51,7 +51,7 @@
 <section class="section" id="whats-new">
   <div class="section-label">Changelog</div>
   <h2 class="section-title">What's new</h2>
-  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the next added a Guide that names every one of them, reached from a Help menu on the header, which a later one made the home of Check for Updates. The newest closes two gaps between what Meridian said and what it did: redirects to plain HTTP are refused before they are made and uninstalling removes the database it said it would.</p>
+  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the next added a Guide that names every one of them, reached from a Help menu on the header, which a later one made the home of Check for Updates. The newest closes gaps between what Meridian said and what it did: redirects to plain HTTP are refused before they are made, uninstalling removes the database it said it would and the setup program honours its option to keep your data.</p>
 
   <div class="changelog-grid">
 
@@ -62,7 +62,8 @@
         <li>A feed or a discovery search that redirected to a plain-HTTP address was followed there, although Meridian said it would not be. Every step of a redirect is now checked before it is made and one pointing at plain HTTP is refused, so the plain-HTTP server is never contacted. A feed that redirects that way is treated as a failed poll and asked again an hour later</li>
         <li>A redirect chain is capped at five steps. A feed that has moved permanently is read from its new address and the move is recorded; the subscription itself keeps the address you gave it</li>
         <li>Uninstalling from the setup program said it would remove your data but left the database behind in the .meridian folder in your home folder. It now removes that folder too, so export your subscriptions first if you want to keep them</li>
-        <li>The site's stylesheet is linked by a hash of its content, so a browser never pairs a new page with an old cached stylesheet. Every page footer now links to the rest of my work</li>
+        <li>Starting the setup program with --keep-user-data was ignored: an uninstall removed your data regardless. The option is now honoured; the application goes and your data stays</li>
+        <li>The site's stylesheet is linked by a hash of its content, so a browser never pairs a new page with an old cached stylesheet. Every page footer now links to the rest of my work; the donate button carries the same mark as every other project site of mine</li>
       </ul>
     </div>
 

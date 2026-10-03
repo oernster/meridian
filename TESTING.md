@@ -22,7 +22,7 @@ $LASTEXITCODE
 
 That one command is the whole gate. `pyproject.toml` adds the coverage measurement and its floor to every run; `black` and `flake8` run inside the suite as assertions (`tests/structural/test_boundaries.py`), so a formatting or lint failure is a test failure. There is no separate gate script.
 
-**A full run takes about thirty seconds.** 822 tests are collected: 297 interface, 219 infrastructure, 125 installer and version at the top of `tests/`, 90 application, 64 domain and 27 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
+**A full run takes about a minute.** 825 tests are collected: 299 interface, 219 infrastructure, 125 installer and version at the top of `tests/`, 90 application, 64 domain and 28 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
 
 **Read the exit code, never the last line.** The suite is coverage gated, so it prints the coverage table last and no line of passed and failed; a coverage row such as `errors.py` also reads like a result to anybody searching the text. `0` means every test passed and the floor was met. Anything else means read the failures above the table. For a count without running anything, `python -m pytest --co -q --no-cov` ends with one.
 
@@ -83,7 +83,7 @@ A structural test checks the source tree rather than behaviour, so a rule holds 
 | `test_boundaries.py` | layer direction by AST scan, the 400-line cap and the danger band below it, `black` and `flake8` over every Python file |
 | `test_delivery_resources.py` | every delivery script bundles the same licence texts |
 | `test_guide_marks.py` | every button on either band has a line in the Guide and every mark the Guide names exists |
-| `test_tray_art.py` | the marks, their generator and the package data name the same files; the site's donate mark is byte-identical to the application's |
+| `test_tray_art.py` | the marks, their generator and the package data name the same files; the site's donate mark is the one every project site shares, checked by its hash; the generator never writes it |
 | `test_donation_address.py` | the payment address is Meridian's own, is `https://`, appears once in the package and nowhere in the QML |
 
 `tests/ui/test_qml_compiles.py` belongs with them in spirit: the coverage gate reads Python only, so compiling every QML file is what catches a broken component.

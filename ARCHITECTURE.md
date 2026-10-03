@@ -190,7 +190,7 @@ tests/
     test_boundaries.py      AST-based layer boundary enforcement + module size limits + black and flake8
     test_delivery_resources.py  Every delivery script bundles the same licence texts, because `main.py` degrades to "Licence text unavailable." rather than raising, so an omission ships silently
     test_guide_marks.py     Every mark on either band has a line in the Guide and every mark the Guide names is a render in the tree
-    test_tray_art.py        The marks, the generator and the wheel name the same files: every sourced mark is one the generator derives, every name has a render, every render is a height the generator would have produced, the package-data glob carries them into the Linux wheel and the site's copy of the donate mark is byte-identical to the application's
+    test_tray_art.py        The marks, the generator and the wheel name the same files: every sourced mark is one the generator derives, every name has a render, every render is a height the generator would have produced, the package-data glob carries them into the Linux wheel; the site's donate mark is the one every project site shares, checked by its hash, which the generator must not write
     test_donation_address.py    The payment address is the one generated for Meridian, is `https://`, appears exactly once in the package and nowhere in the QML; the landing page links the same one. A typo here fails nothing at run time: a browser opens and a supporter's money goes somewhere that is not Oliver's
   domain/                   Unit tests for domain services and entities
   application/              Unit tests for application services (fakes for infrastructure), version comparison and the update offer decision
