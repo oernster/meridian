@@ -16,6 +16,7 @@ from meridian.domain.value_objects.media import (
 )
 from meridian.domain.value_objects.poll_config import PollConfig, POLL_FLOOR_SECONDS
 from meridian.infrastructure.fetching.parser import rss_parser
+from meridian.infrastructure.fetching.parser.https_only import is_https
 
 _ITUNES_NS = "http://www.itunes.com/dtds/podcast-1.0.dtd"
 _PC_NS = "https://podcastindex.org/namespace/1.0"
@@ -58,7 +59,7 @@ def _parse_item(feed_id: int, feed_url: str, feed_title: str | None, el) -> Item
         )
     thumb_url = _itunes_attr(el, "image", "href")
     thumbnail = base.thumbnail
-    if thumb_url and thumb_url.startswith("https://") and not thumbnail:
+    if is_https(thumb_url) and not thumbnail:
         thumbnail = (Thumbnail(url=thumb_url),)
     explicit = _itunes(el, "explicit")
     content_rating: ContentRating | None = None
@@ -69,7 +70,7 @@ def _parse_item(feed_id: int, feed_url: str, feed_title: str | None, el) -> Item
     transcript_mime = _pc_attr(el, "transcript", "type")
     transcript_lang = _pc_attr(el, "transcript", "language")
     transcript: Transcript | None = None
-    if transcript_url and transcript_mime and transcript_url.startswith("https://"):
+    if transcript_mime and is_https(transcript_url):
         transcript = Transcript(
             url=transcript_url,
             mime_type=transcript_mime,

@@ -12,6 +12,7 @@ from meridian.domain.entities.item import Item
 from meridian.domain.value_objects.item_type import ItemType
 from meridian.domain.value_objects.media import Author, ItemSource, Media, Thumbnail
 from meridian.domain.value_objects.poll_config import PollConfig, POLL_FLOOR_SECONDS
+from meridian.infrastructure.fetching.parser.https_only import is_https
 
 _MEDIA_NS = "http://search.yahoo.com/mrss/"
 _DC_NS = "http://purl.org/dc/elements/1.1/"
@@ -58,7 +59,7 @@ def _parse_item(feed_id: int, feed_url: str, feed_title: str | None, el) -> Item
         w = thumb_el.get("width")
         h = thumb_el.get("height")
         thumb_url = thumb_el.get("url")
-        if thumb_url:
+        if is_https(thumb_url):
             thumbnail = [
                 Thumbnail(
                     url=thumb_url,
@@ -97,7 +98,7 @@ def _parse_enclosure(el) -> list[Media]:
     url = el.get("url", "")
     mime = el.get("type", "")
     size = el.get("length")
-    if not url or not url.startswith("https://"):
+    if not is_https(url):
         return []
     return [
         Media(
@@ -110,7 +111,7 @@ def _parse_enclosure(el) -> list[Media]:
 
 def _parse_media_content(el) -> Media | None:
     url = el.get("url", "")
-    if not url or not url.startswith("https://"):
+    if not is_https(url):
         return None
     mime = el.get("type", "")
     dur = el.get("duration")

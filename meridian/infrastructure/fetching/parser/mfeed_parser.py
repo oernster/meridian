@@ -26,6 +26,7 @@ from meridian.infrastructure.fetching.mmsp import (
     PROTOCOL_VERSION,
     accepts_document_version,
 )
+from meridian.infrastructure.fetching.parser.https_only import is_https
 
 
 def parse(
@@ -80,12 +81,14 @@ def _parse_item(feed_id: int, feed_url: str, feed_title: str | None, raw: dict) 
         expires=_parse_dt(raw["expires"]) if raw.get("expires") else None,
         authors=tuple(_parse_author(a) for a in raw.get("authors", [])),
         tags=tuple(raw.get("tags", [])),
-        media=tuple(_parse_media(m) for m in raw.get("media", [])),
-        thumbnail=tuple(_parse_thumbnail(t) for t in raw.get("thumbnail", [])),
+        media=tuple(_parse_media(m) for m in _secure(raw.get("media", []))),
+        thumbnail=tuple(_parse_thumbnail(t) for t in _secure(raw.get("thumbnail", []))),
         chapters=tuple(_parse_chapter(c) for c in raw.get("chapters", [])),
-        captions=tuple(_parse_caption(c) for c in raw.get("captions", [])),
+        captions=tuple(_parse_caption(c) for c in _secure(raw.get("captions", []))),
         transcript=(
-            _parse_transcript(raw["transcript"]) if raw.get("transcript") else None
+            _parse_transcript(raw["transcript"])
+            if raw.get("transcript") and is_https(raw["transcript"].get("url"))
+            else None
         ),
         series=_parse_series(raw["series"]) if raw.get("series") else None,
         content_rating=(
@@ -99,6 +102,11 @@ def _parse_item(feed_id: int, feed_url: str, feed_title: str | None, raw: dict) 
         paywall=_parse_paywall(raw["paywall"]) if raw.get("paywall") else None,
         source=ItemSource(type="mfeed", feed_url=feed_url, feed_title=feed_title),
     )
+
+
+def _secure(entries: list[dict]) -> list[dict]:
+    """The entries whose address Meridian may fetch: HTTPS only."""
+    return [entry for entry in entries if is_https(entry.get("url"))]
 
 
 def _parse_dt(value: str) -> datetime:
