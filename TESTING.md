@@ -22,7 +22,7 @@ $LASTEXITCODE
 
 That one command is the whole gate. `pyproject.toml` adds the coverage measurement and its floor to every run; `black` and `flake8` run inside the suite as assertions (`tests/structural/test_boundaries.py`), so a formatting or lint failure is a test failure. There is no separate gate script.
 
-**A full run takes about half a minute.** 876 tests are collected: 303 interface, 241 infrastructure, 127 installer and version at the top of `tests/`, 113 application, 64 domain and 28 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
+**A full run takes about half a minute.** 885 tests are collected: 303 interface, 241 infrastructure, 127 installer and version at the top of `tests/`, 113 application, 64 domain and 37 structural. A `WebEngineView` coming up on the offscreen platform prints Chromium GPU errors to the console; they are noise, not failures.
 
 **Read the exit code, never the last line.** A run ends with the coverage table, the gate's verdict and a passed count. A passing count does not mean the coverage floor was met; a coverage row such as `errors.py` also reads like a result to anybody searching the text. `0` means every test passed and the floor was met. Anything else means read the failures above the table. For a count without running anything, `python -m pytest --co -q --no-cov` ends with one.
 
@@ -85,6 +85,7 @@ A structural test checks the source tree rather than behaviour, so a rule holds 
 | `test_guide_marks.py` | every button on either band has a line in the Guide and every mark the Guide names exists |
 | `test_tray_art.py` | the marks, their generator and the package data name the same files; the site's donate mark is the one every project site shares, checked by its hash; the generator never writes it |
 | `test_donation_address.py` | the payment address is Meridian's own, is `https://`, appears once in the package and nowhere in the QML |
+| `test_network.py` | each of the six ways out has one home: networking imports only in `infrastructure/fetching` and `infrastructure/update` (plus the web engine started in `main.py`), `XMLHttpRequest` only in `DiscoveryQueryField.qml`, the web engine only in `MediaPlayerPanel.qml` |
 
 `tests/ui/test_qml_compiles.py` belongs with them in spirit: the coverage gate reads Python only, so compiling every QML file is what catches a broken component.
 

@@ -66,8 +66,10 @@ the Guide name all six.
 - **Rather than:** an unqualified "no cloud", which a reading of every outbound
   call showed could not stand.
 - **Gains:** the reader can see exactly what leaves the machine and why.
-- **Costs:** the list is held by the documents rather than by a test; a new
-  outbound call would not fail the suite.
+- **Costs:** a structural test pins each route to its one home, so a new
+  outbound call fails the suite until it is named; it reads source, so an
+  image or media file loaded from a feed's address is held by the parsers'
+  HTTPS rule rather than by it.
 
 ### YouTube plays through Google's own player
 

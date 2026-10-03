@@ -59,7 +59,10 @@ FORBIDDEN: dict[str, list[str]] = {
 }
 
 
-def _get_imports(path: Path) -> list[str]:
+def get_imports(path: Path) -> list[str]:
+    """Every module `path` imports. `from a import b` records `a.b` as well,
+    since `b` may be a submodule: `from PySide6 import QtNetwork` is an import
+    of `PySide6.QtNetwork`. Shared with `test_network.py`."""
     tree = ast.parse(path.read_text(encoding="utf-8"))
     imports: list[str] = []
     for node in ast.walk(tree):
@@ -67,6 +70,7 @@ def _get_imports(path: Path) -> list[str]:
             imports.extend(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module:
             imports.append(node.module)
+            imports.extend(f"{node.module}.{alias.name}" for alias in node.names)
     return imports
 
 
@@ -80,7 +84,7 @@ def test_layer_boundary(layer: str, forbidden_layers: list[str]) -> None:
     assert files, f"No Python files found in meridian/{layer}"
     violations: list[str] = []
     for path in files:
-        for imp in _get_imports(path):
+        for imp in get_imports(path):
             for forbidden in forbidden_layers:
                 if f"meridian.{forbidden}" in imp:
                     violations.append(
