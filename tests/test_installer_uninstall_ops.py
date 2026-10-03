@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 
+from installer.cli import parse_args, wants_remove_user_data
 from installer.constants import InstallerIdentity
 from installer.ops import uninstall_ops
 from installer.ops.errors import AppRunningError, InstallerOperationError
@@ -24,6 +25,7 @@ from installer.ops.shortcuts import ShortcutPaths
 from installer.ops.uninstall_ops import (
     UninstallOptions,
     uninstall,
+    uninstall_confirmation_text,
     uninstall_with_feedback,
 )
 from installer.state.registry import UninstallEntry
@@ -280,3 +282,25 @@ def test_feedback_wrapper_stops_before_touching_anything_when_cancelled(
         )
 
     assert rig.scheduled == []
+
+
+# ── the confirmation wording ───────────────────────────────────────────────
+
+
+def test_confirmation_says_the_data_goes_on_a_plain_uninstall() -> None:
+    args = parse_args(["--uninstall"])
+
+    text = uninstall_confirmation_text(wants_remove_user_data(args))
+
+    assert "remove user data" in text
+    assert "keep" not in text
+
+
+def test_confirmation_says_the_data_stays_with_keep_user_data() -> None:
+    """The box once promised removal even when the data was going to stay."""
+    args = parse_args(["--uninstall", "--keep-user-data"])
+
+    text = uninstall_confirmation_text(wants_remove_user_data(args))
+
+    assert "keep user data" in text
+    assert "remove" not in text

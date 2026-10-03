@@ -32,6 +32,16 @@ class UninstallOptions:
     remove_user_data: bool = True
 
 
+def uninstall_confirmation_text(remove_user_data: bool) -> str:
+    """What the confirmation box promises, matching what `uninstall` will do.
+
+    Takes the same flag `UninstallOptions` is built from, so the box and the
+    operation cannot disagree about the user's data.
+    """
+    fate = "remove user data" if remove_user_data else "keep user data"
+    return f"This will uninstall {APP_NAME} for the current user and {fate}."
+
+
 def uninstall(identity, opts: UninstallOptions) -> None:  # noqa: ANN001
     if os.name != "nt":
         raise InstallerOperationError("Uninstall is Windows-only")

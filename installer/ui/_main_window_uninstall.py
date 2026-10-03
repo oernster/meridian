@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QMessageBox
 
+from installer.cli import wants_remove_user_data
+from installer.ops.uninstall_ops import uninstall_confirmation_text
 from installer.state.model import Operation
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -14,9 +16,9 @@ def confirm_and_run_uninstall(window: InstallerMainWindow) -> None:
     box = QMessageBox(window)
     box.setIcon(QMessageBox.Warning)
     box.setWindowTitle("Confirm uninstall")
-    box.setText(
-        "This will uninstall Meridian for the current user and remove user data."
-    )
+    # The same decision `_operation_dispatch` hands the uninstall, so the box
+    # says what the operation will do with the user's data.
+    box.setText(uninstall_confirmation_text(wants_remove_user_data(window._cli_args)))
     uninstall_btn = box.addButton("Uninstall", QMessageBox.AcceptRole)
     box.addButton("Cancel", QMessageBox.RejectRole)
     box.exec()

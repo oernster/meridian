@@ -414,7 +414,8 @@ Removing Meridian through the setup program takes the reading list with it:
 the database folder in the home folder goes along with the application and
 its per-user data and cache folders. The confirmation says so before anything
 is removed. Started with `--keep-user-data`, the setup program removes the
-application and leaves the data where it is.
+application and leaves the data where it is; the confirmation then says the
+data will be kept.
 
 - **Rather than:** leaving the database behind for a later reinstall to find.
 - **Gains:** an uninstall does not leave the reading list behind; the
