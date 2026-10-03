@@ -51,12 +51,24 @@
 <section class="section" id="whats-new">
   <div class="section-label">Changelog</div>
   <h2 class="section-title">What's new</h2>
-  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the next added a Guide that names every one of them, reached from a Help menu on the header, which a later one made the home of Check for Updates. The two newest close gaps between what Meridian said and what it did: redirects to plain HTTP are refused before they are made, uninstalling removes the database it said it would, an import reports every feed it could not add and no picture or media file is fetched over plain HTTP.</p>
+  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the next added a Guide that names every one of them, reached from a Help menu on the header, which a later one made the home of Check for Updates. The newest releases close gaps between what Meridian said and what it did: redirects to plain HTTP are refused before they are made, uninstalling removes the database it said it would, an import reports every feed it could not add, no picture or media file is fetched over plain HTTP, export keeps your filters and one bad MFEED item no longer silences its feed.</p>
 
   <div class="changelog-grid">
 
     <div class="cl-entry">
-      <div class="ver-tag">v<!--VERSION-->2.11.0<!--/VERSION--></div>
+      <div class="ver-tag">v<!--VERSION-->2.12.0<!--/VERSION--></div>
+      <h3>Export keeps your filters; one bad item no longer silences a feed</h3>
+      <ul>
+        <li>Exporting your subscriptions left every filter you had written out of the file, so moving to another machine or reinstalling lost them. Export and import now carry each feed's filter; files written by earlier versions still import</li>
+        <li>A filter with a date bound, such as the published example in the MMSP specification, stopped its feed showing anything and left the previous feed's items on screen, where Mark all read then acted on the wrong feed. Dates now compare correctly, a filter that cannot be read is refused when you save it and a feed that cannot be shown leaves nothing selected</li>
+        <li>One malformed item in an MFEED feed discarded the whole feed until its publisher fixed it. Each item is now read on its own: a bad one is skipped and counted, a malformed optional field is dropped and the rest of the feed arrives</li>
+        <li>Items are ordered by the moment they were published rather than by the text of their time, so feeds in different time zones sort correctly</li>
+        <li>Import reads files saved as UTF-8 or UTF-16 with a byte order mark, refuses an address with no host instead of adding it, treats a feed address in different letter case as one already held, says plainly when the store refuses a feed and no longer holds the window still while it works</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.11.0</div>
       <h3>Imports that say what they did; no picture fetched over plain HTTP</h3>
       <ul>
         <li>Every import now ends in a report that stays until you dismiss it: how many feeds were added, how many you already had and each entry that could not be added, with the reason. When anything was left out, the dialog is titled Import Incomplete. A feed that could not be added used to be written to the log and nothing else, so an import that half worked looked like one that worked</li>
