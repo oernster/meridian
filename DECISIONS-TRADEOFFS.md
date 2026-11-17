@@ -26,8 +26,7 @@ Subscriptions, items and read state live in a SQLite database in the user's
 home folder. There is no account, no sync and no server. Moving to another
 machine is an export to JSON and an import on the other side. The export
 carries each feed's address, type, title, filter and platform fields, so a
-feed comes back as it was; until this was corrected it carried the first three
-only; every filter was lost on the way.
+feed comes back as it was.
 
 - **Rather than:** synchronised reading lists; a hosted or web reader.
 - **Gains:** nothing to sign in to and nothing held elsewhere; the reading list,
@@ -73,6 +72,17 @@ the Guide name all six.
   outbound call fails the suite until it is named; it reads source, so an
   image or media file loaded from a feed's address is held by the parsers'
   HTTPS rule rather than by it.
+
+### The website counts visits; the application counts nothing
+
+The project's website counts page loads through GoatCounter. The application
+itself carries no counter, no analytics and no telemetry of any kind.
+
+- **Rather than:** a site with no idea whether anybody reads it; counting
+  inside the application.
+- **Gains:** a measure of interest in the project without touching what the
+  reader does in Meridian.
+- **Costs:** a visit to the site is seen by a third-party counting service.
 
 ### YouTube plays through Google's own player
 
@@ -563,12 +573,12 @@ holds them to it.
 
 ### Every build leaves out what is never loaded
 
-PySide6 carries every Qt module and the packagers collect most of them. One
-set of rules in `build_resources.py` names what Meridian never loads, settled
-by reading the import graph of a built bundle and the modules a running build
-actually loaded; `bundle_prune.py` applies it to the Windows application, the
-setup program, the macOS bundle and the Flatpak alike. A build stops if a
-library that stays links one that was left out.
+Qt for Python carries every Qt module and the packagers collect most of them.
+One set of rules names what Meridian never loads, settled by reading which
+libraries a built bundle links and which a running build actually loaded. The
+same rules shape the Windows application, the setup program, the macOS bundle
+and the Flatpak. A build stops if a library that stays needs one that was left
+out.
 
 - **Rather than:** shipping the whole wheel; each script trimming its own way.
 - **Gains:** the Windows bundle loses about 230 MB before compression; the

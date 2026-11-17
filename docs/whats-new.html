@@ -53,12 +53,24 @@
 <section class="section" id="whats-new">
   <div class="section-label">Changelog</div>
   <h2 class="section-title">What's new</h2>
-  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the next added a Guide that names every one of them, reached from a Help menu on the header, which a later one made the home of Check for Updates. The newest releases close gaps between what Meridian said and what it did: redirects to plain HTTP are refused before they are made, uninstalling removes the database it said it would, an import reports every feed it could not add, no picture or media file is fetched over plain HTTP, export keeps your filters and one bad MFEED item no longer silences its feed.</p>
+  <p class="section-sub">Recent releases have focused on holding the application in place: a front end split into components, keyboard rings proven by real key presses, the installer under the same coverage requirement as the application and one source of truth for the version. An earlier feature release turned the window itself into pictures; the next added a Guide that names every one of them, reached from a Help menu on the header, which a later one made the home of Check for Updates. The newest releases close gaps between what Meridian said and what it did: redirects to plain HTTP are refused before they are made, uninstalling removes the database it said it would, an import reports every feed it could not add, no picture or media file is fetched over plain HTTP, export keeps your filters and one bad MFEED item no longer silences its feed. The latest leaves out of every download the parts of Qt that Meridian never loads.</p>
 
   <div class="changelog-grid">
 
     <div class="cl-entry">
-      <div class="ver-tag">v<!--VERSION-->2.12.0<!--/VERSION--></div>
+      <div class="ver-tag">v<!--VERSION-->2.13.0<!--/VERSION--></div>
+      <h3>Smaller downloads on every platform</h3>
+      <ul>
+        <li>Every build carried the whole of Qt, most of which Meridian never loads. Each one now leaves out the 3D, chart, map and PDF modules, the on-screen keyboard, the three interface styles Meridian does not use, the QML debugger, the embedded browser's developer tools and debug data, Qt's own translation catalogues and the Python packages only a command-line tool needed</li>
+        <li>On Windows the installed application falls from 610 MB to 364 MB and the setup program from 292 MB to 185 MB. The macOS disk image and the Flatpak leave out the same parts by the same rules</li>
+        <li>What stays was settled by measuring what a running Meridian actually loads; every build now refuses to finish if anything it keeps depends on something it left out</li>
+        <li>The embedded YouTube player's own built-in wording is now in English whatever your system language, since only its English language pack ships. Meridian's own interface is unchanged</li>
+        <li>This site now counts page loads with GoatCounter. Meridian itself still counts nothing and sends nothing about your reading anywhere</li>
+      </ul>
+    </div>
+
+    <div class="cl-entry">
+      <div class="ver-tag">v2.12.0</div>
       <h3>Export keeps your filters; one bad item no longer silences a feed</h3>
       <ul>
         <li>Exporting your subscriptions left every filter you had written out of the file, so moving to another machine or reinstalling lost them. Export and import now carry each feed's filter; files written by earlier versions still import</li>
