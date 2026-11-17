@@ -193,6 +193,9 @@ modules:
     buildsystem: simple
     build-commands:
       - pip3 install --no-cache-dir --no-deps --prefix=/app .
+      # pip installs the PySide6 wheel whole; leave out what Meridian never
+      # loads, by the same rules as the Windows and macOS bundles.
+      - python3 bundle_prune.py /app/lib/python3.12/site-packages
       - install -Dm644 VERSION /app/lib/python3.12/site-packages/VERSION
       - install -Dm644 LICENSE /app/lib/python3.12/site-packages/LICENSE
       - install -Dm644 LICENSE-LGPL-3.0.txt /app/lib/python3.12/site-packages/LICENSE-LGPL-3.0.txt

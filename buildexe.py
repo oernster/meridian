@@ -6,11 +6,14 @@ import sys
 from pathlib import Path
 
 from build_resources import LICENCE_FILES
+from bundle_prune import run_pyinstaller
 
 
 def _regen_splash(root: Path) -> int:
     print("Regenerating splash screen...")
-    result = subprocess.run([sys.executable, str(root / "create_splash.py")], cwd=root)
+    result = subprocess.run(
+        [sys.executable, str(root / "create_splash.py")], cwd=root, check=False
+    )
     if result.returncode != 0:
         print("Splash generation failed")
         return 1
@@ -29,10 +32,10 @@ def build_exe() -> int:
     build_dir = root / "build"
     spec_file = root / "Meridian.spec"
 
-    pyinstaller_exe = shutil.which("pyinstaller")
-    if not pyinstaller_exe:
+    if shutil.which("pyinstaller") is None:
         print(
-            "Error: pyinstaller not found. Activate the venv and install requirements-dev.txt"  # noqa: E501
+            "Error: pyinstaller not found. "
+            "Activate the venv and install requirements-dev.txt"
         )
         return 1
 
@@ -45,9 +48,7 @@ def build_exe() -> int:
     if build_dir.exists():
         shutil.rmtree(build_dir)
 
-    cmd = [
-        pyinstaller_exe,
-        "--name=Meridian",
+    makespec_args = [
         "--onedir",
         "--windowed",
         "--paths=.",
@@ -73,7 +74,6 @@ def build_exe() -> int:
         "--icon=meridian.ico",
         "--splash=meridian_splash.png",
         "--hidden-import=PySide6.QtMultimedia",
-        "--hidden-import=PySide6.QtMultimediaWidgets",
         "--hidden-import=PySide6.QtQml",
         "--hidden-import=PySide6.QtQuick",
         "--hidden-import=PySide6.QtQuickControls2",
@@ -81,15 +81,16 @@ def build_exe() -> int:
         "--hidden-import=defusedxml",
         "--hidden-import=defusedxml.ElementTree",
         "--hidden-import=dateutil",
-        "--exclude-module=tkinter",
-        "--exclude-module=unittest",
-        "--noconfirm",
-        "--distpath=dist-pyinstaller",
         "meridian/main.py",
     ]
 
-    result = subprocess.run(cmd, cwd=root)
-    if result.returncode != 0:
+    returncode = run_pyinstaller(
+        "Meridian",
+        makespec_args,
+        [f"--distpath={dist_dir}", f"--workpath={build_dir}"],
+        root=root,
+    )
+    if returncode != 0:
         print("PyInstaller build failed")
         return 1
 

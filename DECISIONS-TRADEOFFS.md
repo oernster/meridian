@@ -561,6 +561,22 @@ holds them to it.
   application would otherwise show only as "unavailable".
 - **Costs:** none recorded.
 
+### Every build leaves out what is never loaded
+
+PySide6 carries every Qt module and the packagers collect most of them. One
+set of rules in `build_resources.py` names what Meridian never loads, settled
+by reading the import graph of a built bundle and the modules a running build
+actually loaded; `bundle_prune.py` applies it to the Windows application, the
+setup program, the macOS bundle and the Flatpak alike. A build stops if a
+library that stays links one that was left out.
+
+- **Rather than:** shipping the whole wheel; each script trimming its own way.
+- **Gains:** the Windows bundle loses about 230 MB before compression; the
+  four routes cannot drift apart.
+- **Costs:** a new QML import or Qt module has to be allowed through, which the
+  structural suite says when it is not. WebEngine's own pages show English
+  whatever the system language, since only its en-US locale pack ships.
+
 ### One home for the version
 
 The root VERSION file holds the only copy of the version. The package, the

@@ -62,7 +62,7 @@ The in-suite assertions hold `meridian/`, `installer/`, `tests/` and every `*.py
 
 ```bash
 black meridian installer tests
-black build_resources.py builddmg.py buildexe.py buildinstaller.py create_icons.py create_splash.py stamp_version.py
+black build_resources.py builddmg.py buildexe.py buildinstaller.py bundle_prune.py create_icons.py create_splash.py stamp_version.py
 flake8 meridian installer tests
 ```
 
@@ -109,5 +109,7 @@ python builddmg.py           # macOS: signed .app and DMG (needs Xcode command-l
 ```
 
 `create_icons.py` regenerates two sets: the application icons from `meridian.png`, plus every tray mark into `meridian/ui/qml/art/` (the header's from the masters in `assets/`, the foot's licence marks from the same place and its donate mark from `donate.png` at the repository root). The marks are cropped to their artwork and scaled by height, never squared, because they are pictures drawn at a button's height rather than icons. `create_splash.py` regenerates the splash screen; `buildexe.py` calls the latter for you.
+
+None of the four builds ships PySide6 whole. `build_resources.py` names what Meridian never loads (unused Qt modules, QML modules and plugins, WebEngine's debug and devtools packs, Qt's translation catalogues, every WebEngine locale but en-US, the wheel's developer tools) and `bundle_prune.py` leaves it out: the three Python scripts generate their PyInstaller spec through it so the files are never packed; `build_flatpak.sh` runs it over the installed site-packages. Each build prints how much it left out and stops if a binary that stays links one that was dropped. Adding a QML import or a Qt module the rules drop fails `tests/structural/test_bundle_prune.py` until the rule is narrowed.
 
 See also [ARCHITECTURE.md](ARCHITECTURE.md) and [TESTING.md](TESTING.md).

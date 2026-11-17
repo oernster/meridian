@@ -82,6 +82,7 @@ A structural test checks the source tree rather than behaviour, so a rule holds 
 |---|---|
 | `test_boundaries.py` | layer direction by AST scan, the 400-line cap and the danger band below it, `black` and `flake8` over every Python file |
 | `test_delivery_resources.py` | every delivery script bundles the same licence texts |
+| `test_bundle_prune.py` | the rules for what a bundle leaves out never catch a QML module the application imports, a PySide6 module its code imports or a Qt library a running build was measured loading; every delivery script goes through them |
 | `test_guide_marks.py` | every button on either band has a line in the Guide and every mark the Guide names exists |
 | `test_tray_art.py` | the marks, their generator and the package data name the same files; the site's donate mark is the one every project site shares, checked by its hash; the generator never writes it |
 | `test_donation_address.py` | the payment address is Meridian's own, is `https://`, appears once in the package and nowhere in the QML |

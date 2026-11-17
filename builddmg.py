@@ -27,16 +27,17 @@ import os
 import re
 import shutil
 import struct
-import zlib
 import subprocess
 import sys
 import tempfile
+import zlib
 from importlib import metadata
 from pathlib import Path
 
 from packaging.requirements import InvalidRequirement, Requirement
 
 from build_resources import LICENCE_FILES
+from bundle_prune import run_pyinstaller
 
 VERSION_FILE = Path(__file__).parent / "VERSION"
 
@@ -67,7 +68,7 @@ APPLE_TEAM_ID = os.environ.get("APPLE_TEAM_ID", "W7K465GKFJ")
 #     --apple-id <id> --team-id <team> --password <app-specific>
 # One profile per app means a leaked credential can be revoked for a single
 # app. Stated explicitly rather than derived from a display name: the profile
-# is a fact registered with Apple, and deriving it would silently change which
+# is a fact registered with Apple; deriving it would silently change which
 # credential the build looks for if that name were ever edited.
 # APPLE_KEYCHAIN_PROFILE overrides it.
 NOTARY_PROFILE = os.environ.get("APPLE_KEYCHAIN_PROFILE", "") or "Meridian"
@@ -79,7 +80,7 @@ APP_SPECIFIC_PASSWORD_RE = re.compile(r"^[a-z]{4}-[a-z]{4}-[a-z]{4}-[a-z]{4}$")
 
 # Escape hatch for local test builds. Distribution builds must never set this:
 # an unnotarized DMG is rejected by Gatekeeper on every machine but the one that
-# signed it, and the failure is invisible at build time.
+# signed it; the failure is invisible at build time.
 ALLOW_UNNOTARIZED = os.environ.get("ALLOW_UNNOTARIZED", "") == "1"
 # Notarization is the default and the keychain profile always resolves, so the
 # only way to skip it is to ask for that explicitly.
@@ -156,7 +157,7 @@ def check_platform() -> None:
     if sys.platform != "darwin":
         sys.exit("ERROR: This script must run on macOS.")
     result = subprocess.run(
-        ["sw_vers", "-productVersion"], capture_output=True, text=True
+        ["sw_vers", "-productVersion"], capture_output=True, text=True, check=False
     )
     print(f"  macOS {result.stdout.strip()}")
     require_importable("PySide6")
@@ -185,7 +186,7 @@ def check_notarization_credentials() -> None:
                 "  An Apple account password is rejected by the notary service with\n"
                 "  'HTTP status code: 401. Invalid credentials'.\n"
                 "  Generate one at https://appleid.apple.com (Sign-In and Security,\n"
-                "  App-Specific Passwords), or leave both variables unset and store\n"
+                "  App-Specific Passwords). Alternatively leave both unset and store\n"
                 f"  the credential in the keychain as profile {NOTARY_PROFILE}."
             )
         print(f"  Notarizing as {APPLE_ID} (team {APPLE_TEAM_ID}).")
@@ -266,7 +267,7 @@ def notarytool_credentials() -> list[str]:
 def redact(cmd: list[str]) -> str:
     """Render a command with the value after --password masked.
 
-    run() echoes every command it runs, and CalledProcessError repeats the whole
+    run() echoes every command it runs; CalledProcessError repeats the whole
     argument list in its traceback. Both would otherwise copy the app-specific
     password into build logs and CI output.
     """
@@ -321,7 +322,7 @@ def clean() -> None:
         "build",
         "dist",
         FINAL_DMG,
-        "meridian.spec",
+        f"{APP_NAME}.spec",
         "_dmg_staging",
         "_meridian_rw.dmg",
     ]:
@@ -346,14 +347,11 @@ def build_app_bundle(entitlements_path: Path, icns_path: Path | None = None) -> 
     for name in LICENCE_FILES:
         licence_args += ["--add-data", f"{name}:."]
 
-    cmd = [
-        sys.executable,
-        "-m",
-        "PyInstaller",
-        "--noconfirm",
+    # The application's WebEngine is the Quick one (QtWebEngineQuick, which
+    # main.py imports and PyInstaller follows); the Widgets binding is never
+    # imported, so it is not named here to be dragged in.
+    makespec_args = [
         "--windowed",
-        "--name",
-        APP_NAME,
         "--osx-bundle-identifier",
         BUNDLE_ID,
         "--add-data",
@@ -372,11 +370,7 @@ def build_app_bundle(entitlements_path: Path, icns_path: Path | None = None) -> 
         "--hidden-import",
         "PySide6.QtMultimedia",
         "--hidden-import",
-        "PySide6.QtWebEngine",
-        "--hidden-import",
         "PySide6.QtWebEngineCore",
-        "--hidden-import",
-        "PySide6.QtWebEngineWidgets",
         "--codesign-identity",
         DEVELOPER_ID,
         "--osx-entitlements-file",
@@ -385,7 +379,10 @@ def build_app_bundle(entitlements_path: Path, icns_path: Path | None = None) -> 
         "meridian/main.py",
     ]
 
-    run(cmd)
+    print(f"  $ PyInstaller {APP_NAME} (spec written by bundle_prune)")
+    root = Path(__file__).resolve().parent
+    if run_pyinstaller(APP_NAME, makespec_args, root=root) != 0:
+        sys.exit("ERROR: PyInstaller failed (output above).")
 
     app_path = Path("dist") / f"{APP_NAME}.app"
     if not app_path.exists():
@@ -641,7 +638,7 @@ def set_volume_icon(icns_path: Path) -> None:
             # lives inside Xcode.app. Call it through xcrun so it is found
             # regardless of PATH.
             set_file = subprocess.run(
-                ["xcrun", "-f", "SetFile"], capture_output=True, text=True
+                ["xcrun", "-f", "SetFile"], capture_output=True, text=True, check=False
             ).stdout.strip()
             if set_file:
                 subprocess.run([set_file, "-a", "C", mount_point], check=True)

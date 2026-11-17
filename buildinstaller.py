@@ -15,6 +15,12 @@ import sys
 import time
 from pathlib import Path
 
+from build_resources import (
+    INSTALLER_DROPPED_QT_MODULE_PREFIXES,
+    INSTALLER_EXCLUDED_MODULES,
+)
+from bundle_prune import run_pyinstaller
+
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 
@@ -37,7 +43,7 @@ def _retry_unlink(path: Path, *, attempts: int = 20, delay_s: float = 0.15) -> N
         try:
             path.unlink(missing_ok=True)
             return
-        except Exception as exc:
+        except OSError as exc:
             last_exc = exc
             time.sleep(delay_s)
     if last_exc:
@@ -102,30 +108,34 @@ def main() -> int:
         if p.exists():
             add_data.append(f"{p};.")
 
-    cmd = [
-        sys.executable,
-        "-m",
-        "PyInstaller",
-        "--noconfirm",
-        "--clean",
+    makespec_args = [
         "--onefile",
         "--windowed",
         "--paths=.",
-        "--name",
-        "MeridianSetup",
         *(["--icon", str(icon_ico)] if icon_ico.exists() else []),
-        "--distpath",
-        str(temp_dist_root),
-        "--workpath",
-        str(work_root),
     ]
     for spec in add_data:
-        cmd.extend(["--add-data", spec])
+        makespec_args.extend(["--add-data", spec])
 
-    cmd.extend(["--hidden-import", "installer.ui.worker"])
+    makespec_args.extend(["--hidden-import", "installer.ui.worker"])
 
-    cmd.append(str(entrypoint))
-    _run(cmd)
+    makespec_args.append(str(entrypoint))
+    returncode = run_pyinstaller(
+        "MeridianSetup",
+        makespec_args,
+        [
+            "--clean",
+            "--distpath",
+            str(temp_dist_root),
+            "--workpath",
+            str(work_root),
+        ],
+        root=PROJECT_ROOT,
+        extra_excludes=INSTALLER_EXCLUDED_MODULES,
+        extra_qt_prefixes=INSTALLER_DROPPED_QT_MODULE_PREFIXES,
+    )
+    if returncode != 0:
+        raise SystemExit(f"PyInstaller failed with exit code {returncode}")
 
     built_exe = temp_dist_root / "MeridianSetup.exe"
     final_exe = final_dist_root / "MeridianSetup.exe"
