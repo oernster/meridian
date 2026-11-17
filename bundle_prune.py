@@ -22,6 +22,7 @@ bundle that would fail to load a library at launch never leaves the machine.
 
 from __future__ import annotations
 
+import posixpath
 import re
 import shutil
 import subprocess
@@ -58,6 +59,8 @@ SPEC_ANCHOR = "pyz = PYZ("
 
 # PyInstaller TOC type codes for files that are loaded as code.
 _LINKED_TYPECODES = ("BINARY", "EXTENSION")
+# A link entry, whose source field is the link's target rather than a file.
+_SYMLINK_TYPECODE = "SYMLINK"
 
 # How each platform spells a Qt module's file: the Windows DLL, the Linux shared
 # object, the Python binding (any platform) and the macOS framework folder.
@@ -233,7 +236,16 @@ def filter_analysis(
     """Return the Analysis lists without the dropped files, after the audit."""
 
     def dropped(entry: TocEntry) -> bool:
-        return is_dropped(entry[0], extra_qt_prefixes)
+        dest, source, typecode = entry
+        if is_dropped(dest, extra_qt_prefixes):
+            return True
+        # A link is judged by what it points at too: PyInstaller aliases each
+        # macOS framework at the bundle root, where its own name matches no
+        # rule; a link left pointing at a dropped file fails the signature.
+        if typecode != _SYMLINK_TYPECODE:
+            return False
+        target = posixpath.join(posixpath.dirname(dest.replace("\\", "/")), source)
+        return is_dropped(posixpath.normpath(target), extra_qt_prefixes)
 
     gone = [e for e in (*binaries, *datas) if dropped(e)]
     kept_binaries = [e for e in binaries if not dropped(e)]

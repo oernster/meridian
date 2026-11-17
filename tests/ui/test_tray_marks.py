@@ -58,18 +58,11 @@ def window(qapp):  # noqa: ANN001, ANN201
     del engine
 
 
-def _named(root, name: str) -> QQuickItem:  # noqa: ANN001
-    for child in root.childItems():
-        if child.objectName() == name:
-            return child
-        hit = _named(child, name)
-        if hit is not None:
-            return hit
-    return None
-
-
 def _button(win, name: str) -> QQuickItem:  # noqa: ANN001
-    found = _named(win.contentItem(), name)
+    # Qt searches and hands back only the match. Walking `childItems()` from
+    # Python instead wraps every item on the way; wrapping the children of the
+    # media panel's WebEngineView segfaults PySide 6.11.
+    found = win.findChild(QQuickItem, name)
     assert found is not None, f"{name} was never created"
     return found
 

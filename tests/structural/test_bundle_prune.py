@@ -216,6 +216,24 @@ def test_rules_keep_what_is_loaded(path: str) -> None:
     assert not _PRUNE.is_dropped(path)
 
 
+def test_a_link_to_a_dropped_file_goes_with_it() -> None:
+    """PyInstaller aliases each macOS framework at the bundle's top level.
+
+    The alias sits outside PySide6, so its own name never matches a rule; left
+    in, it dangles once its target is dropped and `codesign --strict` refuses
+    the whole bundle. Measured on PyInstaller 6.21 with QtWebSockets.
+    """
+    target = "PySide6/Qt/lib/QtWebSockets.framework/Versions/A/QtWebSockets"
+    alias = ("QtWebSockets", target, "SYMLINK")
+    relative = ("PySide6/Qt/lib/QtWebSockets.framework/Versions/Current", "A")
+    kept_target = "PySide6/Qt/lib/QtCore.framework/Versions/A/QtCore"
+    kept_alias = ("QtCore", kept_target, "SYMLINK")
+    binaries, _ = _PRUNE.filter_analysis(
+        [alias, (*relative, "SYMLINK"), kept_alias], []
+    )
+    assert binaries == [kept_alias]
+
+
 def test_the_installer_drops_the_quick_stack_but_not_widgets() -> None:
     assert _PRUNE.is_dropped("PySide6/Qt6Quick.dll", _INSTALLER_PREFIXES)
     assert not _PRUNE.is_dropped("PySide6/Qt6Widgets.dll", _INSTALLER_PREFIXES)
