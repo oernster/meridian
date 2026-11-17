@@ -123,6 +123,8 @@ EXCLUDED_MODULES: tuple[str, ...] = (
 # name however the platform spells the file: Qt6<name>.dll, libQt6<name>.so.6,
 # Qt<name>.framework or the Qt<name> binding. Positioning, PrintSupport, Svg,
 # OpenGL and SerialPort are absent on purpose: something kept links them.
+# Lottie, as the Linux 6.12 wheel ships it, links QuickVectorImage and
+# QuickTimeline, both dropped here; nothing in the application uses it.
 DROPPED_QT_MODULE_PREFIXES: tuple[str, ...] = (
     "3D",
     "Bluetooth",
@@ -140,6 +142,7 @@ DROPPED_QT_MODULE_PREFIXES: tuple[str, ...] = (
     "LabsSynchronizer",
     "LabsWavefrontMesh",
     "Location",
+    "Lottie",
     "MultimediaWidgets",
     "Nfc",
     "OpenGLWidgets",
@@ -232,6 +235,7 @@ DROPPED_QML_MODULES: tuple[str, ...] = (
 )
 
 # Qt plugin folders serving only modules dropped above or the QML debugger.
+# vectorimageformats holds the Lottie reader, which links QuickVectorImage.
 # platforminputcontexts stays as a folder: on Linux it holds the compose and
 # IBus input plugins that dead keys and input methods need.
 DROPPED_PLUGIN_DIRS: tuple[str, ...] = (
@@ -249,6 +253,7 @@ DROPPED_PLUGIN_DIRS: tuple[str, ...] = (
     "sensors",
     "sqldrivers",
     "texttospeech",
+    "vectorimageformats",
     "webview",
 )
 

@@ -168,6 +168,8 @@ def test_every_library_measured_loading_survives() -> None:
     [
         "_internal/PySide6/Qt63DCore.dll",
         "PySide6/Qt/lib/libQt6Quick3D.so.6",
+        "PySide6/Qt/lib/libQt6LottieVectorImageGenerator.so.6",
+        "PySide6/Qt/plugins/vectorimageformats/libqlottievectorimage.so",
         "PySide6/Qt/lib/QtCharts.framework/Versions/A/QtCharts",
         "PySide6/Qt/lib/QtCharts.framework/Resources/Info.plist",
         "PySide6/QtMultimediaWidgets.pyd",
